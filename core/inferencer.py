@@ -222,8 +222,12 @@ class Inferencer(BaseModule):
             img_path = site_folder / img_info["original_relative"]
             txt_path = img_path.with_suffix('.txt')
 
-        # 处理空预测 - 不创建文件
+        # 处理空预测 - 创建空文件
         if boxes is None or len(boxes) == 0:
+            # 确保目录存在
+            txt_path.parent.mkdir(parents=True, exist_ok=True)
+            # 创建空的 txt 文件
+            txt_path.touch()
             return False
 
         # 写入标注

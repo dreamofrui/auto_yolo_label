@@ -22,6 +22,7 @@ from gui.pages.scan_page import ScanPage
 from gui.pages.sample_page import SamplePage
 from gui.pages.train_page import TrainPage
 from gui.pages.inference_page import InferencePage
+from gui.pages.label_viewer_page import LabelViewerPage
 from gui.pages.restore_page import RestorePage
 from gui.pages.convert_page import ConvertPage
 from gui.pages.settings_page import SettingsPage
@@ -109,6 +110,14 @@ class MainWindow(FluentWindow):
             InferencePage(self),
             FluentIcon.ROBOT,
             "推理",
+            NavigationItemPosition.TOP
+        )
+
+        # 添加标注检查页
+        self._add_page(
+            LabelViewerPage(self),
+            FluentIcon.VIEW,
+            "标注检查",
             NavigationItemPosition.TOP
         )
 
