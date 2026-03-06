@@ -29,8 +29,8 @@
 
 ```bash
 # 1. Create conda environment
-conda create -n yolo python=3.10
-conda activate yolo
+conda create -n yolo_new python=3.11
+conda activate yolo_new
 
 # 2. Install dependencies (check first, then install)
 pip show pyinstaller || pip install pyinstaller
@@ -131,8 +131,8 @@ batch_size: int = -1    # Auto-calculate based on device
 ```bash
 # Development
 mamba.exe shell hook -s powershell | Out-String | Invoke-Expression
-mamba activate yolo
-D:/mniforge3/envs/yolo/python.exe main.py              # Run application
+mamba activate yolo_new
+D:/mniforge3/envs/yolo_new/python.exe main.py              # Run application
 black .                      # Format code
 
 # Testing (targeted)
@@ -141,7 +141,7 @@ pytest tests/test_sampler.py -v
 pytest tests/test_inferencer.py -v
 
 # Build
-D:/mniforge3/envs/yolo/python.exe build.py             # Create dist/AutoLabeler.exe
+D:/mniforge3/envs/yolo_new/python.exe build.py             # Create dist/AutoLabeler.exe
 ```
 
 ---
@@ -184,7 +184,7 @@ D:/mniforge3/envs/yolo/python.exe build.py             # Create dist/AutoLabeler
 pip show pyinstaller || pip install pyinstaller
 
 # Build
-D:/mniforge3/envs/yolo/python.exe build.py
+D:/mniforge3/envs/yolo_new/python.exe build.py
 
 # Output
 dist/AutoLabeler.exe  # Single executable, Windows 10+ compatible
@@ -221,3 +221,9 @@ dist/AutoLabeler.exe  # Single executable, Windows 10+ compatible
 - Label Inspector page for viewing inference results
 - LabelImg integration with auto-copy classes.txt
 - Inference result browser with Code/Product tree structure
+
+### 2026-03-06
+- External LabelImg environment support (avoid package conflicts with yolo_new)
+- `LabelImgConfig` class for configuration management (project > global priority)
+- GUI configuration dialog for selecting external Python interpreter
+- Configuration stored in `~/.autolabeler/labelimg.json`

@@ -4,7 +4,7 @@ import subprocess
 import shutil
 import sys
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
 
 
 class LabelImgLaunchError(Exception):
@@ -16,22 +16,31 @@ class LabelImgLauncher:
     """Launcher for LabelImg annotation tool"""
 
     @classmethod
-    def check_labelimg_available(cls) -> Tuple[bool, str]:
+    def check_labelimg_available(cls, python_path: Optional[str] = None) -> Tuple[bool, str]:
         """
-        Check if LabelImg is available
+        Check if LabelImg is available in specified Python environment
+
+        Args:
+            python_path: Path to Python interpreter. If None, uses sys.executable
 
         Returns:
             Tuple of (is_available, error_message)
         """
+        python = python_path or sys.executable
+
         try:
             result = subprocess.run(
-                [sys.executable, "-m", "labelImg", "--help"],
+                [python, "-m", "labelImg", "--help"],
                 capture_output=True,
                 timeout=5
             )
-            return True, ""
+            # Check return code to verify LabelImg actually works
+            if result.returncode == 0:
+                return True, ""
+            else:
+                return False, f"LabelImg check failed with return code {result.returncode}. Please ensure LabelImg is properly installed: {python} -m pip install labelImg"
         except FileNotFoundError:
-            return False, "LabelImg not installed. Run: pip install labelImg"
+            return False, f"Cannot execute Python: {python}"
         except subprocess.TimeoutExpired:
             return False, "LabelImg check timed out"
         except Exception as e:
@@ -40,15 +49,17 @@ class LabelImgLauncher:
     @classmethod
     def launch(
         cls,
+        python_path: str,
         site_dir: Path,
         inference_run: str,
         code: str,
         product: str
     ) -> bool:
         """
-        Launch LabelImg for a specific inference result
+        Launch LabelImg for a specific inference result using external Python
 
         Args:
+            python_path: Path to external Python interpreter
             site_dir: Site root directory
             inference_run: Inference run name (e.g., "run_20250305_143022")
             code: Code folder name
@@ -65,7 +76,7 @@ class LabelImgLauncher:
         # Build paths
         label_dir = site_dir / ".autolabeler" / "inference_results" / inference_run / code / product
         image_dir = site_dir / code / product
-        src_classes = site_dir / "classes.txt"
+        src_classes = site_dir / ".autolabeler" / "classes.txt"
         dst_classes = label_dir / "classes.txt"
 
         # Validate classes.txt exists
@@ -92,10 +103,10 @@ class LabelImgLauncher:
         # Copy classes.txt to label directory
         shutil.copy(src_classes, dst_classes)
 
-        # Launch LabelImg
+        # Launch LabelImg using external Python
         # Command: python -m labelImg IMAGE_PATH [PRE-DEFINED CLASS FILE]
         cmd = [
-            sys.executable,
+            python_path,  # Use external Python instead of sys.executable
             "-m",
             "labelImg",
             str(image_dir),

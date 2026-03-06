@@ -1,6 +1,7 @@
 """Tests for LabelImgLauncher utility class"""
 
 import subprocess
+import sys
 import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
@@ -25,7 +26,16 @@ class TestLabelImgLauncherCheck:
             mock_run.side_effect = FileNotFoundError()
             available, msg = LabelImgLauncher.check_labelimg_available()
             assert available is False
-            assert "pip install labelImg" in msg
+            assert "Cannot execute Python" in msg
+
+    def test_check_unavailable_when_returncode_nonzero(self):
+        """Test check returns False when LabelImg command fails (returns non-zero)"""
+        with patch('subprocess.run') as mock_run:
+            # 模拟 labelImg 未安装但命令执行了的情况 (returncode=1)
+            mock_run.return_value = MagicMock(returncode=1)
+            available, msg = LabelImgLauncher.check_labelimg_available()
+            assert available is False
+            assert "LabelImg" in msg
 
 
 class TestLabelImgLauncherLaunch:
@@ -37,8 +47,10 @@ class TestLabelImgLauncherLaunch:
         site_dir = tmp_path / "site"
         site_dir.mkdir()
 
-        # Create classes.txt in site root
-        classes_file = site_dir / "classes.txt"
+        # Create .autolabeler directory and classes.txt (as scanner does)
+        autolabeler_dir = site_dir / ".autolabeler"
+        autolabeler_dir.mkdir()
+        classes_file = autolabeler_dir / "classes.txt"
         classes_file.write_text("class1\nclass2\n")
 
         # Create inference result directory
@@ -56,6 +68,7 @@ class TestLabelImgLauncherLaunch:
         with patch('subprocess.Popen') as mock_popen:
             mock_popen.return_value = MagicMock()
             result = LabelImgLauncher.launch(
+                python_path=sys.executable,
                 site_dir=site_dir,
                 inference_run="run_001",
                 code="CodeA",
@@ -75,6 +88,7 @@ class TestLabelImgLauncherLaunch:
 
         with pytest.raises(LabelImgLaunchError) as exc_info:
             LabelImgLauncher.launch(
+                python_path=sys.executable,
                 site_dir=site_dir,
                 inference_run="run_001",
                 code="CodeA",
@@ -88,8 +102,10 @@ class TestLabelImgLauncherLaunch:
         site_dir = tmp_path / "site"
         site_dir.mkdir()
 
-        # Create classes.txt
-        (site_dir / "classes.txt").write_text("class1\n")
+        # Create .autolabeler directory and classes.txt (as scanner does)
+        autolabeler_dir = site_dir / ".autolabeler"
+        autolabeler_dir.mkdir()
+        (autolabeler_dir / "classes.txt").write_text("class1\n")
 
         # Create empty label directory
         label_dir = site_dir / ".autolabeler" / "inference_results" / "run_001" / "CodeA" / "ProductA"
@@ -98,6 +114,7 @@ class TestLabelImgLauncherLaunch:
 
         with pytest.raises(LabelImgLaunchError) as exc_info:
             LabelImgLauncher.launch(
+                python_path=sys.executable,
                 site_dir=site_dir,
                 inference_run="run_001",
                 code="CodeA",
@@ -105,3 +122,66 @@ class TestLabelImgLauncherLaunch:
             )
 
         assert "no annotation files" in str(exc_info.value).lower()
+
+
+class TestLabelImgLauncherExternalPython:
+    """Test LabelImgLauncher with external Python"""
+
+    def test_check_with_external_python(self):
+        """Test check_labelimg_available with external Python path"""
+        with patch('subprocess.run') as mock_run:
+            mock_run.return_value = MagicMock(returncode=0)
+
+            available, msg = LabelImgLauncher.check_labelimg_available("D:/external/python.exe")
+
+            assert available is True
+            # Verify it called with the external python
+            call_args = mock_run.call_args[0][0]
+            assert "D:/external/python.exe" in call_args
+
+    def test_check_fails_with_invalid_python(self):
+        """Test check fails when Python path is invalid"""
+        with patch('subprocess.run') as mock_run:
+            mock_run.side_effect = FileNotFoundError()
+
+            available, msg = LabelImgLauncher.check_labelimg_available("D:/invalid/python.exe")
+
+            assert available is False
+
+
+class TestLabelImgLauncherExternalLaunch:
+    """Test LabelImgLauncher launch with external Python"""
+
+    def test_launch_uses_external_python(self, tmp_path):
+        """Test launch uses provided Python path instead of sys.executable"""
+        # Setup
+        site_dir = tmp_path / "site"
+        site_dir.mkdir()
+        (site_dir / ".autolabeler" / "classes.txt").parent.mkdir(parents=True)
+        (site_dir / ".autolabeler" / "classes.txt").write_text("class1\n")
+
+        label_dir = site_dir / ".autolabeler" / "inference_results" / "run_001" / "CodeA" / "ProductA"
+        label_dir.mkdir(parents=True)
+        (label_dir / "image1.txt").write_text("0 0.5 0.5 0.1 0.1")
+
+        image_dir = site_dir / "CodeA" / "ProductA"
+        image_dir.mkdir(parents=True)
+        (image_dir / "image1.jpg").write_text("fake")
+
+        external_python = "D:/external/python.exe"
+
+        with patch('subprocess.Popen') as mock_popen:
+            mock_popen.return_value = MagicMock()
+
+            LabelImgLauncher.launch(
+                python_path=external_python,
+                site_dir=site_dir,
+                inference_run="run_001",
+                code="CodeA",
+                product="ProductA"
+            )
+
+            # Verify it used external Python
+            call_args = mock_popen.call_args[0][0]
+            assert external_python in call_args
+            assert sys.executable not in call_args
