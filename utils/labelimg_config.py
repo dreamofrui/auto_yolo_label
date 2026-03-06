@@ -148,14 +148,15 @@ class LabelImgConfig:
                 return False, f"File is not executable: {python_path}"
 
         # Check if labelImg is installed
+        # Try python -m labelImg first (some installations work this way)
         try:
             result = subprocess.run(
                 [python_path, "-m", "labelImg", "--help"],
                 capture_output=True,
                 timeout=10
             )
-            if result.returncode != 0:
-                return False, f"labelImg not installed in this environment. Run: {python_path} -m pip install labelImg"
+            if result.returncode == 0:
+                return True, ""
         except FileNotFoundError:
             return False, f"Cannot execute Python: {python_path}"
         except subprocess.TimeoutExpired:
@@ -163,7 +164,22 @@ class LabelImgConfig:
         except Exception as e:
             return False, f"Validation failed: {e}"
 
-        return True, ""
+        # If python -m labelImg failed, try Scripts/labelImg.exe
+        python_dir = Path(python_path).parent
+        labelimg_exe = python_dir / "Scripts" / "labelImg.exe"
+        if labelimg_exe.exists():
+            try:
+                result = subprocess.run(
+                    [str(labelimg_exe), "--help"],
+                    capture_output=True,
+                    timeout=10
+                )
+                if result.returncode == 0:
+                    return True, ""
+            except Exception:
+                pass
+
+        return False, f"labelImg not installed in this environment. Run: {python_path} -m pip install labelImg"
 
     def get_effective_python(self) -> Tuple[Optional[str], str]:
         """
