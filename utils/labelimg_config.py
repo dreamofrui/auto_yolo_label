@@ -17,6 +17,9 @@ class LabelImgConfig:
     GLOBAL_CONFIG_DIR = ".autolabeler"
     GLOBAL_CONFIG_FILE = "labelimg.json"
 
+    # Default Python path for LabelImg environment
+    DEFAULT_PYTHON_PATH = "D:/miniforge3/envs/labelimg/python.exe"
+
     def __init__(self):
         self._python_path: Optional[str] = None
         self._is_valid: bool = False
@@ -40,7 +43,7 @@ class LabelImgConfig:
 
     def load(self) -> bool:
         """
-        Load configuration with priority: project > global
+        Load configuration with priority: project > global > default
 
         Returns:
             bool: True if configuration was found and loaded
@@ -58,6 +61,12 @@ class LabelImgConfig:
             if self._load_from_file(global_config):
                 self._config_source = "global"
                 return True
+
+        # Try default path
+        if Path(self.DEFAULT_PYTHON_PATH).exists():
+            self._python_path = self.DEFAULT_PYTHON_PATH
+            self._config_source = "default"
+            return True
 
         return False
 
@@ -163,11 +172,15 @@ class LabelImgConfig:
         Returns:
             Tuple[Optional[str], str]: (python_path or None, error_message)
         """
-        if not self._python_path:
-            return None, "LabelImg environment not configured. Please click 'Configure LabelImg' button."
+        # If already loaded from config, use it
+        if self._python_path:
+            # Quick check if path still exists
+            if not Path(self._python_path).exists():
+                return None, f"Configured Python path no longer exists: {self._python_path}"
+            return self._python_path, ""
 
-        # Quick check if path still exists
-        if not Path(self._python_path).exists():
-            return None, f"Configured Python path no longer exists: {self._python_path}"
+        # Try default path as fallback
+        if Path(self.DEFAULT_PYTHON_PATH).exists():
+            return self.DEFAULT_PYTHON_PATH, ""
 
-        return self._python_path, ""
+        return None, "LabelImg environment not configured. Please click 'Configure LabelImg' button."

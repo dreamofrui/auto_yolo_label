@@ -12,12 +12,14 @@ class TestLabelImgConfigLoad:
     """Test configuration loading"""
 
     def test_load_returns_false_when_no_config_exists(self, tmp_path, monkeypatch):
-        """Test load returns False when no config files exist"""
+        """Test load returns False when no config files exist and default path doesn't exist"""
         # Mock home directory to tmp_path
         monkeypatch.setattr(Path, 'home', lambda: tmp_path)
 
         config = LabelImgConfig()
-        result = config.load()
+        # Mock default path to not exist
+        with patch.object(config, 'DEFAULT_PYTHON_PATH', '/nonexistent/python.exe'):
+            result = config.load()
 
         assert result is False
         assert config.python_path is None
@@ -92,6 +94,22 @@ class TestLabelImgConfigLoad:
             config.load()
 
         assert config.python_path == "D:/project/python.exe"
+
+    def test_load_uses_default_when_no_config_and_default_exists(self, tmp_path, monkeypatch):
+        """Test load uses default path when no config exists but default path exists"""
+        monkeypatch.setattr(Path, 'home', lambda: tmp_path)
+
+        # Create a fake default python path
+        fake_default = tmp_path / "default_python.exe"
+        fake_default.write_text("fake")
+
+        config = LabelImgConfig()
+        with patch.object(config, 'DEFAULT_PYTHON_PATH', str(fake_default)):
+            result = config.load()
+
+        assert result is True
+        assert config.python_path == str(fake_default)
+        assert config.config_source == "default"
 
 
 class TestLabelImgConfigSave:

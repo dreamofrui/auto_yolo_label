@@ -158,7 +158,7 @@ class LabelViewerPage(BasePage):
 
     def _check_labelimg(self):
         """检查 LabelImg 是否配置并可用"""
-        # Try to load existing config
+        # Try to load existing config (with default fallback)
         if self.config.load():
             python_path, error = self.config.get_effective_python()
             if python_path:
@@ -166,7 +166,9 @@ class LabelViewerPage(BasePage):
                 available, msg = LabelImgLauncher.check_labelimg_available(python_path)
                 if available:
                     self.labelimg_available = True
-                    self.status_label.setText(f"已配置: {python_path}")
+                    source = self.config.config_source or "unknown"
+                    source_text = {"project": "项目配置", "global": "全局配置", "default": "默认值"}.get(source, source)
+                    self.status_label.setText(f"已配置 ({source_text}): {python_path}")
                 else:
                     self.labelimg_available = False
                     self.status_label.setText(f"配置无效: {msg}")
