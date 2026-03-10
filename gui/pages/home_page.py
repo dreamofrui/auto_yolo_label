@@ -214,7 +214,7 @@ class HomePage(BasePage):
         card_layout.setColumnStretch(0, 1)
 
         # 开发者标签（右侧）
-        developer_label = StrongBodyLabel("Developer: 睿")
+        developer_label = StrongBodyLabel("Developer: 高睿")
         developer_label.setStyleSheet("color: #888;")
         card_layout.addWidget(developer_label, 0, 1)
 

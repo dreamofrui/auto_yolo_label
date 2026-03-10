@@ -185,3 +185,112 @@ class TestLabelImgLauncherExternalLaunch:
             call_args = mock_popen.call_args[0][0]
             assert external_python in call_args
             assert sys.executable not in call_args
+
+
+class TestLabelImgLauncherExeFallback:
+    """Test that launcher falls back to labelImg.exe when python -m fails"""
+
+    def test_launch_uses_labelimg_exe_when_available(self, tmp_path):
+        """
+        BUG FIX: When Scripts/labelImg.exe exists, launcher should use it directly
+        instead of python -m labelImg.
+        """
+        # Setup site directory
+        site_dir = tmp_path / "site"
+        site_dir.mkdir()
+
+        # Create .autolabeler directory and classes.txt
+        autolabeler_dir = site_dir / ".autolabeler"
+        autolabeler_dir.mkdir()
+        classes_file = autolabeler_dir / "classes.txt"
+        classes_file.write_text("class1\nclass2\n")
+
+        # Create inference result directory
+        label_dir = site_dir / ".autolabeler" / "inference_results" / "run_001" / "CodeA" / "ProductA"
+        label_dir.mkdir(parents=True)
+        (label_dir / "image1.txt").write_text("0 0.5 0.5 0.1 0.1")
+
+        # Create image directory
+        image_dir = site_dir / "CodeA" / "ProductA"
+        image_dir.mkdir(parents=True)
+        (image_dir / "image1.jpg").write_text("fake image")
+
+        # Mock external Python path
+        external_python = tmp_path / "env" / "python.exe"
+        external_python.parent.mkdir(parents=True, exist_ok=True)
+        external_python.touch()
+
+        # Create mock Scripts/labelImg.exe
+        labelimg_exe = external_python.parent / "Scripts" / "labelImg.exe"
+        labelimg_exe.parent.mkdir(parents=True, exist_ok=True)
+        labelimg_exe.touch()
+
+        # Track actual command used
+        actual_commands = []
+
+        def mock_popen(cmd, *args, **kwargs):
+            """Mock Popen to track which command was used"""
+            actual_commands.append(cmd)
+            return MagicMock()
+
+        with patch('subprocess.Popen', side_effect=mock_popen):
+            result = LabelImgLauncher.launch(
+                python_path=str(external_python),
+                site_dir=site_dir,
+                inference_run="run_001",
+                code="CodeA",
+                product="ProductA"
+            )
+
+        assert result is True
+        assert len(actual_commands) == 1
+
+        # Should use labelImg.exe directly
+        cmd = actual_commands[0]
+        assert "labelImg.exe" in " ".join(cmd), \
+            f"Expected command to use labelImg.exe, but got: {' '.join(cmd)}"
+
+    def test_launch_uses_python_m_when_exe_not_exists(self, tmp_path):
+        """
+        Test that launcher uses python -m labelImg when Scripts/labelImg.exe doesn't exist.
+        This ensures backward compatibility.
+        """
+        # Setup
+        site_dir = tmp_path / "site"
+        site_dir.mkdir()
+        (site_dir / ".autolabeler" / "classes.txt").parent.mkdir(parents=True)
+        (site_dir / ".autolabeler" / "classes.txt").write_text("class1\n")
+
+        label_dir = site_dir / ".autolabeler" / "inference_results" / "run_001" / "CodeA" / "ProductA"
+        label_dir.mkdir(parents=True)
+        (label_dir / "image1.txt").write_text("0 0.5 0.5 0.1 0.1")
+
+        image_dir = site_dir / "CodeA" / "ProductA"
+        image_dir.mkdir(parents=True)
+        (image_dir / "image1.jpg").write_text("fake")
+
+        external_python = tmp_path / "env" / "python.exe"
+        external_python.parent.mkdir(parents=True, exist_ok=True)
+        external_python.touch()
+        # Do NOT create Scripts/labelImg.exe
+
+        actual_commands = []
+
+        def mock_popen(cmd, *args, **kwargs):
+            actual_commands.append(cmd)
+            return MagicMock()
+
+        with patch('subprocess.Popen', side_effect=mock_popen):
+            LabelImgLauncher.launch(
+                python_path=str(external_python),
+                site_dir=site_dir,
+                inference_run="run_001",
+                code="CodeA",
+                product="ProductA"
+            )
+
+        cmd = actual_commands[0]
+
+        # Should fall back to python -m labelImg
+        assert "-m" in cmd and "labelImg" in cmd, \
+            f"Expected 'python -m labelImg', but got: {' '.join(cmd)}"
