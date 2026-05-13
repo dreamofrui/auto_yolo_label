@@ -20,11 +20,11 @@
 |------|----------|----------|------|------|
 | **基础设施（utils/）** |  |  |  |  |
 | exceptions.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | `ErrorCode` / `ErrorInfo` / `AutoLabelerError` 已实现 |
-| logging_setup.py | 🟡 进行中 | 0% | ⬜ | 下一步：loguru 配置 |
+| logging_setup.py | ✅ 完成 | 目标测试通过 | ✅ | loguru 初始化和幂等 sink 管理 |
+| device.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：设备检测 |
 | path_encoder.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 旧版可借鉴 |
 | mapping_manager.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 双锁，旧版可借鉴 |
 | task_registry.py | ⬜ 待开始 | 0% | ✅ 规范已写 | **新增模块**，无旧版参考 |
-| device.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 旧版可借鉴 |
 | **核心业务（core/）** |  |  |  |  |
 | scanner.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
 | sampler.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
@@ -55,18 +55,19 @@
 - 2026-05-13 创建初始 `CURRENT_STATE.md` 和 `CHANGELOG.md`
 - 2026-05-13 完成阶段 0：旧代码、旧测试、旧配置和旧桌面资产归档到 `legacy/`；新增 `AGENTS.md`
 - 2026-05-13 完成 `utils/exceptions.py`：新增共享错误码、错误信息 dataclass、业务异常基类和通用任务异常
+- 2026-05-13 完成 `utils/logging_setup.py`：新增 loguru 统一初始化、文件 sink、stderr sink 和重复初始化去重
 
 ---
 
 ## 4. 进行中
 
-### 4.1 utils/logging_setup.py
+### 4.1 utils/device.py
 - 负责人：Codex
 - 开始日期：2026-05-13
 - 当前进度：
-  - [ ] 读取 `01-requirements.md` / `02-constraints.md` 中日志约束
-  - [ ] 编写 logging setup 测试
-  - [ ] 实现 loguru 初始化
+  - [ ] 读取 `01-requirements.md` / `02-constraints.md` 中设备约束
+  - [ ] 编写 device 测试
+  - [ ] 实现 CPU/CUDA/MPS 检测和自动 batch 推断
   - [ ] 运行纪律检查和目标测试
 - 阻塞项：无
 
