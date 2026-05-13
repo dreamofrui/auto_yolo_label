@@ -22,6 +22,7 @@
 - (utils) 新增 `utils/exceptions.py`，提供 `ErrorCode`、`ErrorInfo`、`AutoLabelerError` 和通用任务异常（本地 M1.1 提交）
 - (utils) 新增 `utils/logging_setup.py`，提供 loguru 统一初始化和幂等 sink 管理（本地 M1.1 提交）
 - (utils) 新增 `utils/device.py`，提供 CPU/CUDA/MPS 检测、设备解析和自动 batch size 建议（本地 M1.1 提交）
+- (utils) 新增 `utils/path_encoder.py`，提供路径扁平化编码、解码和分隔符冲突校验（本地 M1.1 提交）
 
 ### Changed
 - (docs) `docs/dev/CURRENT_STATE.md` 重置为重构基线状态（2026-05-13）
