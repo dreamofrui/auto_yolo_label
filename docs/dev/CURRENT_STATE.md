@@ -23,8 +23,8 @@
 | logging_setup.py | ✅ 完成 | 目标测试通过 | ✅ | loguru 初始化和幂等 sink 管理 |
 | device.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | CPU/CUDA/MPS 检测和 batch size 建议 |
 | path_encoder.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | encode/decode/to_relative_path 已实现 |
-| mapping_manager.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：MappingData 和线程安全读写 |
-| task_registry.py | ⬜ 待开始 | 0% | ✅ 规范已写 | **新增模块**，无旧版参考 |
+| mapping_manager.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | MappingData / ImageInfo / 状态查询已实现 |
+| task_registry.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：统一 TaskHandle |
 | **核心业务（core/）** |  |  |  |  |
 | scanner.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
 | sampler.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
@@ -58,18 +58,19 @@
 - 2026-05-13 完成 `utils/logging_setup.py`：新增 loguru 统一初始化、文件 sink、stderr sink 和重复初始化去重
 - 2026-05-13 完成 `utils/device.py`：新增可测试的 CPU/CUDA/MPS 检测、显存读取、设备解析和 batch size 建议
 - 2026-05-13 完成 `utils/path_encoder.py`：新增路径编码、解码、相对路径转换和分隔符冲突校验
+- 2026-05-13 完成 `utils/mapping_manager.py`：新增 mapping.json dataclass 缓存、原子保存、状态标记和推理候选查询
 
 ---
 
 ## 4. 进行中
 
-### 4.1 utils/mapping_manager.py
+### 4.1 utils/task_registry.py
 - 负责人：Codex
 - 开始日期：2026-05-13
 - 当前进度：
-  - [ ] 读取 `01-requirements.md` / `02-constraints.md` 中 mapping 约束
-  - [ ] 编写 mapping manager 测试
-  - [ ] 实现 MappingData / ImageInfo / MappingManager
+  - [ ] 读取 `01-requirements.md` / `02-constraints.md` 中任务模型约束
+  - [ ] 编写 task registry 测试
+  - [ ] 实现 TaskHandle / TaskRegistry
   - [ ] 运行纪律检查和目标测试
 - 阻塞项：无
 
