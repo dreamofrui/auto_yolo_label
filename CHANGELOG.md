@@ -1,0 +1,80 @@
+# Changelog
+
+本项目所有显著变更都记录在此文件。
+
+格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
+版本遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+
+---
+
+## [Unreleased]
+
+### Added
+- 初始化重构基线（2026-05-13）
+- 新增规范文档目录 `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/`
+  - `README.md`：阅读顺序索引
+  - `01-requirements.md`：8 大模块详细 I/O + 数据模型 + 异常表 + 新旧差异
+  - `02-constraints.md`：5 角度强约束 + 10 条强制纪律 + Git 规范
+  - `03-progress-template.md`：CURRENT_STATE / CHANGELOG / requirements 维护规则
+- 重写 `CLAUDE.md`，加入「REFACTOR ACTIVE」硬注入段 + Behavioral Guidelines
+- 新建 `CHANGELOG.md`（本文件）
+
+### Changed
+- (docs) `docs/dev/CURRENT_STATE.md` 重置为重构基线状态（2026-05-13）
+
+### Deprecated
+- 整个 `core/`、`utils/`、`gui/`、`tests/` 旧代码目录将在阶段 0 归档至 `legacy/`，仅作参考
+- 旧目录命名 `vals/`（将在新版改为 `val/`，与 YOLO 标准一致）
+- 旧 `Converter.convert_folder()` 默认删除源 TXT 的行为（新版默认 `delete_source=False`）
+
+### Removed
+- 计划在重构期间删除：`utils/site_detector.py`、`core/conversion_rule.py`、`config/A9950_conversion_rules.yaml`
+
+---
+
+## 历史版本（重构前）
+
+> 本节仅保留作为旧版本历史参考。新版本所有变更进入上方 `[Unreleased]` 节。
+
+### 2026-03-06
+- External LabelImg environment support (avoid package conflicts with yolo_new)
+- `LabelImgConfig` class for configuration management (project > global priority)
+- GUI configuration dialog for selecting external Python interpreter
+- Configuration stored in `~/.autolabeler/labelimg.json`
+
+### 2025-03-05
+- Empty prediction now creates empty `.txt` files (for LabelImg compatibility)
+- Label Inspector page for viewing inference results
+- LabelImg integration with auto-copy classes.txt
+- Inference result browser with Code/Product tree structure
+
+### 2025-01-21
+- Homepage quick actions (开始扫描, 使用文档 buttons)
+- Navigation API: `navigationInterface.setCurrentItem(page_name)`
+- Restore function improvements for inference mode
+
+### 2025-01-14
+- Pre-labeled priority sampling (XML/TXT detection)
+- Inference result separation (timestamped directories)
+- `ImageInfo.label_source`: `"none"` / `"pre_existing_xml"` / `"pre_existing_txt"`
+
+---
+
+## 条目规则速查
+
+提交 PR 时，在 `[Unreleased]` 节下加条目：
+
+| Section | 含义 | 示例 |
+|---------|------|------|
+| `Added` | 新功能 | `- (scanner) 支持自定义 output_dir (PR #12)` |
+| `Changed` | 行为/接口变更 | `- (converter) delete_source 默认改为 False，破坏性变更 (PR #14)` |
+| `Deprecated` | 即将移除的接口 | `- 旧 vals/ 目录将在 v2.0 移除` |
+| `Removed` | 已移除的接口 | `- (utils) 删除 site_detector.py (PR #11)` |
+| `Fixed` | bug 修复 | `- (sampler) 修复 mode='ratio' 时未触发全抽 (PR #16)` |
+| `Security` | 安全相关 | `- 无` |
+
+格式：`- (模块名) 描述 (PR #编号)`
+
+破坏性变更必须明确标注，并在 PR 描述中说明迁移方案。
+
+详细规则见 `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/03-progress-template.md` 第 3 节。

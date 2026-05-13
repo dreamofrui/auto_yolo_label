@@ -1,81 +1,193 @@
-# AutoLabeler 当前开发状态
+# AutoLabeler 当前进度
 
-> 更新日期: 2025-01-19
-
----
-
-## 项目完成状态
-
-**核心功能已完成**
-
-### 已交付模块
-- ✅ 6 个核心模块 (Scanner, Sampler, Trainer, Inferencer, Restorer, Converter)
-- ✅ 5 个工具模块 (PathEncoder, MappingManager, Device, ImageUtils, Exceptions)
-- ✅ 8 个 GUI 页面 + 8 个后台工作线程
-- ✅ 111 个单元测试全部通过
+> 最后更新：2026-05-13
+> 当前里程碑：M1（Core 模块解耦）
+> 当前分支：main（重构工作分支待新人创建：`refactor/scaffold-v2`）
 
 ---
 
-## 快速运行
+## 1. 一句话现状
+
+**重构尚未开始**。规范文档（01/02/03）和 CLAUDE.md 已就绪。新人接手后第一件事是执行阶段 0：把现有所有代码归档到 `legacy/`。
+
+下一步：阶段 0 归档 → 阶段 1 架构摸底（≤ 4 小时）→ 进入 M1.1 基础设施模块实现。
+
+---
+
+## 2. 模块状态总览
+
+| 模块 | 重写状态 | 测试覆盖 | 文档 | 备注 |
+|------|----------|----------|------|------|
+| **基础设施（utils/）** |  |  |  |  |
+| exceptions.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 入口模块，优先实现 |
+| logging_setup.py | ⬜ 待开始 | 0% | ⬜ | loguru 配置 |
+| path_encoder.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 旧版可借鉴 |
+| mapping_manager.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 双锁，旧版可借鉴 |
+| task_registry.py | ⬜ 待开始 | 0% | ✅ 规范已写 | **新增模块**，无旧版参考 |
+| device.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 旧版可借鉴 |
+| **核心业务（core/）** |  |  |  |  |
+| scanner.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
+| sampler.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
+| converter.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意 delete_source 默认改为 False |
+| trainer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意补齐 cache 参数 |
+| inferencer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意统一 iou 默认 0.7 |
+| label_inspector.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
+| restorer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意过滤 classes.txt |
+| labelimg_launcher.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 保留集成 |
+| **入口层** |  |  |  |  |
+| gui/workers/* | ⬜ 待开始 | - | - | M3 接入新 core |
+| api/main.py + routes/ | ⬜ 待开始 | 0% | - | M2 |
+| api/schemas/ | ⬜ 待开始 | 0% | - | M2 |
+| **集成测试** |  |  |  |  |
+| tests/integration/test_scenario_a.py（完整流程） | ⬜ 待开始 | - | ✅ 规范已写 | - |
+| tests/integration/test_scenario_b.py（跳过扫描） | ⬜ 待开始 | - | ✅ 规范已写 | - |
+| tests/integration/test_scenario_c.py（跳过训练） | ⬜ 待开始 | - | ✅ 规范已写 | - |
+| tests/integration/test_scenario_d.py（纯转换） | ⬜ 待开始 | - | ✅ 规范已写 | - |
+
+图例：✅ 完成 / 🟡 进行中 / ⬜ 待开始 / ❌ 阻塞
+
+---
+
+## 3. 已完成（本里程碑内）
+
+- 2026-05-13 完成规范文档 `01-requirements.md` / `02-constraints.md` / `03-progress-template.md` / README.md
+- 2026-05-13 重写 `CLAUDE.md`，加入「REFACTOR ACTIVE」硬注入段 + Behavioral Guidelines
+- 2026-05-13 创建初始 `CURRENT_STATE.md` 和 `CHANGELOG.md`
+
+---
+
+## 4. 进行中
+
+无。等待新人开始。
+
+---
+
+## 5. 下一步（按优先级）
+
+### 5.1 阶段 0：归档旧代码（半天内）
+
+由新人执行：
 
 ```bash
-# 激活环境
-conda activate yolo
+git checkout -b refactor/scaffold-v2
 
-# 运行应用
-python main.py
+mkdir legacy
+git mv core legacy/core
+git mv gui legacy/gui
+git mv utils legacy/utils
+git mv tests legacy/tests
+git mv main.py legacy/main.py
+git mv build.py legacy/build.py
+git mv requirements.txt legacy/requirements_old.txt
 
-# 运行测试
-pytest tests/ -v
+git commit -m "chore: archive legacy code to legacy/ for reference-only"
 ```
 
+### 5.2 阶段 1：架构摸底（≤ 4 小时）
+
+- 列模块清单（`notes/legacy-map.md`）
+- 画 worker → core → utils 调用图
+- grep 找隐藏耦合点（`json.load.*mapping`、`os.environ`、`os.getcwd`、全局变量）
+- 对照 01-requirements.md 找差异（`notes/legacy-diff.md`）
+
+完成后向负责人做 10 分钟口头汇报。
+
+### 5.3 阶段 2 / M1.1：基础设施实现顺序
+
+```
+1. utils/exceptions.py          ← 所有模块的依赖
+2. utils/logging_setup.py        ← 所有模块的依赖
+3. utils/device.py
+4. utils/path_encoder.py
+5. utils/mapping_manager.py      ← 依赖 exceptions, path_encoder
+6. utils/task_registry.py        ← 依赖 exceptions（新增模块，无旧版参考）
+```
+
+### 5.4 阶段 2 / M1.2：核心业务模块（顺序基于依赖图）
+
+```
+1. core/scanner.py               ← 依赖 mapping_manager, path_encoder
+2. core/sampler.py               ← 依赖 scanner 的产物，但不依赖 scanner
+3. core/converter.py             ← 独立，可并行
+4. core/trainer.py               ← 依赖 sampler 的产物
+5. core/inferencer.py            ← 依赖 trainer 的产物
+6. core/label_inspector.py       ← 依赖 inferencer 的产物
+7. core/restorer.py              ← 依赖 sampler / inferencer 的产物
+8. core/labelimg_launcher.py     ← 独立
+```
+
+### 5.5 阶段 2 / M1.3：双调用入口
+
+- gui/workers/ 全部用 TaskHandle 替代旧信号
+- api/main.py + 8 个 routes/
+- examples/scan_via_desktop.py + examples/scan_via_http.py
+
 ---
 
-## 最近更新 (2025-01-19)
+## 6. 已知问题 / 风险
 
-### 文档精简
-- **CLAUDE.md**: 精简至 127 行，聚焦开发流程与测试要点
-- **requirement.md**: 精简至 249 行，聚焦核心功能需求
-- **jishukaifawendang.md**: 精简至 242 行，聚焦技术选型与架构
-
-### Bug修复
-- **ComboBox 参数错误**: 修复 `addItem()` 方法调用，正确传递 `(icon, text, userData)` 参数
-
----
-
-## 开发环境
-
-- **Python**: `D:\miniforge3\envs\yolo\python.exe`
-- **环境**: `yolo` conda 环境
-- **代码格式化**: `black .`
+- **风险**：新人若不读完三份规范文档直接动手，会重蹈旧版覆辙
+  - 缓解：CLAUDE.md 顶部「REFACTOR ACTIVE」段强制要求开会话先读 CURRENT_STATE.md；十条纪律靠 pre-commit hook 机器拦截
+- **风险**：阶段 1 摸底变成"细读旧代码"，超时
+  - 缓解：02-constraints.md 第 10 节和给新人的指令明确 4 小时时间盒
+- **风险**：legacy/ 的 `mapping.json` 格式与新版不兼容
+  - 缓解：保持 ImageInfo 字段向后兼容，加新字段不删旧字段；遇兼容问题写迁移脚本
 
 ---
 
-## 关键技术点
+## 7. 当前里程碑定义
 
-1. **路径编码**: 使用 `__` 分隔符扁平化 Code/Product/Filename
-2. **线程安全**: MappingManager 使用双重锁机制 (RLock + FileLock)
-3. **设备检测**: 使用 `device="auto"` 和 `batch_size=-1` 自动检测
-4. **推理状态**: 推理不标记 `inferred=True`，允许重新推理；还原时才标记
+### M1（当前）：Core 模块解耦
+
+**完成标准**：
+- 所有 8 个 core 模块和 6 个 utils 模块按 02-constraints.md 第 5 节验收清单交付
+- 4 个集成场景测试全部通过
+- `mypy --strict core/ utils/` 0 错误
+- `pytest --cov` 覆盖率 `core/ ≥ 70%`、`utils/ ≥ 80%`
+- 所有 PR 的 CURRENT_STATE / CHANGELOG / requirements 同步完成
+
+**预计**：M1 工作量约 2-3 周（视新人熟练度）。
+
+### M2：HTTP 入口
+
+**完成标准**：
+- `api/` 目录下 main.py + 8 个 route 文件
+- HTTP 集成测试全部通过
+- `examples/*_via_http.py` 可跑
+- OpenAPI 文档自动生成可访问
+
+### M3：桌面 GUI 接入新 core
+
+**完成标准**：
+- `gui/workers/` 全部用 `TaskHandle` 替代旧 QThread 信号
+- 桌面端 4 个场景手工验证通过
+- `main.py`（桌面入口）跑起来不依赖 legacy/
 
 ---
 
-## 功能增强 (2025-01-14)
+## 8. 文档维护说明
 
-### 已有标注优先抽样
-- 检测产品文件夹中 XML/TXT 标注
-- XML 自动转换为 YOLO TXT
-- 优先抽取已标注样本（不计入数量限制）
-- 空标注文件自动删除
+本文件 (`CURRENT_STATE.md`) **每个 PR 必须更新**：
+- 模块状态总览：⬜ → 🟡 → ✅
+- "已完成"段落：append 一条
+- "进行中"段落：替换为下一个任务
+- "最后更新"日期
 
-### 推理结果分区存储
-- 推理结果保存到 `.autolabeler/inference_results/run_YYYYMMDD_HHMMSS/`
-- 保留原始 Code/Product 目录结构
-- 生成 `inference_config.json` 记录参数
-- 支持多次推理，用户选择最佳结果还原
+详细规则见 `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/03-progress-template.md` 第 2 节。
 
-### 还原功能增强
-- 支持从 Database 目录还原（人工标注）
-- **新增** 支持从推理结果还原（选择历史 run_xxx）
-- GUI 新增来源选择（Database / 推理结果）
+---
 
+## 9. 新人接手快速指南
+
+如果你是第一次进项目，按这个顺序：
+
+1. 读 `CLAUDE.md`（项目根）
+2. 读 `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/README.md`
+3. 读 `01-requirements.md`、`02-constraints.md`、`03-progress-template.md`（按 README 推荐顺序）
+4. 回答 CLAUDE.md 第 0.3 节"五个自检问题"给负责人
+5. 调用 `Skill: superpowers:brainstorming` 与负责人对齐阶段 0/1 计划
+6. 执行阶段 0（归档 legacy/）
+7. 进入阶段 1（架构摸底，时间盒 4 小时）
+8. 进入阶段 2（M1.1 基础设施实现）
+
+**记住：宁可多问，不要私自决定。**

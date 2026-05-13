@@ -1,0 +1,58 @@
+# AutoLabeler pre-commit 配置
+#
+# 用途：在每次 git commit 前自动跑以下检查，违规则阻止提交。
+#
+# 安装一次：
+#   pip install pre-commit
+#   pre-commit install
+#
+# 跳过（仅紧急情况，需在 PR 描述说明原因）：
+#   git commit --no-verify
+#
+# 手动跑所有 hook：
+#   pre-commit run --all-files
+
+repos:
+  # 格式化
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        files: ^(core|utils|gui|api|tests|scripts|examples)/.*\.py$
+        language_version: python3.11
+
+  # Lint + import 排序
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^(core|utils|gui|api|tests|scripts|examples)/.*\.py$
+      - id: ruff-format
+        files: ^(core|utils|gui|api|tests|scripts|examples)/.*\.py$
+
+  # 项目纪律检查（10 条强制纪律中可机器化的 6 条）
+  - repo: local
+    hooks:
+      - id: autolabel-disciplines
+        name: AutoLabeler discipline checker
+        entry: python scripts/check_disciplines.py
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+  # 常见错误
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=5000']
+        exclude: ^(yolov8.*\.pt|.*\.onnx|legacy/.*)$
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
