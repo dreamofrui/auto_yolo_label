@@ -19,6 +19,7 @@
 - 重写 `CLAUDE.md`，加入「REFACTOR ACTIVE」硬注入段 + Behavioral Guidelines
 - 新建 `CHANGELOG.md`（本文件）
 - (docs) 新增 `AGENTS.md`，记录 Codex / agents 接手重构时必须遵守的执行纪律（本地阶段 0 提交）
+- (utils) 新增 `utils/exceptions.py`，提供 `ErrorCode`、`ErrorInfo`、`AutoLabelerError` 和通用任务异常（本地 M1.1 提交）
 
 ### Changed
 - (docs) `docs/dev/CURRENT_STATE.md` 重置为重构基线状态（2026-05-13）

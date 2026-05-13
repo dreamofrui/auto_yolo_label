@@ -19,8 +19,8 @@
 | 模块 | 重写状态 | 测试覆盖 | 文档 | 备注 |
 |------|----------|----------|------|------|
 | **基础设施（utils/）** |  |  |  |  |
-| exceptions.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 入口模块，优先实现 |
-| logging_setup.py | ⬜ 待开始 | 0% | ⬜ | loguru 配置 |
+| exceptions.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | `ErrorCode` / `ErrorInfo` / `AutoLabelerError` 已实现 |
+| logging_setup.py | 🟡 进行中 | 0% | ⬜ | 下一步：loguru 配置 |
 | path_encoder.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 旧版可借鉴 |
 | mapping_manager.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 双锁，旧版可借鉴 |
 | task_registry.py | ⬜ 待开始 | 0% | ✅ 规范已写 | **新增模块**，无旧版参考 |
@@ -54,20 +54,20 @@
 - 2026-05-13 重写 `CLAUDE.md`，加入「REFACTOR ACTIVE」硬注入段 + Behavioral Guidelines
 - 2026-05-13 创建初始 `CURRENT_STATE.md` 和 `CHANGELOG.md`
 - 2026-05-13 完成阶段 0：旧代码、旧测试、旧配置和旧桌面资产归档到 `legacy/`；新增 `AGENTS.md`
+- 2026-05-13 完成 `utils/exceptions.py`：新增共享错误码、错误信息 dataclass、业务异常基类和通用任务异常
 
 ---
 
 ## 4. 进行中
 
-### 4.1 阶段 1：架构摸底
+### 4.1 utils/logging_setup.py
 - 负责人：Codex
 - 开始日期：2026-05-13
-- 时间盒：≤ 4 小时
 - 当前进度：
-  - [ ] 生成 `notes/legacy-map.md`
-  - [ ] 画 worker → core → utils 调用图
-  - [ ] grep 隐藏耦合点
-  - [ ] 生成 `notes/legacy-diff.md`
+  - [ ] 读取 `01-requirements.md` / `02-constraints.md` 中日志约束
+  - [ ] 编写 logging setup 测试
+  - [ ] 实现 loguru 初始化
+  - [ ] 运行纪律检查和目标测试
 - 阻塞项：无
 
 ---
@@ -78,12 +78,12 @@
 
 已完成。旧代码和旧资产已归档至 `legacy/`，后续只读参考。
 
-### 5.2 阶段 1：架构摸底（≤ 4 小时，当前）
+### 5.2 阶段 1：架构摸底（≤ 4 小时，已完成）
 
-- 列模块清单（`notes/legacy-map.md`）
-- 画 worker → core → utils 调用图
-- grep 找隐藏耦合点（`json.load.*mapping`、`os.environ`、`os.getcwd`、全局变量）
-- 对照 01-requirements.md 找差异（`notes/legacy-diff.md`）
+- 已完成列模块清单（`notes/legacy-map.md`）
+- 已完成 worker → core → utils 调用图（`notes/legacy-callgraph.md`）
+- 已完成 grep 隐藏耦合点
+- 已完成对照 01-requirements.md 找差异（`notes/legacy-diff.md`）
 
 完成后向负责人做 10 分钟口头汇报。
 
