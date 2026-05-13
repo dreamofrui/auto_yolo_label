@@ -24,10 +24,12 @@
 - (utils) 新增 `utils/device.py`，提供 CPU/CUDA/MPS 检测、设备解析和自动 batch size 建议（本地 M1.1 提交）
 - (utils) 新增 `utils/path_encoder.py`，提供路径扁平化编码、解码和分隔符冲突校验（本地 M1.1 提交）
 - (utils) 新增 `utils/mapping_manager.py`，提供 mapping.json dataclass 缓存、原子保存和状态标记查询（本地 M1.1 提交）
+- (utils) 新增 `utils/task_registry.py`，提供 `TaskHandle`、任务生命周期状态、取消标记和 JSON 持久化（本地 M1.1 提交）
 
 ### Changed
 - (docs) `docs/dev/CURRENT_STATE.md` 重置为重构基线状态（2026-05-13）
 - (legacy) 将旧代码、旧测试、旧配置和旧桌面资产归档到 `legacy/`，后续仅作只读参考（本地阶段 0 提交）
+- (dev) `.gitignore` 增加 pytest/mypy 本地缓存和 `pytest_tmp_codex/` 临时目录（本地 M1.1 提交）
 
 ### Deprecated
 - 整个 `core/`、`utils/`、`gui/`、`tests/` 旧代码目录将在阶段 0 归档至 `legacy/`，仅作参考

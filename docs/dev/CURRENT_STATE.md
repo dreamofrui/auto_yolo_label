@@ -24,9 +24,9 @@
 | device.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | CPU/CUDA/MPS 检测和 batch size 建议 |
 | path_encoder.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | encode/decode/to_relative_path 已实现 |
 | mapping_manager.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | MappingData / ImageInfo / 状态查询已实现 |
-| task_registry.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：统一 TaskHandle |
+| task_registry.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | TaskHandle / TaskRegistry / JSON 持久化已实现 |
 | **核心业务（core/）** |  |  |  |  |
-| scanner.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
+| scanner.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：扫描模块 |
 | sampler.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
 | converter.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意 delete_source 默认改为 False |
 | trainer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意补齐 cache 参数 |
@@ -59,18 +59,19 @@
 - 2026-05-13 完成 `utils/device.py`：新增可测试的 CPU/CUDA/MPS 检测、显存读取、设备解析和 batch size 建议
 - 2026-05-13 完成 `utils/path_encoder.py`：新增路径编码、解码、相对路径转换和分隔符冲突校验
 - 2026-05-13 完成 `utils/mapping_manager.py`：新增 mapping.json dataclass 缓存、原子保存、状态标记和推理候选查询
+- 2026-05-13 完成 `utils/task_registry.py`：新增任务句柄、生命周期转换、取消标记、错误信息和 JSON 持久化
 
 ---
 
 ## 4. 进行中
 
-### 4.1 utils/task_registry.py
+### 4.1 core/scanner.py
 - 负责人：Codex
 - 开始日期：2026-05-13
 - 当前进度：
-  - [ ] 读取 `01-requirements.md` / `02-constraints.md` 中任务模型约束
-  - [ ] 编写 task registry 测试
-  - [ ] 实现 TaskHandle / TaskRegistry
+  - [ ] 读取 `01-requirements.md` 中 Scanner 章节
+  - [ ] 编写 scanner 测试
+  - [ ] 实现 ScanConfig / ScanResult / Scanner
   - [ ] 运行纪律检查和目标测试
 - 阻塞项：无
 
