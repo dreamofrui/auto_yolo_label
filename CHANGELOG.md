@@ -18,9 +18,11 @@
   - `03-progress-template.md`：CURRENT_STATE / CHANGELOG / requirements 维护规则
 - 重写 `CLAUDE.md`，加入「REFACTOR ACTIVE」硬注入段 + Behavioral Guidelines
 - 新建 `CHANGELOG.md`（本文件）
+- (docs) 新增 `AGENTS.md`，记录 Codex / agents 接手重构时必须遵守的执行纪律（本地阶段 0 提交）
 
 ### Changed
 - (docs) `docs/dev/CURRENT_STATE.md` 重置为重构基线状态（2026-05-13）
+- (legacy) 将旧代码、旧测试、旧配置和旧桌面资产归档到 `legacy/`，后续仅作只读参考（本地阶段 0 提交）
 
 ### Deprecated
 - 整个 `core/`、`utils/`、`gui/`、`tests/` 旧代码目录将在阶段 0 归档至 `legacy/`，仅作参考

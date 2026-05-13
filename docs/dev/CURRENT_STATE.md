@@ -2,15 +2,15 @@
 
 > 最后更新：2026-05-13
 > 当前里程碑：M1（Core 模块解耦）
-> 当前分支：main（重构工作分支待新人创建：`refactor/scaffold-v2`）
+> 当前分支：refactor/scaffold-v2
 
 ---
 
 ## 1. 一句话现状
 
-**重构尚未开始**。规范文档（01/02/03）和 CLAUDE.md 已就绪。新人接手后第一件事是执行阶段 0：把现有所有代码归档到 `legacy/`。
+**阶段 0 归档已完成**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；`AGENTS.md` 已补充 Codex / agents 接手纪律。
 
-下一步：阶段 0 归档 → 阶段 1 架构摸底（≤ 4 小时）→ 进入 M1.1 基础设施模块实现。
+下一步：阶段 1 架构摸底（≤ 4 小时）→ 负责人汇报通过 → 进入 M1.1 基础设施模块实现。
 
 ---
 
@@ -53,12 +53,22 @@
 - 2026-05-13 完成规范文档 `01-requirements.md` / `02-constraints.md` / `03-progress-template.md` / README.md
 - 2026-05-13 重写 `CLAUDE.md`，加入「REFACTOR ACTIVE」硬注入段 + Behavioral Guidelines
 - 2026-05-13 创建初始 `CURRENT_STATE.md` 和 `CHANGELOG.md`
+- 2026-05-13 完成阶段 0：旧代码、旧测试、旧配置和旧桌面资产归档到 `legacy/`；新增 `AGENTS.md`
 
 ---
 
 ## 4. 进行中
 
-无。等待新人开始。
+### 4.1 阶段 1：架构摸底
+- 负责人：Codex
+- 开始日期：2026-05-13
+- 时间盒：≤ 4 小时
+- 当前进度：
+  - [ ] 生成 `notes/legacy-map.md`
+  - [ ] 画 worker → core → utils 调用图
+  - [ ] grep 隐藏耦合点
+  - [ ] 生成 `notes/legacy-diff.md`
+- 阻塞项：无
 
 ---
 
@@ -66,24 +76,9 @@
 
 ### 5.1 阶段 0：归档旧代码（半天内）
 
-由新人执行：
+已完成。旧代码和旧资产已归档至 `legacy/`，后续只读参考。
 
-```bash
-git checkout -b refactor/scaffold-v2
-
-mkdir legacy
-git mv core legacy/core
-git mv gui legacy/gui
-git mv utils legacy/utils
-git mv tests legacy/tests
-git mv main.py legacy/main.py
-git mv build.py legacy/build.py
-git mv requirements.txt legacy/requirements_old.txt
-
-git commit -m "chore: archive legacy code to legacy/ for reference-only"
-```
-
-### 5.2 阶段 1：架构摸底（≤ 4 小时）
+### 5.2 阶段 1：架构摸底（≤ 4 小时，当前）
 
 - 列模块清单（`notes/legacy-map.md`）
 - 画 worker → core → utils 调用图
