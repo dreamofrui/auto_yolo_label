@@ -8,9 +8,9 @@
 
 ## 1. 一句话现状
 
-**阶段 0 归档已完成**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；`AGENTS.md` 已补充 Codex / agents 接手纪律。
+**阶段 0 / 阶段 1 / M1.1 已完成**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；6 个 `utils/` 基础设施模块已重写；`core/scanner.py` 已完成并合入。
 
-下一步：阶段 1 架构摸底（≤ 4 小时）→ 负责人汇报通过 → 进入 M1.1 基础设施模块实现。
+下一步：进入 `core/sampler.py`，继续按规范推进 M1.2 核心业务模块。
 
 ---
 
@@ -26,8 +26,8 @@
 | mapping_manager.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | MappingData / ImageInfo / 状态查询已实现 |
 | task_registry.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | TaskHandle / TaskRegistry / JSON 持久化已实现 |
 | **核心业务（core/）** |  |  |  |  |
-| scanner.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：扫描模块 |
-| sampler.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
+| scanner.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 Code/Product 扫描、mapping/classes 输出、XML 校验和 TaskHandle 取消 |
+| sampler.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：抽样模块 |
 | converter.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意 delete_source 默认改为 False |
 | trainer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意补齐 cache 参数 |
 | inferencer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意统一 iou 默认 0.7 |
@@ -60,18 +60,20 @@
 - 2026-05-13 完成 `utils/path_encoder.py`：新增路径编码、解码、相对路径转换和分隔符冲突校验
 - 2026-05-13 完成 `utils/mapping_manager.py`：新增 mapping.json dataclass 缓存、原子保存、状态标记和推理候选查询
 - 2026-05-13 完成 `utils/task_registry.py`：新增任务句柄、生命周期转换、取消标记、错误信息和 JSON 持久化
+- 2026-05-13 完成 `core/scanner.py`：新增扫描输入输出 dataclass、Code/Product 两级扫描、mapping/classes 生成、XML 标签一致性校验和 TaskHandle 取消检查
 
 ---
 
 ## 4. 进行中
 
-### 4.1 core/scanner.py
+### 4.1 core/sampler.py
 - 负责人：Codex
 - 开始日期：2026-05-13
 - 当前进度：
-  - [ ] 读取 `01-requirements.md` 中 Scanner 章节
-  - [ ] 编写 scanner 测试
-  - [ ] 实现 ScanConfig / ScanResult / Scanner
+  - [ ] 读取 `01-requirements.md` 中 Sampler 章节
+  - [ ] 消化并行助手输出的 sampler implementation notes
+  - [ ] 编写 sampler 测试
+  - [ ] 实现 SampleConfig / SampleResult / Sampler
   - [ ] 运行纪律检查和目标测试
 - 阻塞项：无
 

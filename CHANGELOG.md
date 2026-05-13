@@ -25,6 +25,7 @@
 - (utils) 新增 `utils/path_encoder.py`，提供路径扁平化编码、解码和分隔符冲突校验（本地 M1.1 提交）
 - (utils) 新增 `utils/mapping_manager.py`，提供 mapping.json dataclass 缓存、原子保存和状态标记查询（本地 M1.1 提交）
 - (utils) 新增 `utils/task_registry.py`，提供 `TaskHandle`、任务生命周期状态、取消标记和 JSON 持久化（本地 M1.1 提交）
+- (scanner) 新增 `core/scanner.py`，实现 Code/Product 站点扫描、`mapping.json` / `classes.txt` 输出、XML 标签一致性校验和 TaskHandle 取消检查（本地 M1.2 提交）
 
 ### Changed
 - (docs) `docs/dev/CURRENT_STATE.md` 重置为重构基线状态（2026-05-13）
