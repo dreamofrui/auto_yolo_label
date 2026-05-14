@@ -35,9 +35,9 @@
 | restorer.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 database/inference 标签还原、跳过/覆盖规则和 mapping restored 标记 |
 | labelimg_launcher.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现外部 Python 校验与 LabelImg 子进程启动 |
 | **入口层** |  |  |  |  |
-| gui/workers/* | ⬜ 待开始 | - | - | M3 接入新 core |
-| api/main.py + routes/ | ⬜ 待开始 | 0% | - | M2 |
-| api/schemas/ | ⬜ 待开始 | 0% | - | M2 |
+| gui/workers/* | 🟡 进行中 | scan worker 通过 | - | 已接入 `gui/workers/scan_worker.py` |
+| api/main.py + routes/ | 🟡 进行中 | scan route 通过 | - | 已接入 `api/routes/scan.py` |
+| api/schemas/ | 🟡 进行中 | scan schema 通过 | - | 已建立 camelCase schema 基类 |
 | **集成测试** |  |  |  |  |
 | tests/integration/test_scenario_a.py（完整流程） | ✅ 完成 | 通过 | ✅ 规范已写 | Scan → Sample → Train → Infer → Restore |
 | tests/integration/test_scenario_b.py（跳过扫描） | ✅ 完成 | 通过 | ✅ 规范已写 | 手写 mapping + database |
@@ -70,6 +70,7 @@
 - 2026-05-14 完成 `core/restorer.py`：新增 database/inference 标签还原、目标跳过/覆盖、单文件失败不中断、TaskHandle 进度取消和 mapping restored 标记
 - 2026-05-14 完成 `core/labelimg_launcher.py`：新增外部 Python / LabelImg 校验、LabelImg 启动命令构造、子进程启动异常映射和无 GUI 框架依赖的测试边界
 - 2026-05-14 完成 M1 四个集成场景测试：完整流程、跳过扫描、跳过训练和纯格式转换均已自动化覆盖
+- 2026-05-14 完成 scan 双调用入口第一版：新增 HTTP route、pydantic camelCase schema、桌面 worker 适配和桌面/HTTP examples
 
 ---
 
@@ -80,9 +81,10 @@
 - 开始日期：2026-05-14
 - 当前进度：
   - [x] 编写 `tests/integration/test_scenario_{a,b,c,d}.py`
-  - [ ] 设计 `api/` 薄入口与 pydantic schema
-  - [ ] 设计 `gui/workers/` 对新 core + TaskHandle 的适配
-  - [ ] 补齐 examples 桌面/HTTP 双调用示例
+  - [x] 设计 `api/` scan 薄入口与 pydantic schema
+  - [x] 设计 `gui/workers/` scan 对新 core + TaskHandle 的适配
+  - [x] 补齐 examples 桌面/HTTP scan 双调用示例
+  - [ ] 推广到 sample/train/infer/restore/convert/label inspector/labelimg launcher
 - 阻塞项：无
 
 ---
