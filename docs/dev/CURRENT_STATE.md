@@ -28,8 +28,8 @@
 | **核心业务（core/）** |  |  |  |  |
 | scanner.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 Code/Product 扫描、mapping/classes 输出、XML 校验和 TaskHandle 取消 |
 | sampler.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 mapping 驱动抽样、YOLO database 输出、预标注处理和 TaskHandle 取消 |
-| converter.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：格式转换模块，注意 delete_source 默认改为 False |
-| trainer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意补齐 cache 参数 |
+| converter.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 YOLO TXT ↔ VOC XML 转换，delete_source 默认 False |
+| trainer.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：训练模块，注意补齐 cache 参数 |
 | inferencer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意统一 iou 默认 0.7 |
 | label_inspector.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
 | restorer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意过滤 classes.txt |
@@ -63,19 +63,19 @@
 - 2026-05-13 完成 `core/scanner.py`：新增扫描输入输出 dataclass、Code/Product 两级扫描、mapping/classes 生成、XML 标签一致性校验和 TaskHandle 取消检查
 - 2026-05-13 修正 `utils/task_registry.py` 取消语义：运行中任务的 `cancel()` 仅请求 core 循环停止，`finish_cancelled_task()` 负责确认终态，避免晚到成功覆盖取消结果
 - 2026-05-13 完成 `core/sampler.py`：新增抽样输入输出 dataclass、基于 mapping 的 Code/Product 抽样、YOLO database 输出、预标注 TXT/XML 处理和映射状态更新
+- 2026-05-13 完成 `core/converter.py`：新增 TXT→XML 批量转换、XML→TXT 单文件转换、classes 解析、备份删除和 TaskHandle 取消检查
 
 ---
 
 ## 4. 进行中
 
-### 4.1 core/converter.py
+### 4.1 core/trainer.py
 - 负责人：Codex
 - 开始日期：2026-05-13
 - 当前进度：
-  - [ ] 读取 `01-requirements.md` 中 Converter 章节
-  - [ ] 消化并行助手输出的 converter implementation notes
-  - [ ] 编写 converter 测试
-  - [ ] 实现 TxtToXmlConfig / XmlToTxtConfig / Converter
+  - [ ] 读取 `01-requirements.md` 中 Trainer 章节
+  - [ ] 编写 trainer 测试
+  - [ ] 实现 TrainConfig / TrainResult / Trainer
   - [ ] 运行纪律检查和目标测试
 - 阻塞项：无
 

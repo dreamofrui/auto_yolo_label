@@ -27,6 +27,7 @@
 - (utils) 新增 `utils/task_registry.py`，提供 `TaskHandle`、任务生命周期状态、取消标记和 JSON 持久化（本地 M1.1 提交）
 - (scanner) 新增 `core/scanner.py`，实现 Code/Product 站点扫描、`mapping.json` / `classes.txt` 输出、XML 标签一致性校验和 TaskHandle 取消检查（本地 M1.2 提交）
 - (sampler) 新增 `core/sampler.py`，实现基于 `mapping.json` 的 Code/Product 抽样、YOLO `database/` 输出、预标注 TXT/XML 处理和映射状态更新（本地 M1.2 提交）
+- (converter) 新增 `core/converter.py`，实现 YOLO TXT → VOC XML 批量转换、VOC XML → YOLO TXT 单文件转换、MappingManager classes 解析、备份删除和 TaskHandle 取消检查（本地 M1.2 提交）
 
 ### Changed
 - (docs) `docs/dev/CURRENT_STATE.md` 重置为重构基线状态（2026-05-13）
