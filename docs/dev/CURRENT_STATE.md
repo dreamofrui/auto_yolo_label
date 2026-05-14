@@ -210,3 +210,9 @@
 8. 进入阶段 2（M1.1 基础设施实现）
 
 **记住：宁可多问，不要私自决定。**
+
+## Latest Maintainer Notes
+
+- 2026-05-14: M1.3 desktop and HTTP adapters are implemented and verified locally.
+- 2026-05-14: Added `docs/superpowers/skills/auto-yolo-boundary-review/SKILL.md` for reusable boundary review and temporary worker handoffs.
+- `legacy/` remains read-only and unchanged.

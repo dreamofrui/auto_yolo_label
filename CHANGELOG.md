@@ -10,6 +10,7 @@
 ## [Unreleased]
 
 ### Added
+- (docs) Added `docs/superpowers/skills/auto-yolo-boundary-review/` to standardize boundary reviews, enterprise discipline checks, and temporary worker handoffs.
 - 初始化重构基线（2026-05-13）
 - 新增规范文档目录 `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/`
   - `README.md`：阅读顺序索引
