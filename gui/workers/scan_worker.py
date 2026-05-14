@@ -30,7 +30,9 @@ class ScanWorker:
         Args:
             registry: Optional task registry supplied by the desktop app.
         """
-        self._registry = registry or TaskRegistry(Path.home() / ".autolabeler" / "tasks")
+        self._registry = registry or TaskRegistry(
+            Path.home() / ".autolabeler" / "tasks"
+        )
 
     def run(self, config: ScanConfig) -> ScanWorkerOutcome:
         """Run scan and return a desktop-friendly outcome."""

@@ -16,7 +16,7 @@ from utils.exceptions import (
     PathNotFoundError,
     TaskCancelledError,
 )
-from utils.mapping_manager import ImageInfo, MappedImage, MappingManager
+from utils.mapping_manager import ImageInfo, MappingManager
 from utils.task_registry import TaskHandle
 
 _VALID_MODES = {"count", "ratio", "mixed"}
@@ -162,7 +162,9 @@ class Sampler:
 
         classes = manager.get_class_list()
         if not classes:
-            raise SampleInvalidConfigError("mapping 中没有类别信息", details=str(mapping_path))
+            raise SampleInvalidConfigError(
+                "mapping 中没有类别信息", details=str(mapping_path)
+            )
 
         candidates = self._build_candidates(config, manager)
         plan = self._build_plan(config, candidates)
@@ -174,7 +176,9 @@ class Sampler:
         try:
             for index, planned in enumerate(plan, start=1):
                 self._raise_if_cancelled()
-                self._set_progress(index - 1, len(plan), f"抽样 {planned.candidate.encoded_name}")
+                self._set_progress(
+                    index - 1, len(plan), f"抽样 {planned.candidate.encoded_name}"
+                )
                 self._copy_planned_sample(planned, paths, classes)
                 manager.mark_sampled(
                     planned.candidate.encoded_name,
@@ -184,7 +188,9 @@ class Sampler:
                 processed.append(planned)
                 self._set_progress(index, len(plan), f"已抽样 {index}/{len(plan)}")
 
-            statistics = _statistics(processed, total_products=len(_group_by_product(candidates)))
+            statistics = _statistics(
+                processed, total_products=len(_group_by_product(candidates))
+            )
             self._write_data_yaml(config.output_dir, classes)
             self._update_mapping_snapshot(manager, config, statistics)
             manager.save(mapping_path)
@@ -205,7 +211,9 @@ class Sampler:
     def _validate_config(self, config: SampleConfig) -> None:
         """Validate public sampling configuration."""
         if not config.site_folder.exists() or not config.site_folder.is_dir():
-            raise SampleInvalidConfigError("站点目录无效", details=str(config.site_folder))
+            raise SampleInvalidConfigError(
+                "站点目录无效", details=str(config.site_folder)
+            )
         if config.mode not in _VALID_MODES:
             raise SampleInvalidConfigError("抽样模式无效", details=config.mode)
         if config.count < 1:
@@ -224,7 +232,9 @@ class Sampler:
         try:
             manager.load()
         except PathNotFoundError as exc:
-            raise SampleMappingNotFoundError("mapping.json 不存在", details=str(mapping_path)) from exc
+            raise SampleMappingNotFoundError(
+                "mapping.json 不存在", details=str(mapping_path)
+            ) from exc
 
     def _build_candidates(
         self,
@@ -251,18 +261,24 @@ class Sampler:
             )
         return candidates
 
-    def _build_plan(self, config: SampleConfig, candidates: list[_SampleCandidate]) -> list[_PlannedSample]:
+    def _build_plan(
+        self, config: SampleConfig, candidates: list[_SampleCandidate]
+    ) -> list[_PlannedSample]:
         """Select candidates and assign train/val splits."""
         selected_by_code: dict[str, list[_SampleCandidate]] = {}
         for product_candidates in _group_by_product(candidates).values():
-            ordered = _ordered_candidates(product_candidates, config.pre_labeled_priority)
+            ordered = _ordered_candidates(
+                product_candidates, config.pre_labeled_priority
+            )
             count = _target_count(config, len(ordered))
             for candidate in ordered[:count]:
                 selected_by_code.setdefault(candidate.info.code, []).append(candidate)
 
         plan: list[_PlannedSample] = []
         for code in sorted(selected_by_code):
-            code_candidates = sorted(selected_by_code[code], key=lambda candidate: candidate.encoded_name)
+            code_candidates = sorted(
+                selected_by_code[code], key=lambda candidate: candidate.encoded_name
+            )
             train_count = _train_count(len(code_candidates), config.train_ratio)
             for index, candidate in enumerate(code_candidates):
                 split = "train" if index < train_count else "val"
@@ -271,7 +287,12 @@ class Sampler:
 
     def _ensure_output_dirs(self, paths: SamplePaths) -> None:
         """Create the YOLO output directory tree."""
-        for path in (paths.images_train, paths.images_val, paths.labels_train, paths.labels_val):
+        for path in (
+            paths.images_train,
+            paths.images_val,
+            paths.labels_train,
+            paths.labels_val,
+        ):
             path.mkdir(parents=True, exist_ok=True)
 
     def _copy_planned_sample(
@@ -380,19 +401,31 @@ def _non_empty_file(path: Path) -> bool:
     return path.is_file() and bool(path.read_text(encoding="utf-8").strip())
 
 
-def _group_by_product(candidates: list[_SampleCandidate]) -> dict[tuple[str, str], list[_SampleCandidate]]:
+def _group_by_product(
+    candidates: list[_SampleCandidate],
+) -> dict[tuple[str, str], list[_SampleCandidate]]:
     """Group sample candidates by Code/Product."""
     grouped: dict[tuple[str, str], list[_SampleCandidate]] = {}
     for candidate in candidates:
-        grouped.setdefault((candidate.info.code, candidate.info.product), []).append(candidate)
+        grouped.setdefault((candidate.info.code, candidate.info.product), []).append(
+            candidate
+        )
     return grouped
 
 
-def _ordered_candidates(candidates: list[_SampleCandidate], pre_labeled_priority: bool) -> list[_SampleCandidate]:
+def _ordered_candidates(
+    candidates: list[_SampleCandidate], pre_labeled_priority: bool
+) -> list[_SampleCandidate]:
     """Return stable candidate ordering with optional pre-labeled priority."""
     priority = {"pre_existing_xml": 0, "pre_existing_txt": 1, "none": 2}
     if pre_labeled_priority:
-        return sorted(candidates, key=lambda candidate: (priority[candidate.label_source], candidate.encoded_name))
+        return sorted(
+            candidates,
+            key=lambda candidate: (
+                priority[candidate.label_source],
+                candidate.encoded_name,
+            ),
+        )
     return sorted(candidates, key=lambda candidate: candidate.encoded_name)
 
 
@@ -425,7 +458,9 @@ def _statistics(plan: list[_PlannedSample], total_products: int) -> SampleStatis
         sampled_count=len(plan),
         train_count=sum(1 for item in plan if item.split == "train"),
         val_count=sum(1 for item in plan if item.split == "val"),
-        pre_labeled_count=sum(1 for item in plan if item.candidate.label_source != "none"),
+        pre_labeled_count=sum(
+            1 for item in plan if item.candidate.label_source != "none"
+        ),
     )
 
 
@@ -435,7 +470,10 @@ def _xml_to_yolo_txt(xml_path: Path, output_path: Path, classes: list[str]) -> N
         root = ElementTree.parse(xml_path).getroot()
         width = _positive_float(root.findtext("size/width"), "width", xml_path)
         height = _positive_float(root.findtext("size/height"), "height", xml_path)
-        lines = [_object_to_yolo_line(obj, classes, width, height, xml_path) for obj in root.findall("object")]
+        lines = [
+            _object_to_yolo_line(obj, classes, width, height, xml_path)
+            for obj in root.findall("object")
+        ]
     except (ElementTree.ParseError, ValueError) as exc:
         raise SampleXmlConvertError("XML 标签转换失败", details=str(xml_path)) from exc
     output_path.parent.mkdir(parents=True, exist_ok=True)

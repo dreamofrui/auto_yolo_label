@@ -36,7 +36,9 @@ class ConvertWorker:
 
     def __init__(self, registry: TaskRegistry | None = None) -> None:
         """Create a convert worker with an optional shared registry."""
-        self._registry = registry or TaskRegistry(Path.home() / ".autolabeler" / "tasks")
+        self._registry = registry or TaskRegistry(
+            Path.home() / ".autolabeler" / "tasks"
+        )
 
     def run_txt_to_xml(self, config: TxtToXmlConfig) -> TxtToXmlWorkerOutcome:
         """Run TXT to XML conversion and return a desktop-friendly outcome."""
@@ -57,4 +59,3 @@ class ConvertWorker:
             output_path=outcome.output_path,
             error=None if outcome.error is None else outcome.error.to_error_info(),
         )
-

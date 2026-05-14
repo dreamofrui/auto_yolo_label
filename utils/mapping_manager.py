@@ -104,7 +104,9 @@ class MappingManager:
         """
         with self._lock, _FILE_LOCK:
             if not self.mapping_path.exists():
-                raise PathNotFoundError("mapping.json 不存在", details=str(self.mapping_path))
+                raise PathNotFoundError(
+                    "mapping.json 不存在", details=str(self.mapping_path)
+                )
             raw = json.loads(self.mapping_path.read_text(encoding="utf-8"))
             self.data = _mapping_from_dict(raw)
             self._dirty = False
@@ -241,7 +243,12 @@ class MappingManager:
     def get_class_list(self) -> list[str]:
         """Return class names sorted by numeric class id."""
         with self._lock:
-            return [name for _, name in sorted(self.data.classes.items(), key=lambda item: int(item[0]))]
+            return [
+                name
+                for _, name in sorted(
+                    self.data.classes.items(), key=lambda item: int(item[0])
+                )
+            ]
 
     @property
     def is_dirty(self) -> bool:
@@ -264,7 +271,9 @@ class MappingManager:
             {
                 "total_images": len(images),
                 "total_codes": len({image.code for image in images}),
-                "total_products": len({(image.code, image.product) for image in images}),
+                "total_products": len(
+                    {(image.code, image.product) for image in images}
+                ),
                 "sampled_count": sum(1 for image in images if image.sampled),
                 "labeled_count": sum(1 for image in images if image.manual_labeled),
                 "inferred_count": sum(1 for image in images if image.inferred),
@@ -309,9 +318,13 @@ def _mapping_from_dict(raw: dict[str, Any]) -> MappingData:
         updated_time=str(raw.get("updated_time", "")),
         classes={str(key): str(value) for key, value in raw.get("classes", {}).items()},
         config=dict(raw.get("config", {})),
-        statistics={str(key): int(value) for key, value in raw.get("statistics", {}).items()},
+        statistics={
+            str(key): int(value) for key, value in raw.get("statistics", {}).items()
+        },
         products={
-            str(code): {str(product): int(count) for product, count in product_counts.items()}
+            str(code): {
+                str(product): int(count) for product, count in product_counts.items()
+            }
             for code, product_counts in raw.get("products", {}).items()
             if isinstance(product_counts, dict)
         },

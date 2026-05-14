@@ -11,7 +11,12 @@ from typing import TypeAlias
 from loguru import logger
 from PIL import Image
 
-from utils.exceptions import AutoLabelerError, ErrorCode, PathNotFoundError, TaskCancelledError
+from utils.exceptions import (
+    AutoLabelerError,
+    ErrorCode,
+    PathNotFoundError,
+    TaskCancelledError,
+)
 from utils.mapping_manager import MappingManager
 from utils.task_registry import TaskHandle
 
@@ -145,7 +150,9 @@ class Converter:
             TaskCancelledError: If the injected task requests cancellation.
         """
         if not config.folder.exists() or not config.folder.is_dir():
-            raise ConvertFolderNotFoundError("转换目录不存在", details=str(config.folder))
+            raise ConvertFolderNotFoundError(
+                "转换目录不存在", details=str(config.folder)
+            )
         classes = self._resolve_classes(config)
         txt_paths = _annotation_txt_files(config.folder, config.recursive)
         result = ConvertResult(total=len(txt_paths), success=0, skipped=0, failed=0)
@@ -167,7 +174,12 @@ class Converter:
             except ConvertError as exc:
                 result.failed += 1
                 result.errors.append(
-                    ConvertFileError(path=txt_path, code=exc.code, message=exc.message, details=exc.details)
+                    ConvertFileError(
+                        path=txt_path,
+                        code=exc.code,
+                        message=exc.message,
+                        details=exc.details,
+                    )
                 )
             except OSError as exc:
                 result.failed += 1
@@ -183,7 +195,9 @@ class Converter:
                     xml_path.unlink(missing_ok=True)
             else:
                 result.success += 1
-            self._set_progress(index, len(txt_paths), f"已转换 {index}/{len(txt_paths)}")
+            self._set_progress(
+                index, len(txt_paths), f"已转换 {index}/{len(txt_paths)}"
+            )
 
         self._set_progress(len(txt_paths), len(txt_paths), "转换完成")
         return result
@@ -210,26 +224,38 @@ class Converter:
         except ConvertXmlParseError:
             raise
         except (ElementTree.ParseError, OSError, ValueError) as exc:
-            raise ConvertXmlParseError("XML 解析失败", details=str(config.xml_path)) from exc
+            raise ConvertXmlParseError(
+                "XML 解析失败", details=str(config.xml_path)
+            ) from exc
         config.output_path.parent.mkdir(parents=True, exist_ok=True)
-        config.output_path.write_text("".join(f"{line}\n" for line in lines), encoding="utf-8")
+        config.output_path.write_text(
+            "".join(f"{line}\n" for line in lines), encoding="utf-8"
+        )
         return config.output_path
 
     def _resolve_classes(self, config: TxtToXmlConfig) -> list[str]:
         """Resolve class names from config or MappingManager."""
         if config.classes:
             return config.classes
-        manager = self._mapping_manager or MappingManager(config.folder / ".autolabeler" / "mapping.json")
+        manager = self._mapping_manager or MappingManager(
+            config.folder / ".autolabeler" / "mapping.json"
+        )
         try:
             manager.load()
         except PathNotFoundError as exc:
-            raise ConvertClassesNotFoundError("找不到类别配置", details=str(manager.mapping_path)) from exc
+            raise ConvertClassesNotFoundError(
+                "找不到类别配置", details=str(manager.mapping_path)
+            ) from exc
         classes = manager.get_class_list()
         if not classes:
-            raise ConvertClassesNotFoundError("类别列表为空", details=str(manager.mapping_path))
+            raise ConvertClassesNotFoundError(
+                "类别列表为空", details=str(manager.mapping_path)
+            )
         return classes
 
-    def _convert_one_txt(self, txt_path: Path, image_path: Path, classes: list[str]) -> Path:
+    def _convert_one_txt(
+        self, txt_path: Path, image_path: Path, classes: list[str]
+    ) -> Path:
         """Convert one YOLO TXT file to a VOC XML file."""
         size = _read_image_size(image_path)
         boxes = _read_yolo_boxes(txt_path, classes)
@@ -238,7 +264,9 @@ class Converter:
         xml_path.write_text(xml_text, encoding="utf-8")
         return xml_path
 
-    def _delete_source(self, txt_path: Path, folder: Path, backup_dir: Path | None) -> None:
+    def _delete_source(
+        self, txt_path: Path, folder: Path, backup_dir: Path | None
+    ) -> None:
         """Backup and delete a source TXT file after successful conversion."""
         if backup_dir is not None:
             backup_path = backup_dir / txt_path.relative_to(folder)
@@ -264,7 +292,9 @@ class Converter:
 def _annotation_txt_files(folder: Path, recursive: bool) -> list[Path]:
     """Return sorted annotation TXT files after filtering control files."""
     pattern = folder.rglob("*.txt") if recursive else folder.glob("*.txt")
-    return sorted(path for path in pattern if path.name.lower() not in _CONTROL_FILE_NAMES)
+    return sorted(
+        path for path in pattern if path.name.lower() not in _CONTROL_FILE_NAMES
+    )
 
 
 def _find_image_for_txt(txt_path: Path) -> Path | None:
@@ -278,8 +308,12 @@ def _find_image_for_txt(txt_path: Path) -> Path | None:
     ]
     if not candidates:
         return None
-    suffix_order = {suffix: index for index, suffix in enumerate(_SUPPORTED_IMAGE_SUFFIXES)}
-    return sorted(candidates, key=lambda path: (suffix_order[path.suffix.lower()], path.name))[0]
+    suffix_order = {
+        suffix: index for index, suffix in enumerate(_SUPPORTED_IMAGE_SUFFIXES)
+    }
+    return sorted(
+        candidates, key=lambda path: (suffix_order[path.suffix.lower()], path.name)
+    )[0]
 
 
 def _read_image_size(image_path: Path) -> _ImageSize:
@@ -292,7 +326,9 @@ def _read_image_size(image_path: Path) -> _ImageSize:
 def _read_yolo_boxes(txt_path: Path, classes: list[str]) -> list[_YoloBox]:
     """Parse YOLO TXT annotation rows."""
     boxes: list[_YoloBox] = []
-    for line_number, line in enumerate(txt_path.read_text(encoding="utf-8").splitlines(), start=1):
+    for line_number, line in enumerate(
+        txt_path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
         stripped = line.strip()
         if not stripped:
             continue
@@ -303,17 +339,29 @@ def _read_yolo_boxes(txt_path: Path, classes: list[str]) -> list[_YoloBox]:
             class_id = int(parts[0])
             values = [float(value) for value in parts[1:5]]
         except ValueError as exc:
-            raise ConvertError("YOLO 行格式无效", details=f"{txt_path}:{line_number}") from exc
+            raise ConvertError(
+                "YOLO 行格式无效", details=f"{txt_path}:{line_number}"
+            ) from exc
         if class_id < 0 or class_id >= len(classes):
             raise ConvertClassIdOutOfRangeError(
                 "类别 id 超出范围",
                 details=f"{txt_path}:{line_number}: {class_id}",
             )
-        boxes.append(_YoloBox(class_id=class_id, x_center=values[0], y_center=values[1], width=values[2], height=values[3]))
+        boxes.append(
+            _YoloBox(
+                class_id=class_id,
+                x_center=values[0],
+                y_center=values[1],
+                width=values[2],
+                height=values[3],
+            )
+        )
     return boxes
 
 
-def _voc_xml_text(image_path: Path, size: _ImageSize, boxes: list[_YoloBox], classes: list[str]) -> str:
+def _voc_xml_text(
+    image_path: Path, size: _ImageSize, boxes: list[_YoloBox], classes: list[str]
+) -> str:
     """Build VOC XML text without an XML declaration."""
     root = ElementTree.Element("annotation")
     ElementTree.SubElement(root, "folder").text = image_path.parent.name
@@ -331,7 +379,9 @@ def _voc_xml_text(image_path: Path, size: _ImageSize, boxes: list[_YoloBox], cla
     return ElementTree.tostring(root, encoding="unicode", short_empty_elements=False)
 
 
-def _append_object(root: ElementTree.Element, box: _YoloBox, size: _ImageSize, classes: list[str]) -> None:
+def _append_object(
+    root: ElementTree.Element, box: _YoloBox, size: _ImageSize, classes: list[str]
+) -> None:
     """Append one VOC object node."""
     xmin = round((box.x_center - box.width / 2) * size.width)
     ymin = round((box.y_center - box.height / 2) * size.height)
@@ -360,7 +410,10 @@ def _xml_to_yolo_lines(xml_path: Path, classes: list[str]) -> list[str]:
     root = ElementTree.parse(xml_path).getroot()
     width = _positive_float(root.findtext("size/width"), "width", xml_path)
     height = _positive_float(root.findtext("size/height"), "height", xml_path)
-    return [_xml_object_to_line(obj, classes, width, height, xml_path) for obj in root.findall("object")]
+    return [
+        _xml_object_to_line(obj, classes, width, height, xml_path)
+        for obj in root.findall("object")
+    ]
 
 
 def _xml_object_to_line(
@@ -373,7 +426,9 @@ def _xml_object_to_line(
     """Convert one VOC object to a YOLO line."""
     class_name = (obj.findtext("name") or "").strip()
     if class_name not in classes:
-        raise ConvertXmlParseError("XML 类别不存在", details=f"{xml_path}: {class_name}")
+        raise ConvertXmlParseError(
+            "XML 类别不存在", details=f"{xml_path}: {class_name}"
+        )
     xmin = _float_text(obj.findtext("bndbox/xmin"), "xmin", xml_path)
     ymin = _float_text(obj.findtext("bndbox/ymin"), "ymin", xml_path)
     xmax = _float_text(obj.findtext("bndbox/xmax"), "xmax", xml_path)
@@ -403,4 +458,6 @@ def _float_text(text: str | None, field_name: str, xml_path: Path) -> float:
     try:
         return float(text)
     except ValueError as exc:
-        raise ConvertXmlParseError("XML 字段无效", details=f"{xml_path}: {field_name}") from exc
+        raise ConvertXmlParseError(
+            "XML 字段无效", details=f"{xml_path}: {field_name}"
+        ) from exc

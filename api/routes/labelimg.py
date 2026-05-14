@@ -14,14 +14,22 @@ from api.schemas.labelimg import (
 )
 from api.services.common import task_response
 from api.services.labelimg_service import launch_labelimg, validate_labelimg
-from core.labelimg_launcher import LabelImgConfig, LabelImgLaunchResult, LabelImgLauncher, LabelImgValidateConfig, LabelImgValidateResult
+from core.labelimg_launcher import (
+    LabelImgConfig,
+    LabelImgLaunchResult,
+    LabelImgLauncher,
+    LabelImgValidateConfig,
+    LabelImgValidateResult,
+)
 from utils.task_registry import TaskRegistry
 
 router = APIRouter(prefix="/api/labelimg", tags=["labelimg"])
 
 
 @router.post("/validate", response_model=LabelImgValidateResponse)
-def validate_environment(payload: LabelImgValidateRequest, request: Request) -> LabelImgValidateResponse:
+def validate_environment(
+    payload: LabelImgValidateRequest, request: Request
+) -> LabelImgValidateResponse:
     """Validate a LabelImg Python environment via HTTP."""
     outcome = validate_labelimg(
         LabelImgValidateConfig(python_path=payload.python_path),
@@ -40,7 +48,9 @@ def validate_environment(payload: LabelImgValidateRequest, request: Request) -> 
 
 
 @router.post("/launch", response_model=LabelImgLaunchResponse)
-def launch_labeling_tool(payload: LabelImgLaunchRequest, request: Request) -> LabelImgLaunchResponse:
+def launch_labeling_tool(
+    payload: LabelImgLaunchRequest, request: Request
+) -> LabelImgLaunchResponse:
     """Launch LabelImg via HTTP."""
     outcome = launch_labelimg(
         LabelImgConfig(
@@ -74,7 +84,9 @@ def _launcher(request: Request) -> LabelImgLauncher | None:
     return launcher if isinstance(launcher, LabelImgLauncher) else launcher
 
 
-def _validate_response(result: LabelImgValidateResult) -> LabelImgValidateResultResponse:
+def _validate_response(
+    result: LabelImgValidateResult,
+) -> LabelImgValidateResultResponse:
     """Convert validation result to response schema."""
     return LabelImgValidateResultResponse(
         is_valid=result.is_valid,
@@ -86,4 +98,6 @@ def _validate_response(result: LabelImgValidateResult) -> LabelImgValidateResult
 
 def _launch_response(result: LabelImgLaunchResult) -> LabelImgLaunchResultResponse:
     """Convert launch result to response schema."""
-    return LabelImgLaunchResultResponse(process_id=result.process_id, command=result.command)
+    return LabelImgLaunchResultResponse(
+        process_id=result.process_id, command=result.command
+    )

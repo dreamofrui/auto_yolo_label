@@ -85,11 +85,12 @@ def test_convert_worker_converts_errors_to_failed_task(tmp_path: Path) -> None:
     registry = TaskRegistry(task_dir=tmp_path / "tasks")
 
     outcome = ConvertWorker(registry=registry).run_txt_to_xml(
-        TxtToXmlConfig(folder=tmp_path / "missing", recursive=False, classes=["Product1"])
+        TxtToXmlConfig(
+            folder=tmp_path / "missing", recursive=False, classes=["Product1"]
+        )
     )
 
     assert outcome.success is False
     assert outcome.error is not None
     assert outcome.error.code == "CONVERT_FOLDER_NOT_FOUND"
     assert registry.get(outcome.task.task_id).status == "failed"
-

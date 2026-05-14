@@ -106,7 +106,9 @@ class LabelInspector:
         if not inference_root.exists() or not inference_root.is_dir():
             return []
         runs: list[InferenceRun] = []
-        for path in sorted((item for item in inference_root.iterdir() if item.is_dir()), reverse=True):
+        for path in sorted(
+            (item for item in inference_root.iterdir() if item.is_dir()), reverse=True
+        ):
             config_data = _read_config(path / "inference_config.json")
             runs.append(
                 InferenceRun(
@@ -137,14 +139,18 @@ class LabelInspector:
 
         nodes: list[RunTreeNode] = []
         for code_dir in sorted(item for item in run_dir.iterdir() if item.is_dir()):
-            for product_dir in sorted(item for item in code_dir.iterdir() if item.is_dir()):
+            for product_dir in sorted(
+                item for item in code_dir.iterdir() if item.is_dir()
+            ):
                 labels = _label_files(product_dir)
                 nodes.append(
                     RunTreeNode(
                         code=code_dir.name,
                         product=product_dir.name,
                         label_count=len(labels),
-                        empty_count=sum(1 for label_path in labels if _object_count(label_path) == 0),
+                        empty_count=sum(
+                            1 for label_path in labels if _object_count(label_path) == 0
+                        ),
                         path=product_dir,
                     )
                 )
@@ -168,14 +174,20 @@ class LabelInspector:
             raise InspectorRunNotFoundError("推理 run 不存在", details=str(run_dir))
         product_dir = run_dir / config.code / config.product
         if not product_dir.exists() or not product_dir.is_dir():
-            raise InspectorProductNotFoundError("推理产品目录不存在", details=str(product_dir))
+            raise InspectorProductNotFoundError(
+                "推理产品目录不存在", details=str(product_dir)
+            )
 
         labels: list[ProductLabel] = []
         for label_path in _label_files(product_dir):
-            image_path = _find_original_image(config.site_folder, config.code, config.product, label_path.stem)
+            image_path = _find_original_image(
+                config.site_folder, config.code, config.product, label_path.stem
+            )
             labels.append(
                 ProductLabel(
-                    image_name=image_path.name if image_path is not None else label_path.stem,
+                    image_name=(
+                        image_path.name if image_path is not None else label_path.stem
+                    ),
                     image_path=image_path,
                     label_path=label_path,
                     object_count=_object_count(label_path),
@@ -212,7 +224,9 @@ def _created_at(run_dir: Path) -> str:
     try:
         parsed = datetime.strptime(run_dir.name, "run_%Y%m%d_%H%M%S")
     except ValueError:
-        return datetime.fromtimestamp(run_dir.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        return datetime.fromtimestamp(run_dir.stat().st_mtime).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
     return parsed.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -228,24 +242,32 @@ def _label_files(folder: Path) -> list[Path]:
 def _object_count(label_path: Path) -> int:
     """Count non-empty YOLO annotation rows in a label file."""
     try:
-        return sum(1 for line in label_path.read_text(encoding="utf-8").splitlines() if line.strip())
+        return sum(
+            1
+            for line in label_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
     except OSError:
         return 0
 
 
-def _find_original_image(site_folder: Path, code: str, product: str, stem: str) -> Path | None:
+def _find_original_image(
+    site_folder: Path, code: str, product: str, stem: str
+) -> Path | None:
     """Find a source image with a matching stem and supported suffix."""
     product_dir = site_folder / code / product
     if not product_dir.exists() or not product_dir.is_dir():
         return None
-    suffix_order = {suffix: index for index, suffix in enumerate(_SUPPORTED_IMAGE_SUFFIXES)}
+    suffix_order = {
+        suffix: index for index, suffix in enumerate(_SUPPORTED_IMAGE_SUFFIXES)
+    }
     candidates = [
         path
         for path in product_dir.iterdir()
-        if path.is_file()
-        and path.stem == stem
-        and path.suffix.lower() in suffix_order
+        if path.is_file() and path.stem == stem and path.suffix.lower() in suffix_order
     ]
     if not candidates:
         return None
-    return sorted(candidates, key=lambda path: (suffix_order[path.suffix.lower()], path.name))[0]
+    return sorted(
+        candidates, key=lambda path: (suffix_order[path.suffix.lower()], path.name)
+    )[0]

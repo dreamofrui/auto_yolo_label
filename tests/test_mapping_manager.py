@@ -24,7 +24,9 @@ def make_image(name: str = "IMG_001.jpg") -> ImageInfo:
 def test_create_new_initializes_mapping_data(tmp_path: Path) -> None:
     """New mappings start with empty collections and default version."""
     mapping_path = tmp_path / "mapping.json"
-    manager = MappingManager(mapping_path).create_new(tmp_path / "site", project_name="Demo")
+    manager = MappingManager(mapping_path).create_new(
+        tmp_path / "site", project_name="Demo"
+    )
 
     assert isinstance(manager.data, MappingData)
     assert manager.data.version == "1.0"

@@ -65,4 +65,3 @@ class XmlToTxtResponse(CamelModel):
     success: bool
     task: TaskResponse
     result: XmlToTxtResultResponse
-

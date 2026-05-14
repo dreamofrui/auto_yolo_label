@@ -38,7 +38,9 @@ def make_task_handle(is_cancel_requested: bool = False) -> TaskHandle:
     )
 
 
-def make_site_with_mapping(site: Path, layout: dict[str, dict[str, list[str]]]) -> MappingManager:
+def make_site_with_mapping(
+    site: Path, layout: dict[str, dict[str, list[str]]]
+) -> MappingManager:
     """Create placeholder images and a mapping.json for sampler tests."""
     encoder = PathEncoder()
     manager = MappingManager(site / ".autolabeler" / "mapping.json").create_new(site)
@@ -97,10 +99,14 @@ def test_sample_count_mode_creates_dataset_and_updates_mapping(tmp_path: Path) -
             "CodeB": {"Product1": ["b1.jpg", "b2.jpg"]},
         },
     )
-    (site / "CodeA" / "Product1" / "a1.txt").write_text("0 0.5 0.5 0.2 0.2\n", encoding="utf-8")
+    (site / "CodeA" / "Product1" / "a1.txt").write_text(
+        "0 0.5 0.5 0.2 0.2\n", encoding="utf-8"
+    )
     write_xml(site / "CodeB" / "Product1" / "b1.xml", "CodeB")
 
-    result = Sampler().sample(SampleConfig(site_folder=site, output_dir=output_dir, count=1, full_threshold=1))
+    result = Sampler().sample(
+        SampleConfig(site_folder=site, output_dir=output_dir, count=1, full_threshold=1)
+    )
 
     assert result.dataset_dir == output_dir
     assert result.data_yaml == output_dir / "data.yaml"
@@ -121,7 +127,11 @@ def test_sample_count_mode_creates_dataset_and_updates_mapping(tmp_path: Path) -
     assert "names: [CodeA, CodeB]" in yaml_text
 
     copied_images = sorted(path.name for path in (output_dir / "images").rglob("*.jpg"))
-    assert copied_images == ["CodeA__Product1__a1.jpg", "CodeA__Product2__a3.jpg", "CodeB__Product1__b1.jpg"]
+    assert copied_images == [
+        "CodeA__Product1__a1.jpg",
+        "CodeA__Product2__a3.jpg",
+        "CodeB__Product1__b1.jpg",
+    ]
     copied_labels = sorted(path.name for path in (output_dir / "labels").rglob("*.txt"))
     assert copied_labels == ["CodeA__Product1__a1.txt", "CodeB__Product1__b1.txt"]
 
@@ -137,15 +147,25 @@ def test_sample_count_mode_creates_dataset_and_updates_mapping(tmp_path: Path) -
 def test_ratio_and_mixed_modes_calculate_sample_counts(tmp_path: Path) -> None:
     """Ratio and mixed modes follow the documented count rules."""
     site = tmp_path / "site"
-    make_site_with_mapping(site, {"CodeA": {"Product1": [f"a{i}.jpg" for i in range(10)]}})
+    make_site_with_mapping(
+        site, {"CodeA": {"Product1": [f"a{i}.jpg" for i in range(10)]}}
+    )
 
     ratio_result = Sampler().sample(
-        SampleConfig(site_folder=site, output_dir=tmp_path / "ratio", mode="ratio", ratio=0.3, full_threshold=2)
+        SampleConfig(
+            site_folder=site,
+            output_dir=tmp_path / "ratio",
+            mode="ratio",
+            ratio=0.3,
+            full_threshold=2,
+        )
     )
     assert ratio_result.statistics.sampled_count == 3
 
     # Reset mapping to unsampled images for the mixed assertion.
-    make_site_with_mapping(site, {"CodeA": {"Product1": [f"a{i}.jpg" for i in range(10)]}})
+    make_site_with_mapping(
+        site, {"CodeA": {"Product1": [f"a{i}.jpg" for i in range(10)]}}
+    )
     mixed_result = Sampler().sample(
         SampleConfig(
             site_folder=site,
@@ -166,7 +186,9 @@ def test_missing_mapping_raises_sample_mapping_not_found(tmp_path: Path) -> None
     site.mkdir()
 
     with pytest.raises(SampleMappingNotFoundError):
-        Sampler().sample(SampleConfig(site_folder=site, output_dir=tmp_path / "database"))
+        Sampler().sample(
+            SampleConfig(site_folder=site, output_dir=tmp_path / "database")
+        )
 
 
 def test_invalid_config_raises_sample_invalid_config(tmp_path: Path) -> None:
@@ -175,7 +197,9 @@ def test_invalid_config_raises_sample_invalid_config(tmp_path: Path) -> None:
     make_site_with_mapping(site, {"CodeA": {"Product1": ["a1.jpg"]}})
 
     with pytest.raises(SampleInvalidConfigError):
-        Sampler().sample(SampleConfig(site_folder=site, output_dir=tmp_path / "database", ratio=1.5))
+        Sampler().sample(
+            SampleConfig(site_folder=site, output_dir=tmp_path / "database", ratio=1.5)
+        )
 
 
 def test_xml_unknown_class_raises_sample_xml_convert(tmp_path: Path) -> None:
@@ -185,7 +209,9 @@ def test_xml_unknown_class_raises_sample_xml_convert(tmp_path: Path) -> None:
     write_xml(site / "CodeA" / "Product1" / "a1.xml", "OtherCode")
 
     with pytest.raises(SampleXmlConvertError):
-        Sampler().sample(SampleConfig(site_folder=site, output_dir=tmp_path / "database"))
+        Sampler().sample(
+            SampleConfig(site_folder=site, output_dir=tmp_path / "database")
+        )
 
 
 def test_cancelled_task_raises_task_cancelled(tmp_path: Path) -> None:
@@ -195,4 +221,6 @@ def test_cancelled_task_raises_task_cancelled(tmp_path: Path) -> None:
     handle = make_task_handle(is_cancel_requested=True)
 
     with pytest.raises(TaskCancelledError):
-        Sampler(task_handle=handle).sample(SampleConfig(site_folder=site, output_dir=tmp_path / "database"))
+        Sampler(task_handle=handle).sample(
+            SampleConfig(site_folder=site, output_dir=tmp_path / "database")
+        )

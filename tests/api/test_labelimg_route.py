@@ -23,7 +23,9 @@ class FakeLauncher:
         python_version="Python 3.11.14",
         error_message=None,
     )
-    launch_result: LabelImgLaunchResult = LabelImgLaunchResult(process_id=1234, command="python -m labelImg")
+    launch_result: LabelImgLaunchResult = LabelImgLaunchResult(
+        process_id=1234, command="python -m labelImg"
+    )
 
     def validate(self, config: object) -> LabelImgValidateResult:
         """Return a configured validation result."""
@@ -34,7 +36,9 @@ class FakeLauncher:
         return self.launch_result
 
 
-def make_client(registry: TaskRegistry, launcher: FakeLauncher | None = None) -> TestClient:
+def make_client(
+    registry: TaskRegistry, launcher: FakeLauncher | None = None
+) -> TestClient:
     """Create a test client from the main API app."""
     app = create_app(task_registry=registry)
     if launcher is not None:
@@ -55,7 +59,9 @@ def test_labelimg_validate_route_returns_probe_result(tmp_path: Path) -> None:
     client = make_client(registry, FakeLauncher())
     python_path = make_python(tmp_path / "python.exe")
 
-    response = client.post("/api/labelimg/validate", json={"pythonPath": str(python_path)})
+    response = client.post(
+        "/api/labelimg/validate", json={"pythonPath": str(python_path)}
+    )
 
     assert response.status_code == 200
     payload = response.json()
@@ -86,12 +92,16 @@ def test_labelimg_launch_route_returns_process_metadata(tmp_path: Path) -> None:
     assert payload["result"]["command"] == "python -m labelImg"
 
 
-def test_labelimg_validate_route_maps_missing_python_to_invalid_result(tmp_path: Path) -> None:
+def test_labelimg_validate_route_maps_missing_python_to_invalid_result(
+    tmp_path: Path,
+) -> None:
     """Validate route succeeds with invalid result when Python path is absent."""
     registry = TaskRegistry(tmp_path / "tasks")
     client = make_client(registry)
 
-    response = client.post("/api/labelimg/validate", json={"pythonPath": str(tmp_path / "missing.exe")})
+    response = client.post(
+        "/api/labelimg/validate", json={"pythonPath": str(tmp_path / "missing.exe")}
+    )
 
     assert response.status_code == 200
     payload = response.json()
@@ -107,7 +117,10 @@ def test_labelimg_launch_route_maps_business_errors_to_json(tmp_path: Path) -> N
 
     response = client.post(
         "/api/labelimg/launch",
-        json={"pythonPath": str(tmp_path / "missing.exe"), "imageDir": str(tmp_path / "images")},
+        json={
+            "pythonPath": str(tmp_path / "missing.exe"),
+            "imageDir": str(tmp_path / "images"),
+        },
     )
 
     assert response.status_code == 400

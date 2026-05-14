@@ -31,7 +31,12 @@ def test_sample_worker_runs_core_sample_and_updates_task(tmp_path: Path) -> None
     registry = TaskRegistry(task_dir=tmp_path / "tasks")
 
     outcome = SampleWorker(registry=registry).run(
-        SampleConfig(site_folder=site, output_dir=tmp_path / "database", count=1, full_threshold=1)
+        SampleConfig(
+            site_folder=site,
+            output_dir=tmp_path / "database",
+            count=1,
+            full_threshold=1,
+        )
     )
 
     assert outcome.success is True

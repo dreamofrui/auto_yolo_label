@@ -58,7 +58,9 @@ def _restore_response(result: RestoreResult) -> RestoreResultResponse:
         errors=[
             RestoreFileErrorResponse(
                 source_path=str(error.source_path),
-                target_path=None if error.target_path is None else str(error.target_path),
+                target_path=(
+                    None if error.target_path is None else str(error.target_path)
+                ),
                 reason=error.reason,
             )
             for error in result.errors

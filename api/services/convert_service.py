@@ -31,7 +31,9 @@ class XmlToTxtServiceOutcome:
     error: AutoLabelerError | None
 
 
-def run_txt_to_xml(config: TxtToXmlConfig, registry: TaskRegistry) -> TxtToXmlServiceOutcome:
+def run_txt_to_xml(
+    config: TxtToXmlConfig, registry: TaskRegistry
+) -> TxtToXmlServiceOutcome:
     """Run Converter.txt_to_xml with TaskRegistry lifecycle handling."""
     task = registry.create_task("convert")
     registry.start_task(task.task_id, message="准备转换")
@@ -50,7 +52,9 @@ def run_txt_to_xml(config: TxtToXmlConfig, registry: TaskRegistry) -> TxtToXmlSe
     return TxtToXmlServiceOutcome(success=True, task=task, result=result, error=None)
 
 
-def run_xml_to_txt(config: XmlToTxtConfig, registry: TaskRegistry) -> XmlToTxtServiceOutcome:
+def run_xml_to_txt(
+    config: XmlToTxtConfig, registry: TaskRegistry
+) -> XmlToTxtServiceOutcome:
     """Run Converter.xml_to_txt with TaskRegistry lifecycle handling."""
     task = registry.create_task("convert")
     registry.start_task(task.task_id, total=1, message="准备转换")
@@ -64,9 +68,13 @@ def run_xml_to_txt(config: XmlToTxtConfig, registry: TaskRegistry) -> XmlToTxtSe
             details=exc.details,
             retryable=exc.retryable,
         )
-        return XmlToTxtServiceOutcome(success=False, task=task, output_path=None, error=exc)
+        return XmlToTxtServiceOutcome(
+            success=False, task=task, output_path=None, error=exc
+        )
     registry.succeed_task(task.task_id, result={"output_path": str(output_path)})
-    return XmlToTxtServiceOutcome(success=True, task=task, output_path=output_path, error=None)
+    return XmlToTxtServiceOutcome(
+        success=True, task=task, output_path=output_path, error=None
+    )
 
 
 def _txt_to_xml_result_dict(result: ConvertResult) -> dict[str, Any]:
@@ -86,4 +94,3 @@ def _txt_to_xml_result_dict(result: ConvertResult) -> dict[str, Any]:
             for error in result.errors
         ],
     }
-

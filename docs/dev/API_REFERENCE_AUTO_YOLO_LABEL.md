@@ -1,7 +1,7 @@
 # AutoLabeler Web API 文档
 
-> 生成日期：2026-05-11  
-> 目标读者：Next.js 前端工程师、后端 API 封装工程师、后续维护者  
+> 生成日期：2026-05-11
+> 目标读者：Next.js 前端工程师、后端 API 封装工程师、后续维护者
 > 范围：基于当前 `auto_yolo_label` 桌面项目代码，整理现有功能模块、输入输出、文件产物、状态流转，并给出 Web 化时建议暴露的 API 契约。
 
 ---
@@ -54,12 +54,12 @@ Next.js Frontend
 | 首页/流程 | `gui/pages/home_page.py` | 无 | 无 | 静态流程、项目概览 |
 | 扫描 | `scan_page.py` | `ScanWorker` | `core.scanner.Scanner` | `ScanService` |
 | 抽样 | `sample_page.py` | `SampleWorker` | `core.sampler.Sampler` | `SampleService` |
-| 训练 | `train_page.py` | `TrainWorker` | `core.trainer.Trainer` | `TrainService` |
-| 推理 | `inference_page.py` | `InferenceWorker` | `core.inferencer.Inferencer` | `InferenceService` |
-| 标注检查 | `label_viewer_page.py` | 无 | `core.label_inspector.LabelInspector` | `InferenceBrowserService` |
-| 还原 | `restore_page.py` | `RestoreWorker` | `core.restorer.Restorer` | `RestoreService` |
-| 转换 | `convert_page.py` | `ConvertWorker` | `core.converter.Converter` | `ConvertService` |
-| 设置 | `settings_page.py` | 无 | 部分使用 `utils.labelimg_config` | `SettingsService` |
+| 训练 | `train_page.py` | `TrainWorker` | `core.trainer.Trainer` | `api.services.train_service` |
+| 推理 | `inference_page.py` | `InferWorker` | `core.inferencer.Inferencer` | `api.services.infer_service` |
+| 标注检查 | `label_viewer_page.py` | `LabelInspectorWorker` | `core.label_inspector.LabelInspector` | `api.services.label_inspector_service` |
+| 还原 | `restore_page.py` | `RestoreWorker` | `core.restorer.Restorer` | `api.services.restore_service` |
+| 转换 | `convert_page.py` | `ConvertWorker` | `core.converter.Converter` | `api.services.convert_service` |
+| 设置/LabelImg | `settings_page.py` | `LabelImgWorker` | `core.labelimg_launcher.LabelImgLauncher` | `api.services.labelimg_service` |
 
 ---
 
@@ -333,7 +333,7 @@ SSE 事件示例：
 
 ### 6.1 扫描模块
 
-核心文件：`core/scanner.py`  
+核心文件：`core/scanner.py`
 当前调用：`gui/workers/scan_worker.py`
 
 作用：
@@ -418,7 +418,7 @@ POST /api/scan
 
 ### 6.2 抽样模块
 
-核心文件：`core/sampler.py`  
+核心文件：`core/sampler.py`
 当前调用：`gui/workers/sample_worker.py`
 
 作用：
@@ -564,7 +564,7 @@ class_id x_center y_center width height
 
 ### 6.4 训练模块
 
-核心文件：`core/trainer.py`  
+核心文件：`core/trainer.py`
 当前调用：`gui/workers/train_worker.py`
 
 作用：
@@ -581,19 +581,19 @@ class_id x_center y_center width height
 | `dataYaml` | string | 是 | - | 抽样生成的 `data.yaml` |
 | `baseModel` | string | 是 | - | 预训练模型 `.pt` |
 | `outputDir` | string | 是 | - | 训练输出目录 |
-| `config.epochs` | int | 否 | 100 | 训练轮次 |
-| `config.batchSize` | int | 否 | -1 | -1 表示自动检测 |
-| `config.imageSize` | int | 否 | 640 | 训练图片尺寸 |
-| `config.device` | string | 否 | `auto` | `auto`、`cpu`、`0`、`0,1`、`mps` |
-| `config.patience` | int | 否 | 50 | 早停轮数 |
-| `config.workers` | int | 否 | 8 | 数据加载 worker 数 |
-| `config.optimizer` | string | 否 | `AdamW` | YOLO optimizer |
-| `config.lr0` | float | 否 | 0.01 | 初始学习率 |
-| `config.box` | float | 否 | 7.5 | box loss gain，小目标可降到 1.5-3.0 |
-| `config.cls` | float | 否 | 0.5 | cls loss gain，小目标可降到 0.3-0.5 |
-| `config.dfl` | float | 否 | 1.5 | distribution focal loss gain |
-| `config.scale` | float | 否 | 0.5 | 数据增强缩放幅度 |
-| `config.cache` | string/boolean | 否 | `ram` | `ram`、`disk`、`false` |
+| `epochs` | int | 否 | 100 | 训练轮次 |
+| `batchSize` | int | 否 | -1 | -1 表示自动检测 |
+| `imageSize` | int | 否 | 640 | 训练图片尺寸 |
+| `device` | string | 否 | `auto` | `auto`、`cpu`、`0`、`0,1`、`mps` |
+| `patience` | int | 否 | 50 | 早停轮数 |
+| `workers` | int | 否 | 8 | 数据加载 worker 数 |
+| `optimizer` | string | 否 | `AdamW` | YOLO optimizer |
+| `lr0` | float | 否 | 0.01 | 初始学习率 |
+| `box` | float | 否 | 7.5 | box loss gain，小目标可降到 1.5-3.0 |
+| `cls` | float | 否 | 0.5 | cls loss gain，小目标可降到 0.3-0.5 |
+| `dfl` | float | 否 | 1.5 | distribution focal loss gain |
+| `scale` | float | 否 | 0.5 | 数据增强缩放幅度 |
+| `cache` | string/boolean | 否 | `ram` | `ram`、`disk`、`false` |
 
 进度/指标输出：
 
@@ -641,21 +641,19 @@ POST /api/train
   "dataYaml": "D:/data/A9950_database/data.yaml",
   "baseModel": "D:/models/yolov8n.pt",
   "outputDir": "D:/models/A9950_run_001",
-  "config": {
-    "epochs": 100,
-    "batchSize": -1,
-    "imageSize": 640,
-    "device": "auto",
-    "patience": 50,
-    "workers": 8,
-    "optimizer": "AdamW",
-    "lr0": 0.01,
-    "box": 7.5,
-    "cls": 0.5,
-    "dfl": 1.5,
-    "scale": 0.5,
-    "cache": "ram"
-  }
+  "epochs": 100,
+  "batchSize": -1,
+  "imageSize": 640,
+  "device": "auto",
+  "patience": 50,
+  "workers": 8,
+  "optimizer": "AdamW",
+  "lr0": 0.01,
+  "box": 7.5,
+  "cls": 0.5,
+  "dfl": 1.5,
+  "scale": 0.5,
+  "cache": "ram"
 }
 ```
 
@@ -666,26 +664,32 @@ POST /api/train
   "bestModel": "D:/models/A9950_run_001/train/weights/best.pt",
   "lastModel": "D:/models/A9950_run_001/train/weights/last.pt",
   "outputDir": "D:/models/A9950_run_001/train",
-  "config": {
+  "effectiveConfig": {
     "epochs": 100,
     "batchSize": 8,
     "imageSize": 640,
     "device": "0"
+  },
+  "metrics": {
+    "bestEpoch": 12,
+    "bestMap50": 0.7,
+    "bestMap5095": 0.4,
+    "finalMap50": 0.7,
+    "finalMap5095": 0.4
   }
 }
 ```
 
 实现注意：
 
-- 当前 `TrainPage` 有 `cache` 控件，但 `TrainWorker` 组装 `TrainConfig` 时没有把 `cache` 传入核心模块；Web 后端封装时建议补齐。
-- 当前 `TrainWorker` 只透传了 `epochs`、`batch_size`、`image_size`、`device`、`patience`、`box`、`cls`、`scale`，没有透传 `workers`、`optimizer`、`lr0`、`dfl`、`cache`。
+- M1.3 HTTP route 与新 `TrainWorker` 均完整透传 `TrainConfig` 当前字段。
 
 ---
 
 ### 6.5 推理模块
 
-核心文件：`core/inferencer.py`  
-当前调用：`gui/workers/inference_worker.py`
+核心文件：`core/inferencer.py`
+当前调用：`gui/workers/infer_worker.py`
 
 作用：
 
@@ -701,11 +705,13 @@ POST /api/train
 | `modelPath` | string | 是 | - | `.pt` 模型文件 |
 | `siteFolder` | string | 是 | - | 已扫描站点目录 |
 | `outputBaseDir` | string | 否 | `siteFolder/.autolabeler/inference_results` | 推理结果根目录 |
-| `config.confidence` | float | 否 | 0.25 | 置信度阈值 |
-| `config.iou` | float | 否 | 0.7 | NMS IoU 阈值 |
-| `config.batchSize` | int | 否 | -1 | -1 表示自动检测 |
-| `config.device` | string | 否 | `auto` | `auto`、`cpu`、`0`、`mps` |
-| `config.saveToSeparateDir` | boolean | 否 | true | 是否保存到独立 run 目录 |
+| `confidence` | float | 否 | 0.25 | 置信度阈值 |
+| `iou` | float | 否 | 0.7 | NMS IoU 阈值 |
+| `batchSize` | int | 否 | -1 | -1 表示自动检测 |
+| `device` | string | 否 | `auto` | `auto`、`cpu`、`0`、`mps` |
+| `saveToSeparateDir` | boolean | 否 | true | 是否保存到独立 run 目录 |
+| `imageSource` | string | 否 | `unsampled` | `unsampled` / `all` / `custom` |
+| `customImages` | string[] | 条件 | null | `imageSource="custom"` 时使用 |
 
 待推理图片筛选：
 
@@ -765,13 +771,12 @@ POST /api/infer
   "modelPath": "D:/models/A9950_run_001/train/weights/best.pt",
   "siteFolder": "D:/data/A9950",
   "outputBaseDir": null,
-  "config": {
-    "confidence": 0.25,
-    "iou": 0.7,
-    "batchSize": -1,
-    "device": "auto",
-    "saveToSeparateDir": true
-  }
+  "confidence": 0.25,
+  "iou": 0.7,
+  "batchSize": -1,
+  "device": "auto",
+  "saveToSeparateDir": true,
+  "imageSource": "unsampled"
 }
 ```
 
@@ -796,14 +801,14 @@ POST /api/infer
 
 实现注意：
 
-- `InferenceConfig` 类默认 `iou=0.7`，`InferenceWorker` 的 fallback 是 `0.45`，页面默认是 `0.7`。Web API 建议统一默认值。
+- M1.3 HTTP route 与新 `InferWorker` 使用 `InferConfig` 默认值，`iou` 统一为 `0.7`。
 - 当前推理会调用 `mapping.mark_inferred()`，但该字段只用于统计，不影响下次推理筛选。
 
 ---
 
 ### 6.6 推理历史与标注检查模块
 
-核心文件：`core/label_inspector.py`、`core/inferencer.py:get_inference_history()`  
+核心文件：`core/label_inspector.py`、`core/inferencer.py:get_inference_history()`
 当前页面：`gui/pages/label_viewer_page.py`
 
 作用：
@@ -859,31 +864,30 @@ Code/Product 树：
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `GET` | `/api/inference/history?siteFolder=...` | 列出推理历史 |
-| `GET` | `/api/inference/runs/{runId}/tree?siteFolder=...` | 获取 Code/Product 树 |
-| `GET` | `/api/inference/runs/{runId}/products/{code}/{product}?siteFolder=...` | 获取产品下图片和标签列表 |
+| `POST` | `/api/label-inspector/runs` | 列出推理历史 |
+| `POST` | `/api/label-inspector/run-tree` | 获取 Code/Product 树 |
+| `POST` | `/api/label-inspector/product-labels` | 获取产品下图片和标签列表 |
 | `GET` | `/api/files/image?...` | 获取原图 |
 | `GET` | `/api/files/label?...` | 获取 YOLO TXT |
 | `PUT` | `/api/files/label` | Web 标注器保存修改后的标签 |
 
-桌面专用 LabelImg API，可选保留：
+桌面专用 LabelImg API：
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `GET` | `/api/labelimg/config` | 获取当前 LabelImg Python 配置 |
 | `POST` | `/api/labelimg/validate` | 验证 Python 环境是否安装 LabelImg |
-| `POST` | `/api/labelimg/config` | 保存全局配置 |
 | `POST` | `/api/labelimg/launch` | 在后端所在机器启动 LabelImg |
+
+LabelImg Python 路径持久化属于后续 settings 能力，M1.3 仅提供 validate/launch 两个薄入口。
 
 `POST /api/labelimg/launch` 请求：
 
 ```json
 {
   "pythonPath": "D:/miniforge3/envs/labelimg/python.exe",
-  "siteFolder": "D:/data/A9950",
-  "runId": "run_20260511_103000",
-  "code": "AS_CV_PI_P",
-  "product": "H4A238FDF04"
+  "imageDir": "D:/data/A9950/.autolabeler/inference_results/run_20260511_103000/AS_CV_PI_P/H4A238FDF04",
+  "labelDir": "D:/data/A9950/.autolabeler/inference_results/run_20260511_103000/AS_CV_PI_P/H4A238FDF04",
+  "classesFile": "D:/data/A9950/.autolabeler/classes.txt"
 }
 ```
 
@@ -893,7 +897,7 @@ Code/Product 树：
 
 ### 6.7 还原模块
 
-核心文件：`core/restorer.py`  
+核心文件：`core/restorer.py`
 当前调用：`gui/workers/restore_worker.py`
 
 作用：
@@ -989,7 +993,7 @@ POST /api/restore
 
 ### 6.8 格式转换模块
 
-核心文件：`core/converter.py`  
+核心文件：`core/converter.py`
 当前调用：`gui/workers/convert_worker.py`
 
 作用：
@@ -1223,6 +1227,8 @@ POST /api/convert/voc-to-yolo
 | `POST` | `/api/restore` | 是 | 还原标注 |
 | `POST` | `/api/convert/yolo-to-voc` | 是 | 批量 TXT 转 XML |
 | `POST` | `/api/convert/voc-to-yolo` | 否/是 | 单个 XML 转 TXT |
+| `POST` | `/api/labelimg/validate` | 否/是 | 验证 LabelImg Python 环境 |
+| `POST` | `/api/labelimg/launch` | 是 | 启动后端机器上的 LabelImg |
 
 ### 7.3 查询与浏览
 
@@ -1232,8 +1238,9 @@ POST /api/convert/voc-to-yolo
 | `GET` | `/api/project/statistics?siteFolder=...` | 否 | 读取统计 |
 | `GET` | `/api/project/classes?siteFolder=...` | 否 | 读取类别 |
 | `GET` | `/api/project/products?siteFolder=...` | 否 | 读取 Code/Product 树 |
-| `GET` | `/api/inference/history?siteFolder=...` | 否 | 推理历史 |
-| `GET` | `/api/inference/runs/{runId}/tree?siteFolder=...` | 否 | 推理结果树 |
+| `POST` | `/api/label-inspector/runs` | 否 | 推理历史 |
+| `POST` | `/api/label-inspector/run-tree` | 否 | 推理结果树 |
+| `POST` | `/api/label-inspector/product-labels` | 否 | 产品标签列表 |
 
 ### 7.4 Web 标注器扩展
 
@@ -1388,34 +1395,34 @@ POST /api/convert/voc-to-yolo
 
 ## 10. Web 化关键注意事项
 
-1. 浏览器不能直接访问用户本机任意路径。  
+1. 浏览器不能直接访问用户本机任意路径。
    如果后端运行在用户本机，可以让前端传路径字符串；如果是远程部署，需要改成上传文件或挂载共享目录。
 
-2. 不要把原始本地路径直接作为图片 URL。  
+2. 不要把原始本地路径直接作为图片 URL。
    应通过后端文件流 API 返回图片，并做路径白名单、路径穿越校验和权限控制。
 
-3. 所有耗时任务都应异步化。  
+3. 所有耗时任务都应异步化。
    扫描、抽样、训练、推理、还原、转换都可能耗时，前端应使用轮询或 SSE/WebSocket 展示进度。
 
-4. `mapping.json` 是状态源。  
+4. `mapping.json` 是状态源。
    后端应通过 `MappingManager` 读写，不要让前端直接修改 JSON。
 
-5. 推理可以重复执行。  
+5. 推理可以重复执行。
    当前逻辑每次推理生成新的 `run_YYYYMMDD_HHMMSS`，还原时由用户选择某次结果。
 
-6. 还原默认不覆盖。  
+6. 还原默认不覆盖。
    目标 `.txt` 已存在会跳过，前端需要展示 `skipped`。
 
-7. 转换会删除原 TXT。  
+7. 转换会删除原 TXT。
    `convert_folder()` 成功生成 XML 后会删除原 `.txt`，前端需要明确提示或后端增加 dry-run/backup 参数。
 
-8. 当前设置页没有真正持久化。  
+8. 当前设置页没有真正持久化。
    Web 版如需全局默认参数，需要新增 settings 存储。
 
-9. 当前人工标注状态不自动同步。  
+9. 当前人工标注状态不自动同步。
    如果 Web 版内置标注器，应在保存标签后调用状态更新接口，或新增扫描 labels 的同步任务。
 
-10. 注意若保留 LabelImg。  
+10. 注意若保留 LabelImg。
     LabelImg 启动是后端机器上的 GUI 行为，不适合普通 Web 远程部署。
 
 ---
@@ -1466,13 +1473,13 @@ SampleConfig(
 
 | 项目 | 当前状态 | 建议 |
 |------|----------|------|
-| 推理 IoU 默认值 | `InferenceConfig` 默认 0.7，`InferenceWorker` fallback 0.45，页面默认 0.7 | Web API 统一为一个默认值 |
-| 训练 cache 参数 | 页面有控件，Worker 未传入 `TrainConfig` | 后端封装时补齐 |
-| 训练高级参数 | `workers/optimizer/lr0/dfl/cache` core 支持但 GUI 未完整传入 | API 可全部暴露为高级设置 |
+| 推理 IoU 默认值 | M1.3 HTTP route 与新 `InferWorker` 均使用 `InferConfig.iou=0.7` | 已对齐 |
+| 训练 cache 参数 | M1.3 HTTP route 与新 `TrainWorker` 均透传 `TrainConfig.cache` | 已对齐 |
+| 训练高级参数 | M1.3 HTTP route 与新 `TrainWorker` 均暴露 `workers/optimizer/lr0/dfl/cache` | 已对齐 |
 | 设置页 | 只展示表单，不持久化 | 新增 settings 存储 |
 | `manual_labeled` | 有字段和方法，但未自动更新 | Web 标注器保存后更新 |
-| 推理历史还原 | 可能误处理 LabelImg 复制的 `classes.txt` | 后端过滤 `classes.txt` |
-| 转换操作 | 成功后删除 TXT | 前端显式确认，或后端增加 `deleteSource` 参数 |
+| 推理历史还原 | M1.2 Restorer 已过滤 `classes.txt` / `data.yaml` / `README.txt` | 已对齐 |
+| 转换操作 | M1.2/M1.3 `deleteSource` 默认 `false`，需要显式传入才删除 TXT | 已对齐 |
 | 路径访问 | 桌面应用天然本地访问 | Web 需要安全文件 API |
 
 ---
@@ -1485,12 +1492,11 @@ SampleConfig(
 2. `POST /api/sample`
 3. `POST /api/train`
 4. `POST /api/infer`
-5. `GET /api/inference/history`
-6. `GET /api/inference/runs/{runId}/tree`
+5. `POST /api/label-inspector/runs`
+6. `POST /api/label-inspector/run-tree`
 7. `POST /api/restore`
 8. `POST /api/convert/yolo-to-voc`
 9. `GET /api/tasks/{taskId}` + `GET /api/tasks/{taskId}/events`
 10. `GET /api/project/statistics` + `GET /api/project/classes`
 
-标注检查和 Web 标注器可以作为第二阶段扩展。
-
+Web 标注器文件读写、任务 SSE 与 project 查询仍作为后续扩展。

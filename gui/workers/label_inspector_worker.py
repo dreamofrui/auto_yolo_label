@@ -5,7 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from api.services.label_inspector_service import get_product_labels, get_run_tree, list_runs
+from api.services.label_inspector_service import (
+    get_product_labels,
+    get_run_tree,
+    list_runs,
+)
 from core.label_inspector import (
     GetProductLabelsConfig,
     GetRunTreeConfig,
@@ -33,7 +37,9 @@ class LabelInspectorWorker:
 
     def __init__(self, registry: TaskRegistry | None = None) -> None:
         """Create a label inspector worker with an optional registry."""
-        self._registry = registry or TaskRegistry(Path.home() / ".autolabeler" / "tasks")
+        self._registry = registry or TaskRegistry(
+            Path.home() / ".autolabeler" / "tasks"
+        )
 
     def list_runs(self, config: ListRunsConfig) -> LabelInspectorWorkerOutcome:
         """List inference runs and return a desktop-friendly outcome."""
@@ -55,7 +61,9 @@ class LabelInspectorWorker:
             error=None if outcome.error is None else outcome.error.to_error_info(),
         )
 
-    def get_product_labels(self, config: GetProductLabelsConfig) -> LabelInspectorWorkerOutcome:
+    def get_product_labels(
+        self, config: GetProductLabelsConfig
+    ) -> LabelInspectorWorkerOutcome:
         """Read product labels and return a desktop-friendly outcome."""
         outcome = get_product_labels(config, self._registry)
         return LabelInspectorWorkerOutcome(

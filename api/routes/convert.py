@@ -89,4 +89,3 @@ def _txt_to_xml_response(result: ConvertResult) -> TxtToXmlResultResponse:
             for error in result.errors
         ],
     )
-

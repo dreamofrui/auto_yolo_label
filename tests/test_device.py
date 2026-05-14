@@ -6,7 +6,12 @@ from dataclasses import dataclass
 
 import pytest
 
-from utils.device import DeviceInfo, get_device_info, get_optimal_batch_size, resolve_device
+from utils.device import (
+    DeviceInfo,
+    get_device_info,
+    get_optimal_batch_size,
+    resolve_device,
+)
 from utils.exceptions import ValidationError
 
 
@@ -66,7 +71,12 @@ def test_get_device_info_returns_cpu_when_no_accelerator() -> None:
 def test_get_device_info_returns_single_cuda_device() -> None:
     """Single CUDA devices use id 0 and expose GPU memory."""
     info = get_device_info(
-        FakeProbe(cuda_available=True, cuda_count=1, cuda_name="RTX 4090", cuda_memory_mb=24576)
+        FakeProbe(
+            cuda_available=True,
+            cuda_count=1,
+            cuda_name="RTX 4090",
+            cuda_memory_mb=24576,
+        )
     )
 
     assert info == DeviceInfo(
@@ -80,7 +90,9 @@ def test_get_device_info_returns_single_cuda_device() -> None:
 
 def test_get_device_info_returns_all_cuda_device_ids() -> None:
     """Multiple CUDA devices are represented as a comma-separated id list."""
-    info = get_device_info(FakeProbe(cuda_available=True, cuda_count=2, cuda_memory_mb=12288))
+    info = get_device_info(
+        FakeProbe(cuda_available=True, cuda_count=2, cuda_memory_mb=12288)
+    )
 
     assert info.device == "cuda"
     assert info.device_id == "0,1"
@@ -126,8 +138,28 @@ def test_resolve_device_rejects_invalid_values() -> None:
 def test_get_optimal_batch_size_is_conservative() -> None:
     """Batch-size selection is deterministic and conservative."""
     assert get_optimal_batch_size("cpu", probe=FakeProbe()) == 1
-    assert get_optimal_batch_size("0", probe=FakeProbe(cuda_available=True, cuda_memory_mb=24576)) == 32
-    assert get_optimal_batch_size("0", probe=FakeProbe(cuda_available=True, cuda_memory_mb=12288)) == 16
-    assert get_optimal_batch_size("0", probe=FakeProbe(cuda_available=True, cuda_memory_mb=6144)) == 8
-    assert get_optimal_batch_size("0", probe=FakeProbe(cuda_available=True, cuda_memory_mb=4096)) == 4
+    assert (
+        get_optimal_batch_size(
+            "0", probe=FakeProbe(cuda_available=True, cuda_memory_mb=24576)
+        )
+        == 32
+    )
+    assert (
+        get_optimal_batch_size(
+            "0", probe=FakeProbe(cuda_available=True, cuda_memory_mb=12288)
+        )
+        == 16
+    )
+    assert (
+        get_optimal_batch_size(
+            "0", probe=FakeProbe(cuda_available=True, cuda_memory_mb=6144)
+        )
+        == 8
+    )
+    assert (
+        get_optimal_batch_size(
+            "0", probe=FakeProbe(cuda_available=True, cuda_memory_mb=4096)
+        )
+        == 4
+    )
     assert get_optimal_batch_size("mps", probe=FakeProbe(mps_available=True)) == 8

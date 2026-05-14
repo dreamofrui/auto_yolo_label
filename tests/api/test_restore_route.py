@@ -33,7 +33,9 @@ def make_restore_client(registry: TaskRegistry) -> TestClient:
     return TestClient(create_app(task_registry=registry))
 
 
-def test_restore_route_restores_database_labels_and_records_task(tmp_path: Path) -> None:
+def test_restore_route_restores_database_labels_and_records_task(
+    tmp_path: Path,
+) -> None:
     """HTTP restore route copies database labels beside original images."""
     site = tmp_path / "site"
     database_dir = tmp_path / "database"
@@ -63,7 +65,9 @@ def test_restore_route_restores_database_labels_and_records_task(tmp_path: Path)
     assert registry.get(payload["task"]["taskId"]).status == "succeeded"
 
 
-def test_restore_route_maps_invalid_source_type_to_business_error(tmp_path: Path) -> None:
+def test_restore_route_maps_invalid_source_type_to_business_error(
+    tmp_path: Path,
+) -> None:
     """Restore route returns stable JSON errors for invalid source_type."""
     site = tmp_path / "site"
     make_scanned_site(site)

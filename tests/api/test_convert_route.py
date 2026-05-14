@@ -19,7 +19,9 @@ def make_image(path: Path) -> None:
 
 def make_client(tmp_path: Path) -> TestClient:
     """Create a test client from the main API app."""
-    return TestClient(create_app(task_registry=TaskRegistry(task_dir=tmp_path / "tasks")))
+    return TestClient(
+        create_app(task_registry=TaskRegistry(task_dir=tmp_path / "tasks"))
+    )
 
 
 def write_voc_xml(path: Path) -> None:
@@ -113,4 +115,3 @@ def test_yolo_to_voc_route_maps_business_error_to_json(tmp_path: Path) -> None:
     payload = response.json()
     assert payload["success"] is False
     assert payload["error"]["code"] == "CONVERT_FOLDER_NOT_FOUND"
-

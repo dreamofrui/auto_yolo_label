@@ -36,6 +36,8 @@
 - (tests) 新增 M1 四个集成场景，覆盖完整流程、跳过扫描、跳过训练和纯格式转换（本地 M1 提交）
 - (entry) 新增 scan HTTP route、pydantic camelCase schema、桌面 worker 适配和桌面/HTTP examples（本地 M1.3 提交）
 - (entry) 新增 sample HTTP route、pydantic camelCase schema、桌面 worker 适配和共享 TaskRegistry service（本地 M1.3 提交）
+- (entry) 新增 train/infer/restore/convert HTTP route、pydantic camelCase schema、桌面 worker 适配和共享 TaskRegistry service（本地 M1.3 提交）
+- (entry) 新增 label inspector 与 LabelImg HTTP route、pydantic camelCase schema、桌面 worker 适配和共享 service，并统一注册到 `api/main.py`（本地 M1.3 提交）
 
 ### Changed
 - (inferencer) custom 图片位于 `site_folder/Code/Product/` 下时，推理输出保留 Code/Product 相对结构，便于直接交给 Restorer（本地 M1 提交）

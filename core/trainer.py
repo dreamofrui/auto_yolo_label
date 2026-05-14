@@ -68,7 +68,9 @@ class TrainResult:
     last_model: Path | None
     output_dir: Path
     effective_config: dict[str, Any] = field(default_factory=dict)
-    metrics: TrainMetrics = field(default_factory=lambda: TrainMetrics(0, 0.0, 0.0, 0.0, 0.0))
+    metrics: TrainMetrics = field(
+        default_factory=lambda: TrainMetrics(0, 0.0, 0.0, 0.0, 0.0)
+    )
 
 
 class TrainerError(AutoLabelerError):
@@ -139,14 +141,18 @@ class Trainer:
         try:
             device = resolve_device(config.device)
         except AutoLabelerError as exc:
-            raise TrainDeviceUnavailableError("训练设备不可用", details=str(exc)) from exc
+            raise TrainDeviceUnavailableError(
+                "训练设备不可用", details=str(exc)
+            ) from exc
         batch_size = _resolve_batch_size(config, device)
         run_dir = config.output_dir / "train"
         effective_config = _effective_config(config, device, batch_size)
         model = _load_yolo_model(config.base_model)
         self._register_progress_callback(model, config.epochs)
 
-        logger.info("开始训练 YOLO: data={}, model={}", config.data_yaml, config.base_model)
+        logger.info(
+            "开始训练 YOLO: data={}, model={}", config.data_yaml, config.base_model
+        )
         try:
             model.train(
                 data=str(config.data_yaml),
@@ -191,13 +197,21 @@ class Trainer:
     def _validate_inputs(self, config: TrainConfig) -> None:
         """Validate training inputs."""
         if not config.data_yaml.exists() or not config.data_yaml.is_file():
-            raise TrainDataYamlInvalidError("data.yaml 不存在", details=str(config.data_yaml))
+            raise TrainDataYamlInvalidError(
+                "data.yaml 不存在", details=str(config.data_yaml)
+            )
         text = config.data_yaml.read_text(encoding="utf-8")
-        missing_keys = [key for key in _REQUIRED_DATA_YAML_KEYS if f"{key}:" not in text]
+        missing_keys = [
+            key for key in _REQUIRED_DATA_YAML_KEYS if f"{key}:" not in text
+        ]
         if missing_keys:
-            raise TrainDataYamlInvalidError("data.yaml 缺少必要字段", details=", ".join(missing_keys))
+            raise TrainDataYamlInvalidError(
+                "data.yaml 缺少必要字段", details=", ".join(missing_keys)
+            )
         if not config.base_model.exists() or not config.base_model.is_file():
-            raise TrainBaseModelNotFoundError("预训练模型不存在", details=str(config.base_model))
+            raise TrainBaseModelNotFoundError(
+                "预训练模型不存在", details=str(config.base_model)
+            )
 
     def _register_progress_callback(self, model: _YoloModel, total_epochs: int) -> None:
         """Register a YOLO epoch callback when supported."""
@@ -209,7 +223,9 @@ class Trainer:
             epochs = int(getattr(trainer_state, "epochs", total_epochs))
             metrics = getattr(trainer_state, "metrics", None)
             map50 = _metric_value(metrics, "mAP50")
-            self._set_progress(epoch, epochs, f"Epoch {epoch}/{epochs} - mAP50: {map50:.3f}")
+            self._set_progress(
+                epoch, epochs, f"Epoch {epoch}/{epochs} - mAP50: {map50:.3f}"
+            )
 
         add_callback = getattr(model, "add_callback", None)
         if callable(add_callback):
@@ -243,7 +259,9 @@ def _resolve_batch_size(config: TrainConfig, device: str) -> int:
     return max(1, config.batch_size)
 
 
-def _effective_config(config: TrainConfig, device: str, batch_size: int) -> dict[str, Any]:
+def _effective_config(
+    config: TrainConfig, device: str, batch_size: int
+) -> dict[str, Any]:
     """Return the effective training parameters."""
     return {
         "data_yaml": str(config.data_yaml),
@@ -268,11 +286,23 @@ def _effective_config(config: TrainConfig, device: str, batch_size: int) -> dict
 def _parse_metrics(results_csv: Path) -> TrainMetrics:
     """Parse YOLO results.csv metrics, defaulting missing values to zero."""
     if not results_csv.exists():
-        return TrainMetrics(best_epoch=0, best_map50=0.0, best_map50_95=0.0, final_map50=0.0, final_map50_95=0.0)
+        return TrainMetrics(
+            best_epoch=0,
+            best_map50=0.0,
+            best_map50_95=0.0,
+            final_map50=0.0,
+            final_map50_95=0.0,
+        )
     with results_csv.open("r", encoding="utf-8", newline="") as file_obj:
         rows = list(csv.DictReader(file_obj))
     if not rows:
-        return TrainMetrics(best_epoch=0, best_map50=0.0, best_map50_95=0.0, final_map50=0.0, final_map50_95=0.0)
+        return TrainMetrics(
+            best_epoch=0,
+            best_map50=0.0,
+            best_map50_95=0.0,
+            final_map50=0.0,
+            final_map50_95=0.0,
+        )
     best_index = 0
     best_map50 = -1.0
     best_map50_95 = 0.0

@@ -30,7 +30,9 @@ class LabelInspectorServiceOutcome:
     error: AutoLabelerError | None
 
 
-def list_runs(config: ListRunsConfig, registry: TaskRegistry) -> LabelInspectorServiceOutcome:
+def list_runs(
+    config: ListRunsConfig, registry: TaskRegistry
+) -> LabelInspectorServiceOutcome:
     """List inference runs with TaskRegistry lifecycle handling."""
     task = registry.create_task("label_inspector")
     registry.start_task(task.task_id, message="Listing inference runs")
@@ -38,11 +40,17 @@ def list_runs(config: ListRunsConfig, registry: TaskRegistry) -> LabelInspectorS
         result = LabelInspector().list_runs(config)
     except AutoLabelerError as exc:
         return _fail(registry, task, exc)
-    registry.succeed_task(task.task_id, result={"runs": [_run_dict(item) for item in result]})
-    return LabelInspectorServiceOutcome(success=True, task=task, result=result, error=None)
+    registry.succeed_task(
+        task.task_id, result={"runs": [_run_dict(item) for item in result]}
+    )
+    return LabelInspectorServiceOutcome(
+        success=True, task=task, result=result, error=None
+    )
 
 
-def get_run_tree(config: GetRunTreeConfig, registry: TaskRegistry) -> LabelInspectorServiceOutcome:
+def get_run_tree(
+    config: GetRunTreeConfig, registry: TaskRegistry
+) -> LabelInspectorServiceOutcome:
     """Read an inference run tree with TaskRegistry lifecycle handling."""
     task = registry.create_task("label_inspector")
     registry.start_task(task.task_id, message="Reading inference run tree")
@@ -50,8 +58,12 @@ def get_run_tree(config: GetRunTreeConfig, registry: TaskRegistry) -> LabelInspe
         result = LabelInspector().get_run_tree(config)
     except AutoLabelerError as exc:
         return _fail(registry, task, exc)
-    registry.succeed_task(task.task_id, result={"nodes": [_node_dict(item) for item in result]})
-    return LabelInspectorServiceOutcome(success=True, task=task, result=result, error=None)
+    registry.succeed_task(
+        task.task_id, result={"nodes": [_node_dict(item) for item in result]}
+    )
+    return LabelInspectorServiceOutcome(
+        success=True, task=task, result=result, error=None
+    )
 
 
 def get_product_labels(
@@ -65,8 +77,12 @@ def get_product_labels(
         result = LabelInspector().get_product_labels(config)
     except AutoLabelerError as exc:
         return _fail(registry, task, exc)
-    registry.succeed_task(task.task_id, result={"labels": [_label_dict(item) for item in result]})
-    return LabelInspectorServiceOutcome(success=True, task=task, result=result, error=None)
+    registry.succeed_task(
+        task.task_id, result={"labels": [_label_dict(item) for item in result]}
+    )
+    return LabelInspectorServiceOutcome(
+        success=True, task=task, result=result, error=None
+    )
 
 
 def _fail(
@@ -82,7 +98,9 @@ def _fail(
         details=exc.details,
         retryable=exc.retryable,
     )
-    return LabelInspectorServiceOutcome(success=False, task=task, result=None, error=exc)
+    return LabelInspectorServiceOutcome(
+        success=False, task=task, result=None, error=exc
+    )
 
 
 def _run_dict(result: InferenceRun) -> dict[str, object]:

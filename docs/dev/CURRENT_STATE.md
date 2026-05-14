@@ -8,9 +8,9 @@
 
 ## 1. 一句话现状
 
-**阶段 0 / 阶段 1 / M1.1 / M1.2 已完成**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；6 个 `utils/` 基础设施模块与 8 个 `core/` 业务模块已完成。
+**阶段 0 / 阶段 1 / M1.1 / M1.2 / M1.3 已完成**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；6 个 `utils/` 基础设施模块、8 个 `core/` 业务模块、桌面 worker 与 FastAPI HTTP 薄入口均已接入。
 
-下一步：进入 M1.3 双调用入口，按规范接入桌面 worker 与 HTTP API。
+下一步：进入 M1 收尾验收，重点跑全量测试、`mypy --strict core/ utils/`、纪律检查与覆盖率。
 
 ---
 
@@ -35,9 +35,9 @@
 | restorer.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 database/inference 标签还原、跳过/覆盖规则和 mapping restored 标记 |
 | labelimg_launcher.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现外部 Python 校验与 LabelImg 子进程启动 |
 | **入口层** |  |  |  |  |
-| gui/workers/* | 🟡 进行中 | scan/sample worker 通过 | - | 已接入 scan、sample worker |
-| api/main.py + routes/ | 🟡 进行中 | scan/sample route 通过 | - | 已接入 scan、sample route |
-| api/schemas/ | 🟡 进行中 | scan/sample schema 通过 | - | 已建立 camelCase schema 基类和通用 TaskResponse |
+| gui/workers/* | ✅ 完成 | 入口 worker 测试通过 | - | 已接入 scan/sample/train/infer/restore/convert/label_inspector/labelimg worker |
+| api/main.py + routes/ | ✅ 完成 | API route 测试通过 | - | 已接入 scan/sample/train/infer/restore/convert/label-inspector/labelimg route |
+| api/schemas/ | ✅ 完成 | API schema 测试通过 | - | 已建立 camelCase schema 基类、通用 TaskResponse 和各模块请求/响应模型 |
 | **集成测试** |  |  |  |  |
 | tests/integration/test_scenario_a.py（完整流程） | ✅ 完成 | 通过 | ✅ 规范已写 | Scan → Sample → Train → Infer → Restore |
 | tests/integration/test_scenario_b.py（跳过扫描） | ✅ 完成 | 通过 | ✅ 规范已写 | 手写 mapping + database |
@@ -72,12 +72,13 @@
 - 2026-05-14 完成 M1 四个集成场景测试：完整流程、跳过扫描、跳过训练和纯格式转换均已自动化覆盖
 - 2026-05-14 完成 scan 双调用入口第一版：新增 HTTP route、pydantic camelCase schema、桌面 worker 适配和桌面/HTTP examples
 - 2026-05-14 完成 sample 双调用入口：新增 HTTP route、pydantic camelCase schema、桌面 worker 适配和共享 service 生命周期
+- 2026-05-14 完成 M1.3 剩余双调用入口：新增 train、infer、restore、convert、label inspector、LabelImg 的 HTTP route、pydantic schema、共享 service 和桌面 worker，并统一注册到 `api/main.py`
 
 ---
 
 ## 4. 进行中
 
-### 4.1 M1.3 双调用入口
+### 4.1 M1 收尾验收
 - 负责人：Codex
 - 开始日期：2026-05-14
 - 当前进度：
@@ -86,7 +87,11 @@
   - [x] 设计 `gui/workers/` scan 对新 core + TaskHandle 的适配
   - [x] 补齐 examples 桌面/HTTP scan 双调用示例
   - [x] 推广到 sample
-  - [ ] 推广到 train/infer/restore/convert/label inspector/labelimg launcher
+  - [x] 推广到 train/infer/restore/convert/label inspector/labelimg launcher
+  - [ ] 跑全量验收：`pytest tests -q`
+  - [ ] 跑类型检查：`mypy --strict core/ utils/`
+  - [ ] 跑纪律检查：`python scripts/check_disciplines.py`
+  - [ ] 跑覆盖率并确认 core/utils 目标
 - 阻塞项：无
 
 ---

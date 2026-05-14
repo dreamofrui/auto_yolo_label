@@ -54,7 +54,14 @@ def test_list_runs_route_returns_camel_case_run_metadata(tmp_path: Path) -> None
 def test_run_tree_route_returns_product_counts(tmp_path: Path) -> None:
     """Run-tree route returns Code/Product label counts."""
     site = tmp_path / "site"
-    product_dir = site / ".autolabeler" / "inference_results" / "run_20260513_104000" / "CodeA" / "Product1"
+    product_dir = (
+        site
+        / ".autolabeler"
+        / "inference_results"
+        / "run_20260513_104000"
+        / "CodeA"
+        / "Product1"
+    )
     make_label(product_dir / "a.txt", "0 0.5 0.5 0.2 0.2\n")
     make_label(product_dir / "b.txt", "\n")
     registry = TaskRegistry(tmp_path / "tasks")
@@ -77,7 +84,14 @@ def test_run_tree_route_returns_product_counts(tmp_path: Path) -> None:
 def test_product_labels_route_returns_labels_and_source_images(tmp_path: Path) -> None:
     """Product-labels route returns label records with image paths."""
     site = tmp_path / "site"
-    product_dir = site / ".autolabeler" / "inference_results" / "run_20260513_104000" / "CodeA" / "Product1"
+    product_dir = (
+        site
+        / ".autolabeler"
+        / "inference_results"
+        / "run_20260513_104000"
+        / "CodeA"
+        / "Product1"
+    )
     make_label(product_dir / "a.txt", "0 0.5 0.5 0.2 0.2\n")
     image_path = site / "CodeA" / "Product1" / "a.jpg"
     make_image(image_path)
@@ -86,7 +100,12 @@ def test_product_labels_route_returns_labels_and_source_images(tmp_path: Path) -
 
     response = client.post(
         "/api/label-inspector/product-labels",
-        json={"siteFolder": str(site), "runId": "run_20260513_104000", "code": "CodeA", "product": "Product1"},
+        json={
+            "siteFolder": str(site),
+            "runId": "run_20260513_104000",
+            "code": "CodeA",
+            "product": "Product1",
+        },
     )
 
     assert response.status_code == 200

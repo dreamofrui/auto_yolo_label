@@ -26,7 +26,9 @@ class InferWorker:
 
     def __init__(self, registry: TaskRegistry | None = None) -> None:
         """Create an infer worker with an optional shared registry."""
-        self._registry = registry or TaskRegistry(Path.home() / ".autolabeler" / "tasks")
+        self._registry = registry or TaskRegistry(
+            Path.home() / ".autolabeler" / "tasks"
+        )
 
     def run(self, config: InferConfig) -> InferWorkerOutcome:
         """Run inference and return a desktop-friendly outcome."""

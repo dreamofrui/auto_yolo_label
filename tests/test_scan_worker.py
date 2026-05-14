@@ -35,7 +35,9 @@ def test_scan_worker_converts_errors_to_failed_task(tmp_path: Path) -> None:
     """Desktop scan worker records business failures on the shared task registry."""
     registry = TaskRegistry(task_dir=tmp_path / "tasks")
 
-    outcome = ScanWorker(registry=registry).run(ScanConfig(site_folder=tmp_path / "missing"))
+    outcome = ScanWorker(registry=registry).run(
+        ScanConfig(site_folder=tmp_path / "missing")
+    )
 
     assert outcome.success is False
     assert outcome.error is not None

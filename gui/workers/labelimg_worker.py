@@ -6,7 +6,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from api.services.labelimg_service import launch_labelimg, validate_labelimg
-from core.labelimg_launcher import LabelImgConfig, LabelImgLaunchResult, LabelImgLauncher, LabelImgValidateConfig, LabelImgValidateResult
+from core.labelimg_launcher import (
+    LabelImgConfig,
+    LabelImgLaunchResult,
+    LabelImgLauncher,
+    LabelImgValidateConfig,
+    LabelImgValidateResult,
+)
 from utils.exceptions import ErrorInfo
 from utils.task_registry import TaskHandle, TaskRegistry
 
@@ -30,7 +36,9 @@ class LabelImgWorker:
         launcher: LabelImgLauncher | None = None,
     ) -> None:
         """Create a LabelImg worker with optional dependencies."""
-        self._registry = registry or TaskRegistry(Path.home() / ".autolabeler" / "tasks")
+        self._registry = registry or TaskRegistry(
+            Path.home() / ".autolabeler" / "tasks"
+        )
         self._launcher = launcher
 
     def validate(self, config: LabelImgValidateConfig) -> LabelImgWorkerOutcome:

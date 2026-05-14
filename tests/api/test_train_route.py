@@ -36,7 +36,11 @@ class FakeYOLO:
         """Simulate an Ultralytics training run."""
         run_dir = Path(str(kwargs["project"])) / str(kwargs["name"])
         for callback in self.callbacks.get("on_fit_epoch_end", []):
-            callback(FakeTrainerState(epoch=0, epochs=int(kwargs["epochs"]), metrics={"mAP50": 0.5}))
+            callback(
+                FakeTrainerState(
+                    epoch=0, epochs=int(kwargs["epochs"]), metrics={"mAP50": 0.5}
+                )
+            )
         weights_dir = run_dir / "weights"
         weights_dir.mkdir(parents=True, exist_ok=True)
         (weights_dir / "best.pt").write_bytes(b"best")
@@ -66,7 +70,9 @@ def write_data_yaml(path: Path) -> None:
     )
 
 
-def test_train_route_returns_task_result_and_metrics(tmp_path: Path, monkeypatch: Any) -> None:
+def test_train_route_returns_task_result_and_metrics(
+    tmp_path: Path, monkeypatch: Any
+) -> None:
     """HTTP train route converts camelCase JSON to core TrainConfig and back."""
     data_yaml = tmp_path / "database" / "data.yaml"
     write_data_yaml(data_yaml)

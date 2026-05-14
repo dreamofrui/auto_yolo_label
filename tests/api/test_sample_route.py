@@ -24,7 +24,9 @@ def make_scanned_site(site: Path) -> None:
     Scanner().scan(ScanConfig(site_folder=site))
 
 
-def test_sample_route_accepts_camel_case_and_returns_task_result(tmp_path: Path) -> None:
+def test_sample_route_accepts_camel_case_and_returns_task_result(
+    tmp_path: Path,
+) -> None:
     """HTTP sample route converts camelCase JSON to core SampleConfig and back."""
     site = tmp_path / "site"
     output_dir = tmp_path / "database"
@@ -34,7 +36,12 @@ def test_sample_route_accepts_camel_case_and_returns_task_result(tmp_path: Path)
 
     response = client.post(
         "/api/sample",
-        json={"siteFolder": str(site), "outputDir": str(output_dir), "count": 1, "fullThreshold": 1},
+        json={
+            "siteFolder": str(site),
+            "outputDir": str(output_dir),
+            "count": 1,
+            "fullThreshold": 1,
+        },
     )
 
     assert response.status_code == 200

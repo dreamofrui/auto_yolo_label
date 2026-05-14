@@ -26,7 +26,9 @@ class SampleWorker:
 
     def __init__(self, registry: TaskRegistry | None = None) -> None:
         """Create a sample worker with an optional shared registry."""
-        self._registry = registry or TaskRegistry(Path.home() / ".autolabeler" / "tasks")
+        self._registry = registry or TaskRegistry(
+            Path.home() / ".autolabeler" / "tasks"
+        )
 
     def run(self, config: SampleConfig) -> SampleWorkerOutcome:
         """Run sample and return a desktop-friendly outcome."""

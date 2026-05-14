@@ -46,7 +46,13 @@ class FakeYOLO:
         """Simulate a YOLO train call."""
         self.train_kwargs = kwargs
         for callback in self.callbacks.get("on_fit_epoch_end", []):
-            callback(FakeTrainerState(epoch=0, epochs=int(kwargs["epochs"]), metrics={"mAP50": 0.5, "mAP50-95": 0.25}))
+            callback(
+                FakeTrainerState(
+                    epoch=0,
+                    epochs=int(kwargs["epochs"]),
+                    metrics={"mAP50": 0.5, "mAP50-95": 0.25},
+                )
+            )
         if self.error is not None:
             raise self.error
         weights = self.run_dir / "weights"
@@ -110,7 +116,13 @@ def test_train_missing_data_yaml_raises_invalid(tmp_path: Path) -> None:
     model.write_bytes(b"model")
 
     with pytest.raises(TrainDataYamlInvalidError):
-        Trainer().train(TrainConfig(data_yaml=tmp_path / "missing.yaml", base_model=model, output_dir=tmp_path / "runs"))
+        Trainer().train(
+            TrainConfig(
+                data_yaml=tmp_path / "missing.yaml",
+                base_model=model,
+                output_dir=tmp_path / "runs",
+            )
+        )
 
 
 def test_train_invalid_data_yaml_raises_invalid(tmp_path: Path) -> None:
@@ -121,7 +133,11 @@ def test_train_invalid_data_yaml_raises_invalid(tmp_path: Path) -> None:
     model.write_bytes(b"model")
 
     with pytest.raises(TrainDataYamlInvalidError):
-        Trainer().train(TrainConfig(data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"))
+        Trainer().train(
+            TrainConfig(
+                data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"
+            )
+        )
 
 
 def test_train_missing_base_model_raises_not_found(tmp_path: Path) -> None:
@@ -130,7 +146,13 @@ def test_train_missing_base_model_raises_not_found(tmp_path: Path) -> None:
     write_data_yaml(data_yaml)
 
     with pytest.raises(TrainBaseModelNotFoundError):
-        Trainer().train(TrainConfig(data_yaml=data_yaml, base_model=tmp_path / "missing.pt", output_dir=tmp_path / "runs"))
+        Trainer().train(
+            TrainConfig(
+                data_yaml=data_yaml,
+                base_model=tmp_path / "missing.pt",
+                output_dir=tmp_path / "runs",
+            )
+        )
 
 
 def test_train_success_returns_weights_metrics_and_effective_config(
@@ -148,7 +170,13 @@ def test_train_success_returns_weights_metrics_and_effective_config(
     monkeypatch.setattr("core.trainer.resolve_device", lambda requested: "cpu")
 
     result = Trainer().train(
-        TrainConfig(data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs", epochs=2, batch_size=-1)
+        TrainConfig(
+            data_yaml=data_yaml,
+            base_model=model,
+            output_dir=tmp_path / "runs",
+            epochs=2,
+            batch_size=-1,
+        )
     )
 
     assert result.best_model == run_dir / "weights" / "best.pt"
@@ -180,7 +208,13 @@ def test_task_handle_progress_updates_from_epoch_callback(
     monkeypatch.setattr("core.trainer._load_yolo_model", lambda base_model: fake)
 
     Trainer(task_handle=handle).train(
-        TrainConfig(data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs", epochs=3, batch_size=2)
+        TrainConfig(
+            data_yaml=data_yaml,
+            base_model=model,
+            output_dir=tmp_path / "runs",
+            epochs=3,
+            batch_size=2,
+        )
     )
 
     assert handle.progress_current == 1
@@ -197,11 +231,16 @@ def test_cancelled_task_raises_train_interrupted(
     write_data_yaml(data_yaml)
     model = tmp_path / "model.pt"
     model.write_bytes(b"model")
-    monkeypatch.setattr("core.trainer._load_yolo_model", lambda base_model: FakeYOLO(tmp_path / "runs" / "train"))
+    monkeypatch.setattr(
+        "core.trainer._load_yolo_model",
+        lambda base_model: FakeYOLO(tmp_path / "runs" / "train"),
+    )
 
     with pytest.raises(TrainInterruptedError):
         Trainer(task_handle=make_task_handle(cancelled=True)).train(
-            TrainConfig(data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs")
+            TrainConfig(
+                data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"
+            )
         )
 
 
@@ -214,8 +253,14 @@ def test_oom_runtime_error_raises_train_oom(
     write_data_yaml(data_yaml)
     model = tmp_path / "model.pt"
     model.write_bytes(b"model")
-    fake = FakeYOLO(tmp_path / "runs" / "train", error=RuntimeError("CUDA out of memory"))
+    fake = FakeYOLO(
+        tmp_path / "runs" / "train", error=RuntimeError("CUDA out of memory")
+    )
     monkeypatch.setattr("core.trainer._load_yolo_model", lambda base_model: fake)
 
     with pytest.raises(TrainOOMError):
-        Trainer().train(TrainConfig(data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"))
+        Trainer().train(
+            TrainConfig(
+                data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"
+            )
+        )

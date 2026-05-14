@@ -8,7 +8,12 @@ from pathlib import Path
 
 from loguru import logger
 
-from utils.exceptions import AutoLabelerError, ErrorCode, TaskCancelledError, ValidationError
+from utils.exceptions import (
+    AutoLabelerError,
+    ErrorCode,
+    TaskCancelledError,
+    ValidationError,
+)
 from utils.mapping_manager import ImageInfo, MappingManager
 from utils.path_encoder import PathEncoder
 from utils.task_registry import TaskHandle
@@ -130,12 +135,16 @@ class Scanner:
             raise ScanPathNotFoundError("站点目录不存在", details=str(site_folder))
         if not site_folder.is_dir():
             logger.error("扫描站点不是目录: {}", site_folder)
-            raise ScanInvalidStructureError("站点路径不是目录", details=str(site_folder))
+            raise ScanInvalidStructureError(
+                "站点路径不是目录", details=str(site_folder)
+            )
 
         code_product_dirs = self._find_code_product_dirs(site_folder)
         if not code_product_dirs:
             logger.error("扫描站点缺少 Code/Product 两级目录: {}", site_folder)
-            raise ScanInvalidStructureError("找不到 Code/Product 两级目录", details=str(site_folder))
+            raise ScanInvalidStructureError(
+                "找不到 Code/Product 两级目录", details=str(site_folder)
+            )
 
         candidates = self._collect_images(code_product_dirs, supported_formats)
         if not candidates:
@@ -153,7 +162,9 @@ class Scanner:
 
         for index, candidate in enumerate(candidates, start=1):
             self._raise_if_cancelled()
-            self._set_progress(index - 1, len(candidates), f"扫描 {candidate.path.name}")
+            self._set_progress(
+                index - 1, len(candidates), f"扫描 {candidate.path.name}"
+            )
             if config.validate_existing_xml:
                 self._validate_existing_xml(candidate)
             encoded_name = self._encode_candidate(candidate)
@@ -161,7 +172,9 @@ class Scanner:
                 encoded_name,
                 _image_info(site_folder, candidate),
             )
-            self._set_progress(index, len(candidates), f"已扫描 {index}/{len(candidates)}")
+            self._set_progress(
+                index, len(candidates), f"已扫描 {index}/{len(candidates)}"
+            )
 
         output_dir.mkdir(parents=True, exist_ok=True)
         classes_path.write_text(_classes_text(classes), encoding="utf-8")
@@ -170,11 +183,17 @@ class Scanner:
         statistics = ScanStatistics(
             total_images=len(candidates),
             total_codes=len(classes),
-            total_products=len({(candidate.code, candidate.product) for candidate in candidates}),
+            total_products=len(
+                {(candidate.code, candidate.product) for candidate in candidates}
+            ),
         )
         products = _products_from_candidates(candidates)
         self._set_progress(len(candidates), len(candidates), "扫描完成")
-        logger.info("扫描完成: {} 张图片, {} 个 Code", statistics.total_images, statistics.total_codes)
+        logger.info(
+            "扫描完成: {} 张图片, {} 个 Code",
+            statistics.total_images,
+            statistics.total_codes,
+        )
         return ScanResult(
             mapping_path=mapping_path,
             classes_path=classes_path,
@@ -186,11 +205,17 @@ class Scanner:
     def _find_code_product_dirs(self, site_folder: Path) -> list[tuple[str, str, Path]]:
         """Return Code/Product directory triples sorted by Code then Product."""
         product_dirs: list[tuple[str, str, Path]] = []
-        for code_dir in sorted((path for path in site_folder.iterdir() if path.is_dir()), key=lambda path: path.name):
+        for code_dir in sorted(
+            (path for path in site_folder.iterdir() if path.is_dir()),
+            key=lambda path: path.name,
+        ):
             if code_dir.name == ".autolabeler":
                 continue
             self._raise_if_cancelled()
-            for product_dir in sorted((path for path in code_dir.iterdir() if path.is_dir()), key=lambda path: path.name):
+            for product_dir in sorted(
+                (path for path in code_dir.iterdir() if path.is_dir()),
+                key=lambda path: path.name,
+            ):
                 product_dirs.append((code_dir.name, product_dir.name, product_dir))
         return product_dirs
 
@@ -203,9 +228,14 @@ class Scanner:
         candidates: list[_ImageCandidate] = []
         for code, product, product_dir in code_product_dirs:
             self._raise_if_cancelled()
-            for image_path in sorted((path for path in product_dir.iterdir() if path.is_file()), key=lambda path: path.name):
+            for image_path in sorted(
+                (path for path in product_dir.iterdir() if path.is_file()),
+                key=lambda path: path.name,
+            ):
                 if image_path.suffix.lower() in supported_formats:
-                    candidates.append(_ImageCandidate(path=image_path, code=code, product=product))
+                    candidates.append(
+                        _ImageCandidate(path=image_path, code=code, product=product)
+                    )
         return candidates
 
     def _validate_existing_xml(self, candidate: _ImageCandidate) -> None:
@@ -217,9 +247,15 @@ class Scanner:
             root = ElementTree.parse(xml_path).getroot()
         except ElementTree.ParseError as exc:
             logger.error("XML 解析失败: {}", xml_path)
-            raise ScanLabelMismatchError("XML 标签解析失败", details=str(xml_path)) from exc
+            raise ScanLabelMismatchError(
+                "XML 标签解析失败", details=str(xml_path)
+            ) from exc
 
-        object_names = [name.text.strip() for name in root.findall(".//object/name") if name.text and name.text.strip()]
+        object_names = [
+            name.text.strip()
+            for name in root.findall(".//object/name")
+            if name.text and name.text.strip()
+        ]
         if not object_names or any(name != candidate.code for name in object_names):
             logger.error("XML 标签与 Code 不一致: {}", xml_path)
             raise ScanLabelMismatchError(
@@ -230,10 +266,14 @@ class Scanner:
     def _encode_candidate(self, candidate: _ImageCandidate) -> str:
         """Encode a candidate path or convert separator errors to scanner errors."""
         try:
-            return self._path_encoder.encode(candidate.code, candidate.product, candidate.path.name)
+            return self._path_encoder.encode(
+                candidate.code, candidate.product, candidate.path.name
+            )
         except ValidationError as exc:
             logger.error("扫描路径包含保留分隔符: {}", candidate.path)
-            raise ScanInvalidStructureError("路径包含保留分隔符", details=str(candidate.path)) from exc
+            raise ScanInvalidStructureError(
+                "路径包含保留分隔符", details=str(candidate.path)
+            ) from exc
 
     def _raise_if_cancelled(self) -> None:
         """Raise TaskCancelledError when the injected task has been cancelled."""
@@ -266,7 +306,9 @@ def _image_info(site_folder: Path, candidate: _ImageCandidate) -> ImageInfo:
     )
 
 
-def _products_from_candidates(candidates: list[_ImageCandidate]) -> dict[str, dict[str, int]]:
+def _products_from_candidates(
+    candidates: list[_ImageCandidate],
+) -> dict[str, dict[str, int]]:
     """Build nested product image counts from scan candidates."""
     products: dict[str, dict[str, int]] = {}
     for candidate in candidates:

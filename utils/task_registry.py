@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import threading
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -147,7 +147,9 @@ class TaskRegistry:
             self._persist(handle)
             return handle
 
-    def succeed_task(self, task_id: str, result: dict[str, Any] | None = None) -> TaskHandle:
+    def succeed_task(
+        self, task_id: str, result: dict[str, Any] | None = None
+    ) -> TaskHandle:
         """Mark a task as succeeded."""
         with self._lock:
             handle = self.get(task_id)
@@ -199,7 +201,9 @@ class TaskRegistry:
             self._persist(handle)
             return handle
 
-    def finish_cancelled_task(self, task_id: str, message: str = "已取消") -> TaskHandle:
+    def finish_cancelled_task(
+        self, task_id: str, message: str = "已取消"
+    ) -> TaskHandle:
         """Mark a cancellation request as fully acknowledged by the core loop."""
         with self._lock:
             handle = self.get(task_id)

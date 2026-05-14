@@ -9,7 +9,12 @@ from typing import TypeAlias
 
 from loguru import logger
 
-from utils.exceptions import AutoLabelerError, ErrorCode, PathNotFoundError, TaskCancelledError
+from utils.exceptions import (
+    AutoLabelerError,
+    ErrorCode,
+    PathNotFoundError,
+    TaskCancelledError,
+)
 from utils.mapping_manager import ImageInfo, MappedImage, MappingManager
 from utils.task_registry import TaskHandle
 
@@ -119,7 +124,9 @@ class Restorer:
             TaskCancelledError: If the injected task requests cancellation.
         """
         if config.source_type not in _VALID_SOURCE_TYPES:
-            raise RestoreInvalidSourceTypeError("还原来源类型无效", details=config.source_type)
+            raise RestoreInvalidSourceTypeError(
+                "还原来源类型无效", details=config.source_type
+            )
         manager = self._load_mapping(config.site_folder)
         source_root = self._resolve_source_root(config)
         self._raise_if_cancelled()
@@ -133,10 +140,22 @@ class Restorer:
             self._raise_if_cancelled()
             self._set_progress(index - 1, len(source_paths), f"还原 {source_path.name}")
             target = self._resolve_target(source_path, source_root, config, manager)
-            if target.target_path is None or target.encoded_name is None or target.info is None:
+            if (
+                target.target_path is None
+                or target.encoded_name is None
+                or target.info is None
+            ):
                 result.failed += 1
-                result.errors.append(RestoreFileIssue(source_path=source_path, target_path=None, reason="找不到 mapping 记录"))
-                self._set_progress(index, len(source_paths), f"已处理 {index}/{len(source_paths)}")
+                result.errors.append(
+                    RestoreFileIssue(
+                        source_path=source_path,
+                        target_path=None,
+                        reason="找不到 mapping 记录",
+                    )
+                )
+                self._set_progress(
+                    index, len(source_paths), f"已处理 {index}/{len(source_paths)}"
+                )
                 continue
             if target.info.restored and not config.overwrite:
                 result.skipped += 1
@@ -152,13 +171,19 @@ class Restorer:
             except OSError as exc:
                 result.failed += 1
                 result.errors.append(
-                    RestoreFileIssue(source_path=source_path, target_path=target.target_path, reason=str(exc))
+                    RestoreFileIssue(
+                        source_path=source_path,
+                        target_path=target.target_path,
+                        reason=str(exc),
+                    )
                 )
             else:
                 manager.mark_restored(target.encoded_name)
                 restored_any = True
                 result.success += 1
-            self._set_progress(index, len(source_paths), f"已处理 {index}/{len(source_paths)}")
+            self._set_progress(
+                index, len(source_paths), f"已处理 {index}/{len(source_paths)}"
+            )
 
         if restored_any:
             manager.save(config.site_folder / ".autolabeler" / "mapping.json")
@@ -173,7 +198,9 @@ class Restorer:
         try:
             return manager.load()
         except PathNotFoundError as exc:
-            raise RestoreMappingNotFoundError("mapping.json 不存在", details=str(mapping_path)) from exc
+            raise RestoreMappingNotFoundError(
+                "mapping.json 不存在", details=str(mapping_path)
+            ) from exc
 
     def _resolve_source_root(self, config: RestoreConfig) -> Path:
         """Resolve and validate the source directory."""
@@ -184,7 +211,9 @@ class Restorer:
         else:
             source_root = _inference_source_root(config)
         if not source_root.exists() or not source_root.is_dir():
-            raise RestoreSourceNotFoundError("还原源目录不存在", details=str(source_root))
+            raise RestoreSourceNotFoundError(
+                "还原源目录不存在", details=str(source_root)
+            )
         return source_root
 
     def _resolve_target(
@@ -242,12 +271,18 @@ def _is_label_file(path: Path) -> bool:
     return path.is_file() and path.name.lower() not in _CONTROL_FILE_NAMES
 
 
-def _database_target(source_path: Path, site_folder: Path, manager: MappingManager) -> _RestoreTarget:
+def _database_target(
+    source_path: Path, site_folder: Path, manager: MappingManager
+) -> _RestoreTarget:
     """Resolve a database label path to a mapping entry."""
-    encoded_name = f"{source_path.stem}{_image_suffix_for_stem(source_path.stem, manager)}"
+    encoded_name = (
+        f"{source_path.stem}{_image_suffix_for_stem(source_path.stem, manager)}"
+    )
     info = manager.get_image_info(encoded_name)
     if info is None:
-        return _RestoreTarget(source_path=source_path, target_path=None, encoded_name=None, info=None)
+        return _RestoreTarget(
+            source_path=source_path, target_path=None, encoded_name=None, info=None
+        )
     return _RestoreTarget(
         source_path=source_path,
         target_path=site_folder / Path(info.original_relative).with_suffix(".txt"),
@@ -274,23 +309,34 @@ def _inference_target(
     try:
         relative = source_path.relative_to(source_root)
     except ValueError:
-        return _RestoreTarget(source_path=source_path, target_path=None, encoded_name=None, info=None)
+        return _RestoreTarget(
+            source_path=source_path, target_path=None, encoded_name=None, info=None
+        )
     parts = relative.parts
     if len(parts) < 3:
-        return _RestoreTarget(source_path=source_path, target_path=None, encoded_name=None, info=None)
+        return _RestoreTarget(
+            source_path=source_path, target_path=None, encoded_name=None, info=None
+        )
     code = parts[0]
     product = parts[1]
     stem = source_path.stem
     for mapped in _all_mapped_images(manager):
         info = mapped.info
-        if info.code == code and info.product == product and Path(info.original_name).stem == stem:
+        if (
+            info.code == code
+            and info.product == product
+            and Path(info.original_name).stem == stem
+        ):
             return _RestoreTarget(
                 source_path=source_path,
-                target_path=site_folder / Path(info.original_relative).with_suffix(".txt"),
+                target_path=site_folder
+                / Path(info.original_relative).with_suffix(".txt"),
                 encoded_name=mapped.encoded_name,
                 info=info,
             )
-    return _RestoreTarget(source_path=source_path, target_path=None, encoded_name=None, info=None)
+    return _RestoreTarget(
+        source_path=source_path, target_path=None, encoded_name=None, info=None
+    )
 
 
 def _all_mapped_images(manager: MappingManager) -> list[MappedImage]:

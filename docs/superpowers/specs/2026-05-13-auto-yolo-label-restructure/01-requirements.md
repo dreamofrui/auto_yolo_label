@@ -124,11 +124,11 @@ auto_yolo_label/
 | 扫描站点 | `core/scanner.py` | `Scanner` | gui/workers/scan_worker.py, api/routes/scan.py |
 | 抽样 | `core/sampler.py` | `Sampler` | sample_worker.py, sample.py |
 | 训练 | `core/trainer.py` | `Trainer` | train_worker.py, train.py |
-| 推理 | `core/inferencer.py` | `Inferencer` | inference_worker.py, infer.py |
-| 推理检查 | `core/label_inspector.py` | `LabelInspector` | label_viewer_page.py, inference.py |
+| 推理 | `core/inferencer.py` | `Inferencer` | infer_worker.py, infer.py |
+| 推理检查 | `core/label_inspector.py` | `LabelInspector` | label_inspector_worker.py, label_inspector.py |
 | 还原 | `core/restorer.py` | `Restorer` | restore_worker.py, restore.py |
 | 转换 | `core/converter.py` | `Converter` | convert_worker.py, convert.py |
-| LabelImg | `core/labelimg_launcher.py` | `LabelImgLauncher` | settings_page.py, labelimg.py |
+| LabelImg | `core/labelimg_launcher.py` | `LabelImgLauncher` | labelimg_worker.py, labelimg.py |
 
 ---
 
@@ -191,7 +191,7 @@ class DeviceInfo:
 @dataclass
 class TaskHandle:
     task_id: str                    # "task_scan_20260513_101530_abc123"
-    task_type: str                  # "scan"/"sample"/"train"/"infer"/"restore"/"convert"
+    task_type: str                  # "scan"/"sample"/"train"/"infer"/"restore"/"convert"/"label_inspector"/"labelimg"
     status: str                     # "queued"/"running"/"succeeded"/"failed"/"cancelled"
     progress_current: int
     progress_total: int
@@ -553,7 +553,7 @@ class LabelImgLaunchResult:
 
 - 用户在 LabelImg 内保存的 `.xml` 或 `.txt` 文件落到 `label_dir`
 - LabelImg 可能把 `classes.txt` 复制到 `image_dir`（**后续 Restorer / Converter 必须过滤此文件**）
-- 用户级配置写到 `~/.autolabeler/labelimg.json`
+- M1.3 仅提供 validate/launch；用户级 LabelImg Python 路径持久化留给后续 settings 能力
 
 #### 5.3.5 异常
 

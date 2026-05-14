@@ -14,4 +14,6 @@ def to_camel(value: str) -> str:
 class CamelModel(BaseModel):
     """Base model using automatic camelCase aliases."""
 
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        alias_generator=to_camel, populate_by_name=True, arbitrary_types_allowed=True
+    )

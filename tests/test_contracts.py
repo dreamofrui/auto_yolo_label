@@ -8,7 +8,11 @@ from typing import Any, get_type_hints
 
 from core.converter import Converter, TxtToXmlConfig, XmlToTxtConfig
 from core.inferencer import InferConfig, Inferencer
-from core.labelimg_launcher import LabelImgConfig, LabelImgLauncher, LabelImgValidateConfig
+from core.labelimg_launcher import (
+    LabelImgConfig,
+    LabelImgLauncher,
+    LabelImgValidateConfig,
+)
 from core.label_inspector import (
     GetProductLabelsConfig,
     GetRunTreeConfig,
@@ -19,7 +23,6 @@ from core.restorer import RestoreConfig, Restorer
 from core.sampler import SampleConfig, Sampler
 from core.scanner import ScanConfig, Scanner
 from core.trainer import TrainConfig, Trainer
-
 
 PUBLIC_ENTRYPOINTS: tuple[tuple[type[Any], str, type[Any]], ...] = (
     (Scanner, "scan", ScanConfig),

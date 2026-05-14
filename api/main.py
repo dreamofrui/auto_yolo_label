@@ -29,7 +29,9 @@ def create_app(task_registry: TaskRegistry | None = None) -> FastAPI:
         Configured FastAPI application.
     """
     app = FastAPI(title="AutoLabeler API")
-    app.state.task_registry = task_registry or TaskRegistry(Path.home() / ".autolabeler" / "tasks")
+    app.state.task_registry = task_registry or TaskRegistry(
+        Path.home() / ".autolabeler" / "tasks"
+    )
     app.include_router(scan_router)
     app.include_router(sample_router)
     app.include_router(train_router)

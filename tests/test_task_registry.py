@@ -31,7 +31,9 @@ def test_create_task_initializes_and_persists_handle(tmp_path: Path) -> None:
     assert handle.finished_at is None
     assert handle.is_cancel_requested is False
 
-    payload = json.loads((tmp_path / f"{handle.task_id}.json").read_text(encoding="utf-8"))
+    payload = json.loads(
+        (tmp_path / f"{handle.task_id}.json").read_text(encoding="utf-8")
+    )
     assert payload["taskId"] == handle.task_id
     assert payload["taskType"] == "scan"
 
@@ -62,7 +64,9 @@ def test_fail_task_stores_error_info(tmp_path: Path) -> None:
     registry = TaskRegistry(task_dir=tmp_path)
     handle = registry.create_task("train")
 
-    registry.fail_task(handle.task_id, code=ErrorCode.INTERNAL_ERROR, message="失败", details="boom")
+    registry.fail_task(
+        handle.task_id, code=ErrorCode.INTERNAL_ERROR, message="失败", details="boom"
+    )
 
     failed = registry.get(handle.task_id)
     assert failed.status == "failed"
@@ -89,7 +93,9 @@ def test_cancel_requests_core_loop_stop_without_finishing_task(tmp_path: Path) -
         registry.create_task("infer")
 
 
-def test_finish_cancelled_task_terminal_state_blocks_late_success(tmp_path: Path) -> None:
+def test_finish_cancelled_task_terminal_state_blocks_late_success(
+    tmp_path: Path,
+) -> None:
     """Cancelled tasks stay cancelled after core acknowledges cancellation."""
     registry = TaskRegistry(task_dir=tmp_path)
     handle = registry.create_task("restore")

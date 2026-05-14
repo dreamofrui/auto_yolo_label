@@ -87,7 +87,10 @@ def test_scan_builds_mapping_and_classes_for_site_structure(tmp_path: Path) -> N
     assert mapping.get_image_info("AlphaCode__Product1__A_002.PNG") is not None
     alpha_image = mapping.get_image_info("AlphaCode__Product1__A_002.PNG")
     assert alpha_image is not None
-    assert alpha_image.original_relative == (Path("AlphaCode") / "Product1" / "A_002.PNG").as_posix()
+    assert (
+        alpha_image.original_relative
+        == (Path("AlphaCode") / "Product1" / "A_002.PNG").as_posix()
+    )
     assert alpha_image.code == "AlphaCode"
     assert alpha_image.product == "Product1"
     assert alpha_image.original_name == "A_002.PNG"
@@ -117,7 +120,9 @@ def test_scan_missing_site_folder_raises_path_not_found(tmp_path: Path) -> None:
         Scanner().scan(ScanConfig(site_folder=tmp_path / "missing"))
 
 
-def test_scan_missing_code_product_structure_raises_invalid_structure(tmp_path: Path) -> None:
+def test_scan_missing_code_product_structure_raises_invalid_structure(
+    tmp_path: Path,
+) -> None:
     """Scanner requires Code/Product directory levels before scanning images."""
     site = tmp_path / "site"
     (site / "CodeOnly").mkdir(parents=True)
@@ -130,7 +135,9 @@ def test_scan_valid_structure_without_images_raises_empty(tmp_path: Path) -> Non
     """A valid site tree with no supported images raises ScanEmptyError."""
     site = tmp_path / "site"
     (site / "CodeA" / "ProductA").mkdir(parents=True)
-    (site / "CodeA" / "ProductA" / "notes.txt").write_text("not image", encoding="utf-8")
+    (site / "CodeA" / "ProductA" / "notes.txt").write_text(
+        "not image", encoding="utf-8"
+    )
 
     with pytest.raises(ScanEmptyError):
         Scanner().scan(ScanConfig(site_folder=site))

@@ -19,7 +19,11 @@ from api.schemas.label_inspector import (
     RunTreeResultResponse,
 )
 from api.services.common import task_response
-from api.services.label_inspector_service import get_product_labels, get_run_tree, list_runs
+from api.services.label_inspector_service import (
+    get_product_labels,
+    get_run_tree,
+    list_runs,
+)
 from core.label_inspector import (
     GetProductLabelsConfig,
     GetRunTreeConfig,
@@ -36,7 +40,9 @@ router = APIRouter(prefix="/api/label-inspector", tags=["label-inspector"])
 @router.post("/runs", response_model=ListRunsResponse)
 def list_inference_runs(payload: ListRunsRequest, request: Request) -> ListRunsResponse:
     """List inference runs via HTTP."""
-    outcome = list_runs(ListRunsConfig(site_folder=payload.site_folder), _registry(request))
+    outcome = list_runs(
+        ListRunsConfig(site_folder=payload.site_folder), _registry(request)
+    )
     if outcome.error is not None:
         raise outcome.error
     if outcome.result is None:
@@ -69,7 +75,9 @@ def read_run_tree(payload: GetRunTreeRequest, request: Request) -> RunTreeRespon
 
 
 @router.post("/product-labels", response_model=ProductLabelsResponse)
-def read_product_labels(payload: GetProductLabelsRequest, request: Request) -> ProductLabelsResponse:
+def read_product_labels(
+    payload: GetProductLabelsRequest, request: Request
+) -> ProductLabelsResponse:
     """Read labels for one Code/Product directory via HTTP."""
     outcome = get_product_labels(
         GetProductLabelsConfig(
@@ -88,7 +96,9 @@ def read_product_labels(payload: GetProductLabelsRequest, request: Request) -> P
     return ProductLabelsResponse(
         success=True,
         task=task_response(outcome.task),
-        result=ProductLabelsResultResponse(labels=[_label_response(item) for item in labels]),
+        result=ProductLabelsResultResponse(
+            labels=[_label_response(item) for item in labels]
+        ),
     )
 
 

@@ -89,7 +89,9 @@ def check_rule1_no_gui_http_in_core(files: list[Path]) -> list[str]:
             continue
         text = f.read_text(encoding="utf-8", errors="replace")
         for m in _RULE1_PATTERN.finditer(text):
-            failures.append(f"  {rel}:{_line_of(text, m.start())}: forbidden in core/: {m.group(0).strip()}")
+            failures.append(
+                f"  {rel}:{_line_of(text, m.start())}: forbidden in core/: {m.group(0).strip()}"
+            )
     return failures
 
 
@@ -107,7 +109,9 @@ def check_rule3_no_implicit_env(files: list[Path]) -> list[str]:
             continue
         text = f.read_text(encoding="utf-8", errors="replace")
         for m in _RULE3_PATTERN.finditer(text):
-            failures.append(f"  {rel}:{_line_of(text, m.start())}: forbidden: {m.group(0)}")
+            failures.append(
+                f"  {rel}:{_line_of(text, m.start())}: forbidden: {m.group(0)}"
+            )
     return failures
 
 
@@ -183,7 +187,9 @@ def _base_name(base: ast.expr) -> str | None:
 
 def _has_code_field(node: ast.ClassDef) -> bool:
     for body_node in node.body:
-        if isinstance(body_node, ast.AnnAssign) and isinstance(body_node.target, ast.Name):
+        if isinstance(body_node, ast.AnnAssign) and isinstance(
+            body_node.target, ast.Name
+        ):
             if body_node.target.id == "code":
                 return True
         elif isinstance(body_node, ast.Assign):
@@ -216,11 +222,22 @@ def check_rule6_exception_inherits_base(files: list[Path]) -> list[str]:
             base_names = [_base_name(b) for b in node.bases]
             base_names = [n for n in base_names if n]
             inherits_app = any(
-                (n == "AutoLabelerError" or (n.endswith("Error") and n not in {"Exception", "BaseException"}))
+                (
+                    n == "AutoLabelerError"
+                    or (n.endswith("Error") and n not in {"Exception", "BaseException"})
+                )
                 for n in base_names
             )
             inherits_builtin_only = base_names and all(
-                n in {"Exception", "BaseException", "RuntimeError", "ValueError", "TypeError", "OSError"}
+                n
+                in {
+                    "Exception",
+                    "BaseException",
+                    "RuntimeError",
+                    "ValueError",
+                    "TypeError",
+                    "OSError",
+                }
                 for n in base_names
             )
             if not inherits_app or inherits_builtin_only:
@@ -233,7 +250,9 @@ def check_rule6_exception_inherits_base(files: list[Path]) -> list[str]:
             # Concrete subclasses (CamelCase with 3+ caps) must have `code` field
             upper_count = sum(1 for c in node.name if c.isupper())
             if upper_count >= 3 and not _has_code_field(node):
-                failures.append(f"  {rel}:{node.lineno}: exception `{node.name}` missing `code` field")
+                failures.append(
+                    f"  {rel}:{node.lineno}: exception `{node.name}` missing `code` field"
+                )
     return failures
 
 
@@ -254,7 +273,9 @@ def check_rule7_public_docstring(files: list[Path]) -> list[str]:
         except SyntaxError:
             continue
         for node in ast.walk(tree):
-            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if not isinstance(
+                node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+            ):
                 continue
             if node.name.startswith("_"):
                 continue
@@ -263,7 +284,9 @@ def check_rule7_public_docstring(files: list[Path]) -> list[str]:
             if ast.get_docstring(node):
                 continue
             kind = "class" if isinstance(node, ast.ClassDef) else "function"
-            failures.append(f"  {rel}:{node.lineno}: public {kind} `{node.name}` missing docstring")
+            failures.append(
+                f"  {rel}:{node.lineno}: public {kind} `{node.name}` missing docstring"
+            )
     return failures
 
 
@@ -272,16 +295,27 @@ def check_rule7_public_docstring(files: list[Path]) -> list[str]:
 
 CHECKS: list[tuple[str, object]] = [
     ("Rule 1: no GUI/HTTP import in core/", check_rule1_no_gui_http_in_core),
-    ("Rule 3: no os.environ / os.getcwd / os.chdir / os.putenv", check_rule3_no_implicit_env),
+    (
+        "Rule 3: no os.environ / os.getcwd / os.chdir / os.putenv",
+        check_rule3_no_implicit_env,
+    ),
     ("Rule 4: paths must use pathlib.Path (no os.path.*)", check_rule4_use_pathlib),
-    ("Rule 5: mapping.json must go through MappingManager", check_rule5_no_direct_mapping_json),
-    ("Rule 6: exceptions must inherit AutoLabelerError with code", check_rule6_exception_inherits_base),
+    (
+        "Rule 5: mapping.json must go through MappingManager",
+        check_rule5_no_direct_mapping_json,
+    ),
+    (
+        "Rule 6: exceptions must inherit AutoLabelerError with code",
+        check_rule6_exception_inherits_base,
+    ),
     ("Rule 7: public funcs/classes must have docstrings", check_rule7_public_docstring),
 ]
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0] if __doc__ else "")
+    parser = argparse.ArgumentParser(
+        description=__doc__.split("\n")[0] if __doc__ else ""
+    )
     parser.add_argument(
         "--paths",
         nargs="*",

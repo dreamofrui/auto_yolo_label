@@ -76,7 +76,9 @@ def make_image(path: Path) -> None:
     path.write_bytes(b"image")
 
 
-def make_mapping(site: Path, sampled: bool = False, inferred: bool = False) -> MappingManager:
+def make_mapping(
+    site: Path, sampled: bool = False, inferred: bool = False
+) -> MappingManager:
     """Create a mapping with two images."""
     encoder = PathEncoder()
     manager = MappingManager(site / ".autolabeler" / "mapping.json").create_new(site)
@@ -137,7 +139,9 @@ def test_custom_inference_writes_predictions_and_empty_files(
     assert result.statistics.success == 2
     assert result.statistics.predicted == 1
     assert result.statistics.empty_prediction == 1
-    assert (result.inference_output_dir / "one.txt").read_text(encoding="utf-8").strip() == "0 0.500000 0.500000 0.250000 0.250000"
+    assert (result.inference_output_dir / "one.txt").read_text(
+        encoding="utf-8"
+    ).strip() == "0 0.500000 0.500000 0.250000 0.250000"
     assert (result.inference_output_dir / "two.txt").read_text(encoding="utf-8") == ""
     assert result.config_path.exists()
     assert fake.predict_kwargs is not None
@@ -154,10 +158,15 @@ def test_unsampled_mapping_inference_marks_inferred_and_ignores_inferred_filter(
     make_mapping(site, sampled=False, inferred=True)
     model_path = tmp_path / "model.pt"
     model_path.write_bytes(b"model")
-    monkeypatch.setattr("core.inferencer._load_yolo_model", lambda path: FakeYOLO([FakeResult([]), FakeResult([])]))
+    monkeypatch.setattr(
+        "core.inferencer._load_yolo_model",
+        lambda path: FakeYOLO([FakeResult([]), FakeResult([])]),
+    )
     monkeypatch.setattr("core.inferencer._run_id", lambda: "run_20260513_103000")
 
-    result = Inferencer().infer(InferConfig(model_path=model_path, site_folder=site, device="cpu"))
+    result = Inferencer().infer(
+        InferConfig(model_path=model_path, site_folder=site, device="cpu")
+    )
 
     assert result.statistics.pending == 2
     mapping = MappingManager(result.mapping_path).load()
@@ -174,9 +183,16 @@ def test_all_mapping_inference_includes_sampled_images(
     make_mapping(site, sampled=True)
     model_path = tmp_path / "model.pt"
     model_path.write_bytes(b"model")
-    monkeypatch.setattr("core.inferencer._load_yolo_model", lambda path: FakeYOLO([FakeResult([]), FakeResult([])]))
+    monkeypatch.setattr(
+        "core.inferencer._load_yolo_model",
+        lambda path: FakeYOLO([FakeResult([]), FakeResult([])]),
+    )
 
-    result = Inferencer().infer(InferConfig(model_path=model_path, site_folder=site, image_source="all", device="cpu"))
+    result = Inferencer().infer(
+        InferConfig(
+            model_path=model_path, site_folder=site, image_source="all", device="cpu"
+        )
+    )
 
     assert result.statistics.pending == 2
 
@@ -188,7 +204,9 @@ def test_missing_mapping_for_unsampled_raises_image_error(tmp_path: Path) -> Non
     (tmp_path / "site").mkdir()
 
     with pytest.raises(InferImageNotFoundError):
-        Inferencer().infer(InferConfig(model_path=model_path, site_folder=tmp_path / "site"))
+        Inferencer().infer(
+            InferConfig(model_path=model_path, site_folder=tmp_path / "site")
+        )
 
 
 def test_missing_custom_image_raises_image_error(tmp_path: Path) -> None:
@@ -220,11 +238,16 @@ def test_missing_model_raises_model_not_found(tmp_path: Path) -> None:
         )
 
 
-def test_model_load_failure_raises_model_load(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_model_load_failure_raises_model_load(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Model loader failures are wrapped as InferModelLoadError."""
     model_path = tmp_path / "model.pt"
     model_path.write_bytes(b"model")
-    monkeypatch.setattr("core.inferencer._load_yolo_model", lambda path: (_ for _ in ()).throw(RuntimeError("bad model")))
+    monkeypatch.setattr(
+        "core.inferencer._load_yolo_model",
+        lambda path: (_ for _ in ()).throw(RuntimeError("bad model")),
+    )
 
     with pytest.raises(InferModelLoadError):
         Inferencer().infer(
@@ -254,14 +277,18 @@ def test_invalid_device_raises_device_unavailable(tmp_path: Path) -> None:
         )
 
 
-def test_task_handle_progress_updates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_task_handle_progress_updates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Inference updates progress on the injected task handle."""
     model_path = tmp_path / "model.pt"
     model_path.write_bytes(b"model")
     image_path = tmp_path / "custom" / "one.jpg"
     make_image(image_path)
     handle = make_task_handle()
-    monkeypatch.setattr("core.inferencer._load_yolo_model", lambda path: FakeYOLO([FakeResult([])]))
+    monkeypatch.setattr(
+        "core.inferencer._load_yolo_model", lambda path: FakeYOLO([FakeResult([])])
+    )
 
     Inferencer(task_handle=handle).infer(
         InferConfig(
@@ -278,14 +305,18 @@ def test_task_handle_progress_updates(tmp_path: Path, monkeypatch: pytest.Monkey
     assert handle.progress_message
 
 
-def test_cancelled_task_raises_task_cancelled(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cancelled_task_raises_task_cancelled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Pre-requested cancellation raises before prediction starts."""
     model_path = tmp_path / "model.pt"
     model_path.write_bytes(b"model")
     image_path = tmp_path / "custom" / "one.jpg"
     make_image(image_path)
     handle = make_task_handle(cancelled=True)
-    monkeypatch.setattr("core.inferencer._load_yolo_model", lambda path: FakeYOLO([FakeResult([])]))
+    monkeypatch.setattr(
+        "core.inferencer._load_yolo_model", lambda path: FakeYOLO([FakeResult([])])
+    )
 
     with pytest.raises(TaskCancelledError):
         Inferencer(task_handle=handle).infer(

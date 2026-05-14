@@ -74,7 +74,9 @@ def test_restorer_constructs_successfully() -> None:
     assert isinstance(restorer, Restorer)
 
 
-def test_database_restore_copies_train_and_val_labels_and_marks_mapping(tmp_path: Path) -> None:
+def test_database_restore_copies_train_and_val_labels_and_marks_mapping(
+    tmp_path: Path,
+) -> None:
     """Database restore copies train/val labels to original folders and marks mapping."""
     site = tmp_path / "site"
     database = tmp_path / "database"
@@ -90,27 +92,43 @@ def test_database_restore_copies_train_and_val_labels_and_marks_mapping(tmp_path
     assert result.success == 2
     assert result.skipped == 0
     assert result.failed == 0
-    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(encoding="utf-8") == "train\n"
-    assert (site / "CodeA" / "Product1" / "a2.txt").read_text(encoding="utf-8") == "val\n"
+    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(
+        encoding="utf-8"
+    ) == "train\n"
+    assert (site / "CodeA" / "Product1" / "a2.txt").read_text(
+        encoding="utf-8"
+    ) == "val\n"
     mapping = MappingManager(site / ".autolabeler" / "mapping.json").load()
     assert mapping.get_statistics()["restored_count"] == 2
 
 
-def test_inference_restore_by_run_id_copies_labels_to_original_products(tmp_path: Path) -> None:
+def test_inference_restore_by_run_id_copies_labels_to_original_products(
+    tmp_path: Path,
+) -> None:
     """Inference restore can resolve the run directory from a run id."""
     site = tmp_path / "site"
     make_site_with_mapping(site)
     write_label(
-        site / ".autolabeler" / "inference_results" / "run_20260513_103000" / "CodeA" / "Product1" / "a1.txt",
+        site
+        / ".autolabeler"
+        / "inference_results"
+        / "run_20260513_103000"
+        / "CodeA"
+        / "Product1"
+        / "a1.txt",
         "inferred\n",
     )
 
     result = Restorer().restore(
-        RestoreConfig(site_folder=site, source_type="inference", run_id="run_20260513_103000")
+        RestoreConfig(
+            site_folder=site, source_type="inference", run_id="run_20260513_103000"
+        )
     )
 
     assert result.success == 1
-    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(encoding="utf-8") == "inferred\n"
+    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(
+        encoding="utf-8"
+    ) == "inferred\n"
 
 
 def test_inference_restore_by_explicit_run_dir(tmp_path: Path) -> None:
@@ -121,12 +139,16 @@ def test_inference_restore_by_explicit_run_dir(tmp_path: Path) -> None:
     write_label(run_dir / "CodeA" / "Product1" / "a2.txt", "custom\n")
 
     result = Restorer().restore(
-        RestoreConfig(site_folder=site, source_type="inference", inference_run_dir=run_dir)
+        RestoreConfig(
+            site_folder=site, source_type="inference", inference_run_dir=run_dir
+        )
     )
 
     assert result.total == 1
     assert result.success == 1
-    assert (site / "CodeA" / "Product1" / "a2.txt").read_text(encoding="utf-8") == "custom\n"
+    assert (site / "CodeA" / "Product1" / "a2.txt").read_text(
+        encoding="utf-8"
+    ) == "custom\n"
 
 
 def test_restore_skips_existing_target_when_overwrite_false(tmp_path: Path) -> None:
@@ -144,7 +166,9 @@ def test_restore_skips_existing_target_when_overwrite_false(tmp_path: Path) -> N
     assert result.total == 1
     assert result.success == 0
     assert result.skipped == 1
-    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(encoding="utf-8") == "old\n"
+    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(
+        encoding="utf-8"
+    ) == "old\n"
 
 
 def test_restore_overwrites_existing_target_when_overwrite_true(tmp_path: Path) -> None:
@@ -156,12 +180,19 @@ def test_restore_overwrites_existing_target_when_overwrite_true(tmp_path: Path) 
     write_label(site / "CodeA" / "Product1" / "a1.txt", "old\n")
 
     result = Restorer().restore(
-        RestoreConfig(site_folder=site, source_type="database", database_dir=database, overwrite=True)
+        RestoreConfig(
+            site_folder=site,
+            source_type="database",
+            database_dir=database,
+            overwrite=True,
+        )
     )
 
     assert result.success == 1
     assert result.skipped == 0
-    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(encoding="utf-8") == "new\n"
+    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(
+        encoding="utf-8"
+    ) == "new\n"
 
 
 def test_restore_skips_already_restored_mapping_entry(tmp_path: Path) -> None:
@@ -201,7 +232,9 @@ def test_restore_filters_control_files(tmp_path: Path) -> None:
     assert not (site / "CodeA" / "Product1" / "classes.txt").exists()
 
 
-def test_database_unknown_encoded_label_records_failure_and_continues(tmp_path: Path) -> None:
+def test_database_unknown_encoded_label_records_failure_and_continues(
+    tmp_path: Path,
+) -> None:
     """Unknown database labels are per-file failures and do not stop later files."""
     site = tmp_path / "site"
     database = tmp_path / "database"
@@ -220,7 +253,9 @@ def test_database_unknown_encoded_label_records_failure_and_continues(tmp_path: 
     assert (site / "CodeA" / "Product1" / "a1.txt").exists()
 
 
-def test_inference_unknown_relative_label_records_failure_and_continues(tmp_path: Path) -> None:
+def test_inference_unknown_relative_label_records_failure_and_continues(
+    tmp_path: Path,
+) -> None:
     """Inference labels with no matching mapping image are per-file failures."""
     site = tmp_path / "site"
     make_site_with_mapping(site)
@@ -229,7 +264,9 @@ def test_inference_unknown_relative_label_records_failure_and_continues(tmp_path
     write_label(run / "CodeA" / "Product1" / "a2.txt", "good\n")
 
     result = Restorer().restore(
-        RestoreConfig(site_folder=site, source_type="inference", run_id="run_20260513_103000")
+        RestoreConfig(
+            site_folder=site, source_type="inference", run_id="run_20260513_103000"
+        )
     )
 
     assert result.success == 1
@@ -238,7 +275,9 @@ def test_inference_unknown_relative_label_records_failure_and_continues(tmp_path
     assert (site / "CodeA" / "Product1" / "a2.txt").exists()
 
 
-def test_copy_failure_records_error_and_continues(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_copy_failure_records_error_and_continues(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Copy errors are recorded per file and later labels continue."""
     site = tmp_path / "site"
     database = tmp_path / "database"
@@ -293,7 +332,9 @@ def test_invalid_source_type_raises_restore_invalid_source_type(tmp_path: Path) 
     assert exc_info.value.code == ErrorCode.RESTORE_INVALID_SOURCE_TYPE
 
 
-def test_missing_database_source_raises_restore_source_not_found(tmp_path: Path) -> None:
+def test_missing_database_source_raises_restore_source_not_found(
+    tmp_path: Path,
+) -> None:
     """Database restore requires an existing database directory."""
     site = tmp_path / "site"
     make_site_with_mapping(site)
@@ -304,7 +345,9 @@ def test_missing_database_source_raises_restore_source_not_found(tmp_path: Path)
     assert exc_info.value.code == ErrorCode.RESTORE_SOURCE_NOT_FOUND
 
 
-def test_missing_inference_source_raises_restore_source_not_found(tmp_path: Path) -> None:
+def test_missing_inference_source_raises_restore_source_not_found(
+    tmp_path: Path,
+) -> None:
     """Inference restore requires run_id or an existing explicit run directory."""
     site = tmp_path / "site"
     make_site_with_mapping(site)
@@ -314,7 +357,9 @@ def test_missing_inference_source_raises_restore_source_not_found(tmp_path: Path
 
     with pytest.raises(RestoreSourceNotFoundError):
         Restorer().restore(
-            RestoreConfig(site_folder=site, source_type="inference", run_id="run_missing")
+            RestoreConfig(
+                site_folder=site, source_type="inference", run_id="run_missing"
+            )
         )
 
 
@@ -345,5 +390,7 @@ def test_cancelled_task_raises_task_cancelled(tmp_path: Path) -> None:
 
     with pytest.raises(TaskCancelledError):
         Restorer(task_handle=handle).restore(
-            RestoreConfig(site_folder=site, source_type="database", database_dir=database)
+            RestoreConfig(
+                site_folder=site, source_type="database", database_dir=database
+            )
         )

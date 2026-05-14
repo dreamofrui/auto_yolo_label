@@ -74,7 +74,6 @@ def test_scenario_c_external_model_custom_infer_then_restore(
     make_mapping_for_custom_site(site, image.name)
     model_path = tmp_path / "best.pt"
     model_path.write_bytes(b"model")
-    run_dir = site / ".autolabeler" / "inference_results" / "run_custom"
     monkeypatch.setattr("core.inferencer._load_yolo_model", lambda path: FakeYOLO())
     monkeypatch.setattr("core.inferencer._run_id", lambda: "run_custom")
 

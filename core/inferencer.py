@@ -12,7 +12,12 @@ from typing import Any, Protocol, SupportsFloat, SupportsIndex, cast
 from loguru import logger
 
 from utils.device import get_optimal_batch_size, resolve_device
-from utils.exceptions import AutoLabelerError, ErrorCode, PathNotFoundError, TaskCancelledError
+from utils.exceptions import (
+    AutoLabelerError,
+    ErrorCode,
+    PathNotFoundError,
+    TaskCancelledError,
+)
 from utils.mapping_manager import MappedImage, MappingManager
 from utils.task_registry import TaskHandle
 
@@ -152,8 +157,13 @@ class Inferencer:
         self._raise_if_cancelled()
         model = self._load_model(config.model_path)
         run_id = _run_id()
-        output_base_dir = config.output_base_dir or config.site_folder / ".autolabeler" / "inference_results"
-        output_dir = output_base_dir / run_id if config.save_to_separate_dir else output_base_dir
+        output_base_dir = (
+            config.output_base_dir
+            or config.site_folder / ".autolabeler" / "inference_results"
+        )
+        output_dir = (
+            output_base_dir / run_id if config.save_to_separate_dir else output_base_dir
+        )
         output_dir.mkdir(parents=True, exist_ok=True)
         self._set_progress(0, len(targets), "准备推理")
 
@@ -173,10 +183,18 @@ class Inferencer:
 
         statistics = self._write_outputs(output_dir, targets, results)
         if manager is not None:
-            manager.mark_inferred([target.mapping_key for target in targets if target.mapping_key is not None])
+            manager.mark_inferred(
+                [
+                    target.mapping_key
+                    for target in targets
+                    if target.mapping_key is not None
+                ]
+            )
             manager.save(mapping_path)
         config_path = output_dir / "inference_config.json"
-        _write_config_snapshot(config_path, config, run_id, device, batch_size, statistics)
+        _write_config_snapshot(
+            config_path, config, run_id, device, batch_size, statistics
+        )
         self._set_progress(statistics.processed, statistics.pending, "推理完成")
         return InferResult(
             mapping_path=mapping_path,
@@ -196,7 +214,9 @@ class Inferencer:
         try:
             return resolve_device(requested)
         except AutoLabelerError as exc:
-            raise InferDeviceUnavailableError("推理设备不可用", details=str(exc)) from exc
+            raise InferDeviceUnavailableError(
+                "推理设备不可用", details=str(exc)
+            ) from exc
 
     def _load_model(self, model_path: Path) -> _YoloModel:
         """Load YOLO model and wrap load failures."""
@@ -214,38 +234,52 @@ class Inferencer:
         try:
             return manager.load()
         except PathNotFoundError as exc:
-            raise InferImageNotFoundError("mapping.json 不存在", details=str(mapping_path)) from exc
+            raise InferImageNotFoundError(
+                "mapping.json 不存在", details=str(mapping_path)
+            ) from exc
 
-    def _mapping_targets(self, config: InferConfig, manager: MappingManager) -> list[_InferTarget]:
+    def _mapping_targets(
+        self, config: InferConfig, manager: MappingManager
+    ) -> list[_InferTarget]:
         """Select mapped images for inference."""
         if config.image_source == "unsampled":
             mapped_images = manager.get_pending_inference_images()
         elif config.image_source == "all":
-            mapped_images = [MappedImage(key, value) for key, value in manager.data.images.items()]
+            mapped_images = [
+                MappedImage(key, value) for key, value in manager.data.images.items()
+            ]
         else:
             raise InferImageNotFoundError("图片来源无效", details=config.image_source)
         targets: list[_InferTarget] = []
         for mapped in mapped_images:
             image_path = config.site_folder / Path(mapped.info.original_relative)
             if not image_path.exists():
-                raise InferImageNotFoundError("待推理图片不存在", details=str(image_path))
+                raise InferImageNotFoundError(
+                    "待推理图片不存在", details=str(image_path)
+                )
             targets.append(
                 _InferTarget(
                     image_path=image_path,
-                    output_relative=Path(mapped.info.code) / mapped.info.product / f"{Path(mapped.info.original_name).stem}.txt",
+                    output_relative=Path(mapped.info.code)
+                    / mapped.info.product
+                    / f"{Path(mapped.info.original_name).stem}.txt",
                     mapping_key=mapped.encoded_name,
                 )
             )
         return targets
 
-    def _custom_targets(self, custom_images: list[Path] | None, site_folder: Path) -> list[_InferTarget]:
+    def _custom_targets(
+        self, custom_images: list[Path] | None, site_folder: Path
+    ) -> list[_InferTarget]:
         """Resolve custom image targets independent of mapping.json."""
         if custom_images is None:
             raise InferImageNotFoundError("custom_images 不能为空")
         targets: list[_InferTarget] = []
         for image_path in custom_images:
             if not image_path.exists() or not image_path.is_file():
-                raise InferImageNotFoundError("待推理图片不存在", details=str(image_path))
+                raise InferImageNotFoundError(
+                    "待推理图片不存在", details=str(image_path)
+                )
             targets.append(
                 _InferTarget(
                     image_path=image_path,
@@ -272,7 +306,9 @@ class Inferencer:
             output_path = output_dir / target.output_relative
             output_path.parent.mkdir(parents=True, exist_ok=True)
             lines = _prediction_lines(result)
-            output_path.write_text("".join(f"{line}\n" for line in lines), encoding="utf-8")
+            output_path.write_text(
+                "".join(f"{line}\n" for line in lines), encoding="utf-8"
+            )
             if lines:
                 predicted += 1
             else:
@@ -356,7 +392,12 @@ def _xywhn_values(value: object) -> tuple[float, float, float, float]:
     if isinstance(value, tuple) and value and isinstance(value[0], tuple):
         value = value[0]
     sequence = list(value) if isinstance(value, (list, tuple)) else [0.0, 0.0, 0.0, 0.0]
-    return (float(sequence[0]), float(sequence[1]), float(sequence[2]), float(sequence[3]))
+    return (
+        float(sequence[0]),
+        float(sequence[1]),
+        float(sequence[2]),
+        float(sequence[3]),
+    )
 
 
 def _scalar(value: object) -> float:
@@ -367,7 +408,9 @@ def _scalar(value: object) -> float:
         value = value.tolist()
     if isinstance(value, (list, tuple)):
         return _scalar(value[0])
-    if isinstance(value, (str, bytes, bytearray)) or isinstance(value, (SupportsFloat, SupportsIndex)):
+    if isinstance(value, (str, bytes, bytearray)) or isinstance(
+        value, (SupportsFloat, SupportsIndex)
+    ):
         return float(value)
     raise TypeError(f"Cannot convert {type(value).__name__} to float")
 
@@ -393,4 +436,6 @@ def _write_config_snapshot(
         "predicted_count": statistics.predicted,
         "empty_prediction_count": statistics.empty_prediction,
     }
-    config_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    config_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+    )

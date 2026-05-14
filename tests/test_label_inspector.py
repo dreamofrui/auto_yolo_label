@@ -56,14 +56,19 @@ def test_list_runs_parses_valid_configs_without_mapping_json(tmp_path: Path) -> 
 
     runs = LabelInspector().list_runs(ListRunsConfig(site_folder=site))
 
-    assert [run.run_id for run in runs] == ["run_20260513_104000", "run_20260513_103000"]
+    assert [run.run_id for run in runs] == [
+        "run_20260513_104000",
+        "run_20260513_103000",
+    ]
     assert runs[0].config_exists is True
     assert runs[0].config == {"run_id": "run_20260513_104000", "image_count": 1}
     assert runs[0].created_at == "2026-05-13 10:40:00"
     assert runs[0].path == run_b
 
 
-def test_list_runs_handles_missing_and_invalid_configs_as_absent(tmp_path: Path) -> None:
+def test_list_runs_handles_missing_and_invalid_configs_as_absent(
+    tmp_path: Path,
+) -> None:
     """Unreadable or invalid config snapshots do not make run listing fail."""
     site = tmp_path / "site"
     invalid_run = site / ".autolabeler" / "inference_results" / "run_20260513_103000"
@@ -100,7 +105,9 @@ def test_get_run_tree_counts_labels_and_filters_control_files(tmp_path: Path) ->
     make_label(product_a / "README.txt", "manual note\n")
     make_label(product_b / "three.txt", "\n")
 
-    tree = LabelInspector().get_run_tree(GetRunTreeConfig(site_folder=site, run_id="run_20260513_103000"))
+    tree = LabelInspector().get_run_tree(
+        GetRunTreeConfig(site_folder=site, run_id="run_20260513_103000")
+    )
 
     assert tree == [
         type(tree[0])(
@@ -130,10 +137,19 @@ def test_get_run_tree_missing_run_raises_run_not_found(tmp_path: Path) -> None:
     assert exc_info.value.code == ErrorCode.INSPECTOR_RUN_NOT_FOUND
 
 
-def test_get_product_labels_counts_objects_and_resolves_original_images(tmp_path: Path) -> None:
+def test_get_product_labels_counts_objects_and_resolves_original_images(
+    tmp_path: Path,
+) -> None:
     """Product label listing returns object counts and best-effort original image paths."""
     site = tmp_path / "site"
-    product = site / ".autolabeler" / "inference_results" / "run_20260513_103000" / "CodeA" / "Product1"
+    product = (
+        site
+        / ".autolabeler"
+        / "inference_results"
+        / "run_20260513_103000"
+        / "CodeA"
+        / "Product1"
+    )
     make_label(product / "one.txt", "0 0.5 0.5 0.2 0.2\n1 0.4 0.4 0.2 0.2\n\n")
     make_label(product / "two.txt", " \n")
     make_label(product / "missing.txt", "2 0.1 0.1 0.2 0.2\n")
@@ -154,7 +170,9 @@ def test_get_product_labels_counts_objects_and_resolves_original_images(tmp_path
         )
     )
 
-    assert [(label.image_name, label.image_path, label.object_count) for label in labels] == [
+    assert [
+        (label.image_name, label.image_path, label.object_count) for label in labels
+    ] == [
         ("missing", None, 1),
         ("one.jpg", image_one, 2),
         ("two.PNG", image_two, 0),
@@ -166,9 +184,13 @@ def test_get_product_labels_counts_objects_and_resolves_original_images(tmp_path
     ]
 
 
-def test_get_product_labels_missing_product_raises_product_not_found(tmp_path: Path) -> None:
+def test_get_product_labels_missing_product_raises_product_not_found(
+    tmp_path: Path,
+) -> None:
     """Missing product directories raise an inspector-specific business exception."""
-    run = tmp_path / "site" / ".autolabeler" / "inference_results" / "run_20260513_103000"
+    run = (
+        tmp_path / "site" / ".autolabeler" / "inference_results" / "run_20260513_103000"
+    )
     run.mkdir(parents=True)
 
     with pytest.raises(InspectorProductNotFoundError) as exc_info:

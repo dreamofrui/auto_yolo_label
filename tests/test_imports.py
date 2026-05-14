@@ -5,8 +5,15 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-
-FORBIDDEN_CORE_IMPORTS = {"PySide6", "PyQt5", "PyQt6", "fastapi", "flask", "uvicorn", "starlette"}
+FORBIDDEN_CORE_IMPORTS = {
+    "PySide6",
+    "PyQt5",
+    "PyQt6",
+    "fastapi",
+    "flask",
+    "uvicorn",
+    "starlette",
+}
 
 
 def test_core_has_no_gui_or_http_imports() -> None:

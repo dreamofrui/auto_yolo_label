@@ -20,7 +20,9 @@ def test_scenario_d_pure_format_conversion(tmp_path: Path) -> None:
     """A folder with YOLO TXT labels can be converted without other modules."""
     folder = tmp_path / "labels"
     make_image(folder / "item.jpg")
-    (folder / "item.txt").write_text("0 0.500000 0.500000 0.500000 0.500000\n", encoding="utf-8")
+    (folder / "item.txt").write_text(
+        "0 0.500000 0.500000 0.500000 0.500000\n", encoding="utf-8"
+    )
 
     result = Converter().txt_to_xml(TxtToXmlConfig(folder=folder, classes=["CodeA"]))
 

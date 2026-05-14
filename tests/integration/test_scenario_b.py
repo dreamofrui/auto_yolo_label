@@ -126,13 +126,22 @@ def test_scenario_b_train_infer_restore_without_scanner(
         TrainConfig(data_yaml=data_yaml, base_model=model_path, output_dir=train_output)
     )
 
-    monkeypatch.setattr("core.inferencer._load_yolo_model", lambda path: FakeInferModel())
+    monkeypatch.setattr(
+        "core.inferencer._load_yolo_model", lambda path: FakeInferModel()
+    )
     monkeypatch.setattr("core.inferencer._run_id", lambda: "run_20260514_104000")
     infer_result = Inferencer().infer(
-        InferConfig(model_path=train_result.best_model, site_folder=site, image_source="all", device="cpu")
+        InferConfig(
+            model_path=train_result.best_model,
+            site_folder=site,
+            image_source="all",
+            device="cpu",
+        )
     )
     restore_result = Restorer().restore(
-        RestoreConfig(site_folder=site, source_type="inference", run_id=infer_result.run_id)
+        RestoreConfig(
+            site_folder=site, source_type="inference", run_id=infer_result.run_id
+        )
     )
 
     assert train_result.best_model.exists()

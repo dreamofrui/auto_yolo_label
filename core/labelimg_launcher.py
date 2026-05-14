@@ -185,7 +185,9 @@ class LabelImgLauncher:
             LabelImgLaunchError: If paths are invalid or process start fails.
         """
         if not _existing_file(config.python_path):
-            raise LabelImgPythonNotFoundError("Python 解释器不存在", details=str(config.python_path))
+            raise LabelImgPythonNotFoundError(
+                "Python 解释器不存在", details=str(config.python_path)
+            )
         if not config.image_dir.exists() or not config.image_dir.is_dir():
             raise LabelImgLaunchError("图片目录不存在", details=str(config.image_dir))
 
@@ -205,7 +207,9 @@ class LabelImgLauncher:
                 str(classes_file),
                 str(label_dir),
             ]
-            logger.info("启动 LabelImg: image_dir={}, label_dir={}", config.image_dir, label_dir)
+            logger.info(
+                "启动 LabelImg: image_dir={}, label_dir={}", config.image_dir, label_dir
+            )
             process = self._runner.popen(args)
         except (OSError, subprocess.SubprocessError) as exc:
             raise LabelImgLaunchError("启动 LabelImg 失败", details=str(exc)) from exc
@@ -213,12 +217,18 @@ class LabelImgLauncher:
 
     def _python_version(self, python_path: Path) -> str:
         """Return the Python version string from the interpreter."""
-        result = self._runner.run([str(python_path), "--version"], timeout=_PROBE_TIMEOUT_SECONDS)
+        result = self._runner.run(
+            [str(python_path), "--version"], timeout=_PROBE_TIMEOUT_SECONDS
+        )
         if result.returncode != 0:
-            raise LabelImgPythonNotFoundError("Python 解释器不可用", details=_combined_output(result))
+            raise LabelImgPythonNotFoundError(
+                "Python 解释器不可用", details=_combined_output(result)
+            )
         version = _combined_output(result)
         if not version:
-            raise LabelImgPythonNotFoundError("Python 版本探测失败", details=str(python_path))
+            raise LabelImgPythonNotFoundError(
+                "Python 版本探测失败", details=str(python_path)
+            )
         return version
 
     def _labelimg_version(self, python_path: Path) -> str | None:
@@ -228,7 +238,9 @@ class LabelImgLauncher:
             timeout=_PROBE_TIMEOUT_SECONDS,
         )
         if result.returncode != 0:
-            raise LabelImgNotInstalledError("LabelImg 未安装", details=_combined_output(result))
+            raise LabelImgNotInstalledError(
+                "LabelImg 未安装", details=_combined_output(result)
+            )
         output = _combined_output(result)
         return output or None
 
