@@ -29,8 +29,8 @@
 | scanner.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 Code/Product 扫描、mapping/classes 输出、XML 校验和 TaskHandle 取消 |
 | sampler.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 mapping 驱动抽样、YOLO database 输出、预标注处理和 TaskHandle 取消 |
 | converter.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 YOLO TXT ↔ VOC XML 转换，delete_source 默认 False |
-| trainer.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：训练模块，注意补齐 cache 参数 |
-| inferencer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意统一 iou 默认 0.7 |
+| trainer.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 Ultralytics YOLO 薄包装、参数校验、结果解析和 TaskHandle epoch 进度 |
+| inferencer.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：推理模块，注意统一 iou 默认 0.7 |
 | label_inspector.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
 | restorer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意过滤 classes.txt |
 | labelimg_launcher.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 保留集成 |
@@ -64,18 +64,19 @@
 - 2026-05-13 修正 `utils/task_registry.py` 取消语义：运行中任务的 `cancel()` 仅请求 core 循环停止，`finish_cancelled_task()` 负责确认终态，避免晚到成功覆盖取消结果
 - 2026-05-13 完成 `core/sampler.py`：新增抽样输入输出 dataclass、基于 mapping 的 Code/Product 抽样、YOLO database 输出、预标注 TXT/XML 处理和映射状态更新
 - 2026-05-13 完成 `core/converter.py`：新增 TXT→XML 批量转换、XML→TXT 单文件转换、classes 解析、备份删除和 TaskHandle 取消检查
+- 2026-05-13 完成 `core/trainer.py`：新增训练输入输出 dataclass、data.yaml / base model 校验、Ultralytics YOLO 训练薄包装、metrics 解析和 epoch 进度回调
 
 ---
 
 ## 4. 进行中
 
-### 4.1 core/trainer.py
+### 4.1 core/inferencer.py
 - 负责人：Codex
 - 开始日期：2026-05-13
 - 当前进度：
-  - [ ] 读取 `01-requirements.md` 中 Trainer 章节
-  - [ ] 编写 trainer 测试
-  - [ ] 实现 TrainConfig / TrainResult / Trainer
+  - [ ] 读取 `01-requirements.md` 中 Inferencer 章节
+  - [ ] 编写 inferencer 测试
+  - [ ] 实现 InferConfig / InferResult / Inferencer
   - [ ] 运行纪律检查和目标测试
 - 阻塞项：无
 
