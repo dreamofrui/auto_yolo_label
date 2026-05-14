@@ -27,8 +27,8 @@
 | task_registry.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | TaskHandle / TaskRegistry / JSON 持久化和取消确认语义已实现 |
 | **核心业务（core/）** |  |  |  |  |
 | scanner.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 Code/Product 扫描、mapping/classes 输出、XML 校验和 TaskHandle 取消 |
-| sampler.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：抽样模块 |
-| converter.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意 delete_source 默认改为 False |
+| sampler.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 mapping 驱动抽样、YOLO database 输出、预标注处理和 TaskHandle 取消 |
+| converter.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：格式转换模块，注意 delete_source 默认改为 False |
 | trainer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意补齐 cache 参数 |
 | inferencer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意统一 iou 默认 0.7 |
 | label_inspector.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
@@ -62,19 +62,20 @@
 - 2026-05-13 完成 `utils/task_registry.py`：新增任务句柄、生命周期转换、取消标记、错误信息和 JSON 持久化
 - 2026-05-13 完成 `core/scanner.py`：新增扫描输入输出 dataclass、Code/Product 两级扫描、mapping/classes 生成、XML 标签一致性校验和 TaskHandle 取消检查
 - 2026-05-13 修正 `utils/task_registry.py` 取消语义：运行中任务的 `cancel()` 仅请求 core 循环停止，`finish_cancelled_task()` 负责确认终态，避免晚到成功覆盖取消结果
+- 2026-05-13 完成 `core/sampler.py`：新增抽样输入输出 dataclass、基于 mapping 的 Code/Product 抽样、YOLO database 输出、预标注 TXT/XML 处理和映射状态更新
 
 ---
 
 ## 4. 进行中
 
-### 4.1 core/sampler.py
+### 4.1 core/converter.py
 - 负责人：Codex
 - 开始日期：2026-05-13
 - 当前进度：
-  - [ ] 读取 `01-requirements.md` 中 Sampler 章节
-  - [ ] 消化并行助手输出的 sampler implementation notes
-  - [ ] 编写 sampler 测试
-  - [ ] 实现 SampleConfig / SampleResult / Sampler
+  - [ ] 读取 `01-requirements.md` 中 Converter 章节
+  - [ ] 消化并行助手输出的 converter implementation notes
+  - [ ] 编写 converter 测试
+  - [ ] 实现 TxtToXmlConfig / XmlToTxtConfig / Converter
   - [ ] 运行纪律检查和目标测试
 - 阻塞项：无
 
