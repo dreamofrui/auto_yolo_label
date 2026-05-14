@@ -10,7 +10,7 @@
 
 **阶段 0 / 阶段 1 / M1.1 / M1.2 / M1.3 已完成**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；6 个 `utils/` 基础设施模块、8 个 `core/` 业务模块、桌面 worker 与 FastAPI HTTP 薄入口均已接入。
 
-下一步：进入 M1 收尾验收，重点跑全量测试、`mypy --strict core/ utils/`、纪律检查与覆盖率。
+下一步：进入 M1 PR 收尾与边界复核；M1 本地全量验收已完成，后续小改动按影响范围运行相关检查，避免无意义反复跑全套。
 
 ---
 
@@ -88,10 +88,10 @@
   - [x] 补齐 examples 桌面/HTTP scan 双调用示例
   - [x] 推广到 sample
   - [x] 推广到 train/infer/restore/convert/label inspector/labelimg launcher
-  - [ ] 跑全量验收：`pytest tests -q`
-  - [ ] 跑类型检查：`mypy --strict core/ utils/`
-  - [ ] 跑纪律检查：`python scripts/check_disciplines.py`
-  - [ ] 跑覆盖率并确认 core/utils 目标
+  - [x] 跑全量验收：`pytest tests -q`（176 passed）
+  - [x] 跑类型检查：`mypy --strict core/ utils/`（0 errors）
+  - [x] 跑纪律检查：`python scripts/check_disciplines.py`（全部 OK）
+  - [x] 跑覆盖率并确认 core/utils 目标（总覆盖率 94%，高于 M1 门槛）
 - 阻塞项：无
 
 ---
@@ -140,6 +140,12 @@
 - gui/workers/ 全部用 TaskHandle 替代旧信号
 - api/main.py + 8 个 routes/
 - examples/scan_via_desktop.py + examples/scan_via_http.py
+
+### 5.6 M1 PR 收尾与边界复核
+
+- 使用 `docs/superpowers/skills/auto-yolo-boundary-review/SKILL.md` 分配只读边界审查任务。
+- 核对 `legacy/` 仍然只读且无变更。
+- 小范围文档或审查改动只跑相关检查；代码面变更再按影响范围补充目标测试。
 
 ---
 
@@ -215,4 +221,5 @@
 
 - 2026-05-14: M1.3 desktop and HTTP adapters are implemented and verified locally.
 - 2026-05-14: Added `docs/superpowers/skills/auto-yolo-boundary-review/SKILL.md` for reusable boundary review and temporary worker handoffs.
+- 2026-05-14: M1 full local validation completed; moving into PR readiness and parallel read-only boundary review.
 - `legacy/` remains read-only and unchanged.
