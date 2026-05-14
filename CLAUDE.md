@@ -6,14 +6,21 @@
 
 ## ⚠️ 0. REFACTOR ACTIVE（最高优先级，违反即返工）
 
-**当前状态**：项目正在从「强制顺序的单体桌面应用」**完全重写**为「模块解耦、企业级、桌面 + Web 双调用」的新版本。**所有现有代码已归档到 `legacy/`，仅供参考。不允许 copy-paste 整段实现。**
+**当前状态**：项目正在从「强制顺序的单体桌面应用」**完全重写**为「模块解耦、企业级、桌面优先 + CLI/Node 调用预留」的新版本。**所有现有代码已归档到 `legacy/`，仅供参考。不允许 copy-paste 整段实现。**
+
+**2026-05-14 范围重置**：本期目标不是 Web 平台。FastAPI/HTTP 入口不再作为 M1/M2 主线验收目标；已有 `api/` 代码只作为候选/实验入口冻结参考。当前优先级是：
+
+1. `core/` 业务能力稳定、测试扎实。
+2. 共享运行层从 `api.services` 迁到中立命名空间，供 GUI 和未来 CLI 共用。
+3. 后续提供面向 Node.js 子进程调用的薄 CLI/JSON 边界。
+4. 桌面 GUI 接入新 core/runtime，形成可用本地工具。
 
 ### 0.1 必读规范文档（动手前全部读完）
 
 | 文档 | 内容 | 何时读 |
 |------|------|--------|
 | `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/README.md` | 三份规范的阅读顺序索引 | 第一次进项目 |
-| `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/01-requirements.md` | 8 大模块详细 I/O + 数据模型 + 异常表 | 实现任何模块前 |
+| `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/01-requirements.md` | 8 大模块详细 I/O + 数据模型 + 异常表（注意 Web/API 部分已降级为未来扩展） | 实现任何模块前 |
 | `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/02-constraints.md` | 5 角度强约束 + 10 条强制纪律 + Git 规范 | 完整通读，背下第 6 节十条 |
 | `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/03-progress-template.md` | CURRENT_STATE / CHANGELOG / requirements 维护规则 | 提任何 PR 前 |
 | `docs/dev/CURRENT_STATE.md` | 当前重构进度（哪个模块做完了、哪个在做） | **每次会话开头第一件事** |
@@ -27,7 +34,7 @@
 5. `mapping.json` 必须经 `MappingManager`，**禁止**裸 `json.load`
 6. 异常必须继承 `AutoLabelerError` 且带 `code` 字段
 7. 公共函数必须 type hint + Google docstring
-8. API 边界 camelCase ↔ snake_case 必须 pydantic v2 自动转换
+8. CLI/Node JSON 边界必须自动、集中转换；HTTP/API 边界本期冻结，不作为新增主线
 9. 耗时 > 1 秒任务必须通过统一 `TaskHandle`
 10. **不允许**假设前置模块跑过（解耦的硬底线）
 
@@ -49,9 +56,9 @@
 4. 把错误码加到 utils/exceptions.py:ErrorCode 枚举
 5. 写 tests/test_<module>.py（成功路径 + 每个异常 + 取消）
 6. 实现 Xxx 类，让测试通过
-7. 写 examples/<module>_example.py
-8. 写 gui/workers/<module>_worker.py
-9. 写 api/routes/<module>.py 和 api/schemas/<module>.py
+7. 写必要 examples 或 CLI/JSON 调用样例
+8. 写 gui/workers/<module>_worker.py 或中立 runtime/service 适配
+9. 不再默认新增 api/routes 和 api/schemas；除非负责人明确恢复 Web/API 目标
 10. 跑 mypy --strict / ruff / pytest / pytest --cov
 11. 更新 01-requirements.md（如有偏差）
 12. 更新 CURRENT_STATE.md 和 CHANGELOG.md

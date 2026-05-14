@@ -1,16 +1,16 @@
 # AutoLabeler 当前进度
 
 > 最后更新：2026-05-14
-> 当前里程碑：M1（Core 模块解耦）
+> 当前里程碑：M1 收口 / M2 重定向准备（Core 稳定 + 桌面优先）
 > 当前分支：refactor/scaffold-v2
 
 ---
 
 ## 1. 一句话现状
 
-**阶段 0 / 阶段 1 / M1.1 / M1.2 / M1.3 已完成**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；6 个 `utils/` 基础设施模块、8 个 `core/` 业务模块、桌面 worker 与 FastAPI HTTP 薄入口均已接入。
+**阶段 0 / 阶段 1 / M1.1 / M1.2 已完成，M1.3 需要瘦身重定向**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；6 个 `utils/` 基础设施模块和 8 个 `core/` 业务模块已实现。桌面优先 + CLI/Node 调用预留已确定为当前产品方向，FastAPI/HTTP 不再作为本期主线目标。
 
-下一步：进入 M1 PR 收尾与边界复核；M1 本地全量验收已完成，后续小改动按影响范围运行相关检查，避免无意义反复跑全套。
+下一步：停止扩展 HTTP/API，把共享 service 从 `api.services` 迁到中立 runtime/service 命名空间；保留 core 测试和集成场景，设计薄 CLI/JSON 机器接口供未来 Node.js 子进程调用。
 
 ---
 
@@ -36,8 +36,10 @@
 | labelimg_launcher.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现外部 Python 校验与 LabelImg 子进程启动 |
 | **入口层** |  |  |  |  |
 | gui/workers/* | ✅ 完成 | 入口 worker 测试通过 | - | 已接入 scan/sample/train/infer/restore/convert/label_inspector/labelimg worker |
-| api/main.py + routes/ | ✅ 完成 | API route 测试通过 | - | 已接入 scan/sample/train/infer/restore/convert/label-inspector/labelimg route |
-| api/schemas/ | ✅ 完成 | API schema 测试通过 | - | 已建立 camelCase schema 基类、通用 TaskResponse 和各模块请求/响应模型 |
+| runtime/services（待迁移） | 🟡 进行中 | service/worker 测试覆盖 | - | 当前暂位于 `api.services`，需迁到中立命名空间 |
+| cli/JSON 机器接口 | ⬜ 待开始 | - | - | 面向未来 Node.js 子进程调用，core 稳定后补 |
+| api/main.py + routes/ | ⏸ 冻结 | API route 测试已有 | - | 已有代码仅作候选/实验入口，本期不继续扩展 |
+| api/schemas/ | ⏸ 冻结 | API schema 测试已有 | - | Web/API 需求恢复前不作为主线验收 |
 | **集成测试** |  |  |  |  |
 | tests/integration/test_scenario_a.py（完整流程） | ✅ 完成 | 通过 | ✅ 规范已写 | Scan → Sample → Train → Infer → Restore |
 | tests/integration/test_scenario_b.py（跳过扫描） | ✅ 完成 | 通过 | ✅ 规范已写 | 手写 mapping + database |
@@ -70,9 +72,10 @@
 - 2026-05-14 完成 `core/restorer.py`：新增 database/inference 标签还原、目标跳过/覆盖、单文件失败不中断、TaskHandle 进度取消和 mapping restored 标记
 - 2026-05-14 完成 `core/labelimg_launcher.py`：新增外部 Python / LabelImg 校验、LabelImg 启动命令构造、子进程启动异常映射和无 GUI 框架依赖的测试边界
 - 2026-05-14 完成 M1 四个集成场景测试：完整流程、跳过扫描、跳过训练和纯格式转换均已自动化覆盖
-- 2026-05-14 完成 scan 双调用入口第一版：新增 HTTP route、pydantic camelCase schema、桌面 worker 适配和桌面/HTTP examples
-- 2026-05-14 完成 sample 双调用入口：新增 HTTP route、pydantic camelCase schema、桌面 worker 适配和共享 service 生命周期
-- 2026-05-14 完成 M1.3 剩余双调用入口：新增 train、infer、restore、convert、label inspector、LabelImg 的 HTTP route、pydantic schema、共享 service 和桌面 worker，并统一注册到 `api/main.py`
+- 2026-05-14 完成 scan 双入口候选实现：新增 HTTP route、pydantic schema、桌面 worker 适配和桌面/HTTP examples
+- 2026-05-14 完成 sample 双入口候选实现：新增 HTTP route、pydantic schema、桌面 worker 适配和共享 service 生命周期
+- 2026-05-14 完成 M1.3 双入口候选实现：新增 train、infer、restore、convert、label inspector、LabelImg 的 HTTP route、schema、共享 service 和桌面 worker；随后确认 Web/API 本期降级为冻结参考
+- 2026-05-14 与负责人重新对齐产品方向：本期选择桌面优先，CLI/JSON 预留给未来 Node.js 调用；不继续按 Web 平台方向扩展
 
 ---
 
@@ -135,11 +138,12 @@
 8. core/labelimg_launcher.py     ← 独立
 ```
 
-### 5.5 阶段 2 / M1.3：双调用入口
+### 5.5 阶段 2 / M1.3：入口层重定向
 
-- gui/workers/ 全部用 TaskHandle 替代旧信号
-- api/main.py + 8 个 routes/
-- 最小双入口示例覆盖 scan：examples/scan_via_desktop.py + examples/scan_via_http.py；其他模块由 API route tests 与 worker tests 覆盖。
+- 保留 gui/workers 作为桌面适配候选
+- 将 `api.services` 中的共享 service 迁移到中立命名空间（例如 `runtime/` 或 `services/`）
+- 冻结 `api/main.py`、routes、schemas，不继续作为本期主线扩展
+- 设计一个薄 CLI/JSON 机器接口，后续供 Node.js 子进程调用；不做复杂人机交互 CLI
 
 ### 5.6 M1 PR 收尾与边界复核
 
@@ -160,7 +164,9 @@
 - **风险**：桌面 worker 目前允许未注入 registry 时自建默认 `TaskRegistry`
   - 缓解：examples/tests 均显式注入 registry；后续 M3 桌面入口接入时统一由应用层创建并注入共享 registry，再决定是否移除 worker 默认值
 - **风险**：桌面 worker 复用的共享 service 目前位于 `api.services` 命名空间
-  - 缓解：当前 service 内保持纯 Python，不 import FastAPI；后续边界硬化时迁移到中立 `services/` 包，避免 GUI 依赖 API 命名空间
+  - 缓解：当前 service 内保持纯 Python，不 import FastAPI；下一步迁移到中立 `runtime/` 或 `services/` 包，避免 GUI 依赖 API 命名空间
+- **风险**：已有 API 代码让项目继续偏向 Web 平台
+  - 缓解：本期冻结 `api/`，不再扩展 route/schema；只有负责人明确恢复 Web 目标时才重新启用
 
 ---
 
@@ -177,18 +183,20 @@
 
 **预计**：M1 工作量约 2-3 周（视新人熟练度）。
 
-### M2：HTTP 入口硬化
+### M2：Runtime 中立化 + CLI/Node 边界
 
 **完成标准**：
-- `api/` 已有 main.py + 8 个 route 文件，后续只做硬化与产品化补齐
-- OpenAPI 文档自动生成可访问，并补充主要调用说明
-- 需要时补齐非 scan 模块的 HTTP examples
-- API 部署开关、错误响应和跨进程任务状态按实际 Web 接入场景复核
+- 共享 service 从 `api.services` 迁到中立命名空间
+- GUI worker 不再依赖 `api.*`
+- 定义薄 CLI/JSON 输入输出契约，面向未来 Node.js 子进程调用
+- 至少提供 scan/sample/train/infer 的机器接口样例或计划
+- 不新增 HTTP route/schema
 
 ### M3：桌面 GUI 接入新 core
 
 **完成标准**：
-- `gui/workers/` 全部用 `TaskHandle` 替代旧 QThread 信号
+- 桌面入口创建并注入共享 `TaskRegistry`
+- `gui/workers/` 调用中立 runtime/service 或 core，不依赖 `api.*`
 - 桌面端 4 个场景手工验证通过
 - `main.py`（桌面入口）跑起来不依赖 legacy/
 
@@ -223,7 +231,8 @@
 
 ## 10. 维护备注
 
-- 2026-05-14：M1.3 桌面 worker 与 HTTP adapters 已实现并完成本地验证。
+- 2026-05-14：M1.3 桌面 worker 与 HTTP adapters 曾作为候选实现完成；后续 Web/API 降级为冻结参考。
 - 2026-05-14：新增 `docs/superpowers/skills/auto-yolo-boundary-review/SKILL.md`，用于复用边界审查与临时 worker 交接。
 - 2026-05-14：M1 本地全量验收已完成，当前进入 PR readiness 与并行只读边界审查。
+- 2026-05-14：负责人确认本期选择桌面优先；CLI/JSON 预留给未来 Node.js 调用；暂不继续 Web 平台方向。
 - `legacy/` 保持只读且无变更。

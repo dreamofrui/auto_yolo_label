@@ -6,7 +6,14 @@
 
 ## 0. REFACTOR ACTIVE
 
-AutoLabeler 正在从「强制顺序的单体桌面应用」完全重写为「模块解耦、企业级、桌面 + Web 双调用」的新版本。
+AutoLabeler 正在从「强制顺序的单体桌面应用」完全重写为「模块解耦、企业级、桌面优先 + CLI/Node 调用预留」的新版本。
+
+2026-05-14 范围重置：
+
+- 本期不做 Web 平台，FastAPI/HTTP 不再是 M1/M2 主线目标。
+- 已有 `api/` 代码只作为候选/实验入口冻结参考，不继续扩展。
+- 当前主线是 core 稳定、中立 runtime/service、未来 CLI/JSON 边界和桌面 GUI 接入。
+- 任何继续新增 HTTP route/schema 的任务都必须先得到负责人明确确认。
 
 当前阶段的最高优先级：
 
@@ -42,7 +49,7 @@ AutoLabeler 正在从「强制顺序的单体桌面应用」完全重写为「�
 5. `mapping.json` 必须经 `MappingManager`，禁止裸 `json.load`。
 6. 异常必须继承 `AutoLabelerError`，并带 `code` 字段。
 7. 公共函数必须有 type hint 和 Google 风格 docstring。
-8. API 边界 camelCase 与 snake_case 必须通过 pydantic v2 自动转换。
+8. CLI/Node JSON 边界必须集中转换；HTTP/API 边界本期冻结，不作为新增主线。
 9. 耗时超过 1 秒的任务必须通过统一 `TaskHandle`。
 10. 不允许假设前置模块已经跑过。
 
@@ -97,7 +104,7 @@ AutoLabeler 正在从「强制顺序的单体桌面应用」完全重写为「�
 2. 写 `XxxConfig` / `XxxResult` dataclass。
 3. 写异常类和错误码。
 4. 先写测试，再写实现。
-5. 写 examples、gui worker、api route/schema。
+5. 写必要 examples、GUI worker 或中立 runtime/service；不再默认新增 api route/schema。
 6. 跑 black、ruff、mypy、pytest、coverage。
 7. 更新文档后再提 PR。
 
@@ -152,7 +159,7 @@ pytest --cov=core --cov=utils --cov-report=term-missing
 
 ## 7. 企业级编码底线
 
-- 代码要有清晰边界：`core/` 不知道 GUI/HTTP，`utils/` 不反向依赖 `core/`。
+- 代码要有清晰边界：`core/` 不知道 GUI/HTTP/CLI，`utils/` 不反向依赖 `core/`。
 - 契约要显式：输入输出 dataclass，异常错误码，路径类型统一。
 - 失败要可诊断：禁止裸 `Exception`、禁止静默吞错、禁止 `print()`。
 - 测试要覆盖风险：成功路径、失败路径、取消路径、集成场景。

@@ -41,6 +41,7 @@
 - (entry) 新增 label inspector 与 LabelImg HTTP route、pydantic camelCase schema、桌面 worker 适配和共享 service，并统一注册到 `api/main.py`（本地 M1.3 提交）
 
 ### Changed
+- (scope) 本期目标从「桌面 + Web 双调用」调整为「桌面优先 + CLI/Node JSON 调用预留」；已有 `api/` 代码冻结为候选/实验入口，不再作为当前主线扩展。
 - (api) LabelImg HTTP `launch` 默认禁用，只有本地 GUI-capable 部署显式传入 `allow_labelimg_launch=True` 时才允许从 API 启动本机 LabelImg。
 - (docs) 同步 `docs/dev/CURRENT_STATE.md` 的 M1 验收状态，记录本地全量测试、类型检查、纪律检查和覆盖率结果，并进入 PR 边界复核阶段。
 - (inferencer) custom 图片位于 `site_folder/Code/Product/` 下时，推理输出保留 Code/Product 相对结构，便于直接交给 Restorer（本地 M1 提交）
