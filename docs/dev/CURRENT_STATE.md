@@ -30,8 +30,8 @@
 | sampler.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 mapping 驱动抽样、YOLO database 输出、预标注处理和 TaskHandle 取消 |
 | converter.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 YOLO TXT ↔ VOC XML 转换，delete_source 默认 False |
 | trainer.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 Ultralytics YOLO 薄包装、参数校验、结果解析和 TaskHandle epoch 进度 |
-| inferencer.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：推理模块，注意统一 iou 默认 0.7 |
-| label_inspector.py | ⬜ 待开始 | 0% | ✅ 规范已写 | - |
+| inferencer.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 mapping/custom 推理、run 输出、空预测文件和 inferred 标记 |
+| label_inspector.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：推理结果检查模块 |
 | restorer.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 注意过滤 classes.txt |
 | labelimg_launcher.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 保留集成 |
 | **入口层** |  |  |  |  |
@@ -65,18 +65,19 @@
 - 2026-05-13 完成 `core/sampler.py`：新增抽样输入输出 dataclass、基于 mapping 的 Code/Product 抽样、YOLO database 输出、预标注 TXT/XML 处理和映射状态更新
 - 2026-05-13 完成 `core/converter.py`：新增 TXT→XML 批量转换、XML→TXT 单文件转换、classes 解析、备份删除和 TaskHandle 取消检查
 - 2026-05-13 完成 `core/trainer.py`：新增训练输入输出 dataclass、data.yaml / base model 校验、Ultralytics YOLO 训练薄包装、metrics 解析和 epoch 进度回调
+- 2026-05-13 完成 `core/inferencer.py`：新增 mapping/custom 图片推理、run 目录输出、空预测 TXT、推理参数快照和 mapping inferred 统计标记
 
 ---
 
 ## 4. 进行中
 
-### 4.1 core/inferencer.py
+### 4.1 core/label_inspector.py
 - 负责人：Codex
 - 开始日期：2026-05-13
 - 当前进度：
-  - [ ] 读取 `01-requirements.md` 中 Inferencer 章节
-  - [ ] 编写 inferencer 测试
-  - [ ] 实现 InferConfig / InferResult / Inferencer
+  - [ ] 读取 `01-requirements.md` 中 LabelInspector 章节
+  - [ ] 编写 label_inspector 测试
+  - [ ] 实现 LabelInspector 查询接口
   - [ ] 运行纪律检查和目标测试
 - 阻塞项：无
 

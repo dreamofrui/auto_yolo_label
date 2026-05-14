@@ -29,6 +29,7 @@
 - (sampler) 新增 `core/sampler.py`，实现基于 `mapping.json` 的 Code/Product 抽样、YOLO `database/` 输出、预标注 TXT/XML 处理和映射状态更新（本地 M1.2 提交）
 - (converter) 新增 `core/converter.py`，实现 YOLO TXT → VOC XML 批量转换、VOC XML → YOLO TXT 单文件转换、MappingManager classes 解析、备份删除和 TaskHandle 取消检查（本地 M1.2 提交）
 - (trainer) 新增 `core/trainer.py`，实现 data.yaml / base model 校验、Ultralytics YOLO 训练薄包装、metrics 解析、OOM/取消异常映射和 TaskHandle epoch 进度（本地 M1.2 提交）
+- (inferencer) 新增 `core/inferencer.py`，实现 mapping/custom 图片推理、`inference_results/run_*` 输出、空预测 TXT、推理参数快照和 inferred 统计标记（本地 M1.2 提交）
 
 ### Changed
 - (docs) `docs/dev/CURRENT_STATE.md` 重置为重构基线状态（2026-05-13）
