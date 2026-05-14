@@ -7,14 +7,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from api.routes.infer import router as infer_router
+from api.main import create_app
 from core.scanner import ScanConfig, Scanner
-from utils.exceptions import AutoLabelerError
 from utils.task_registry import TaskRegistry
 
 
@@ -47,28 +44,8 @@ def make_scanned_site(site: Path) -> None:
 
 
 def make_client(registry: TaskRegistry) -> TestClient:
-    """Create a test app with only the infer router mounted."""
-    app = FastAPI()
-    app.state.task_registry = registry
-    app.include_router(infer_router)
-
-    @app.exception_handler(AutoLabelerError)
-    async def handle_app_error(request: Request, exc: AutoLabelerError) -> JSONResponse:
-        """Convert business exceptions to stable JSON responses."""
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": {
-                    "code": exc.code.value,
-                    "message": exc.message,
-                    "details": exc.details,
-                    "retryable": exc.retryable,
-                },
-            },
-        )
-
-    return TestClient(app)
+    """Create a test client from the main API app."""
+    return TestClient(create_app(task_registry=registry))
 
 
 def test_infer_route_accepts_camel_case_and_returns_task_result(

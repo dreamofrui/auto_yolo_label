@@ -29,12 +29,8 @@ def make_scanned_site(site: Path) -> str:
 
 
 def make_restore_client(registry: TaskRegistry) -> TestClient:
-    """Create a test app with only the restore router added locally."""
-    from api.routes.restore import router as restore_router
-
-    app = create_app(task_registry=registry)
-    app.include_router(restore_router)
-    return TestClient(app)
+    """Create a test client from the main API app."""
+    return TestClient(create_app(task_registry=registry))
 
 
 def test_restore_route_restores_database_labels_and_records_task(tmp_path: Path) -> None:

@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 from PIL import Image
 
 from api.main import create_app
-from api.routes.convert import router as convert_router
 from utils.task_registry import TaskRegistry
 
 
@@ -19,10 +18,8 @@ def make_image(path: Path) -> None:
 
 
 def make_client(tmp_path: Path) -> TestClient:
-    """Create a test app with the convert router mounted."""
-    app = create_app(task_registry=TaskRegistry(task_dir=tmp_path / "tasks"))
-    app.include_router(convert_router)
-    return TestClient(app)
+    """Create a test client from the main API app."""
+    return TestClient(create_app(task_registry=TaskRegistry(task_dir=tmp_path / "tasks")))
 
 
 def write_voc_xml(path: Path) -> None:

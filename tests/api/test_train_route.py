@@ -6,12 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
-from api.routes.train import router as train_router
-from utils.exceptions import AutoLabelerError
+from api.main import create_app
 from utils.task_registry import TaskRegistry
 
 
@@ -51,31 +48,6 @@ class FakeYOLO:
         return object()
 
 
-def make_train_app(registry: TaskRegistry) -> FastAPI:
-    """Create a test app exposing only the train route."""
-    app = FastAPI()
-    app.state.task_registry = registry
-    app.include_router(train_router)
-
-    @app.exception_handler(AutoLabelerError)
-    async def handle_app_error(request: Request, exc: AutoLabelerError) -> JSONResponse:
-        """Convert business exceptions to stable JSON responses."""
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "error": {
-                    "code": exc.code.value,
-                    "message": exc.message,
-                    "details": exc.details,
-                    "retryable": exc.retryable,
-                },
-            },
-        )
-
-    return app
-
-
 def write_data_yaml(path: Path) -> None:
     """Write a minimal YOLO data.yaml."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -102,7 +74,7 @@ def test_train_route_returns_task_result_and_metrics(tmp_path: Path, monkeypatch
     base_model.write_bytes(b"model")
     output_dir = tmp_path / "runs"
     registry = TaskRegistry(task_dir=tmp_path / "tasks")
-    client = TestClient(make_train_app(registry))
+    client = TestClient(create_app(task_registry=registry))
     monkeypatch.setattr("core.trainer._load_yolo_model", lambda base_model: FakeYOLO())
 
     response = client.post(
@@ -132,7 +104,7 @@ def test_train_route_maps_missing_base_model_to_json_error(tmp_path: Path) -> No
     data_yaml = tmp_path / "database" / "data.yaml"
     write_data_yaml(data_yaml)
     registry = TaskRegistry(task_dir=tmp_path / "tasks")
-    client = TestClient(make_train_app(registry))
+    client = TestClient(create_app(task_registry=registry))
 
     response = client.post(
         "/api/train",
