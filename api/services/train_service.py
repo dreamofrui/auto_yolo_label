@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from api.services.common import finish_error_task
 from core.trainer import TrainConfig, TrainResult, Trainer
 from utils.exceptions import AutoLabelerError
 from utils.task_registry import TaskHandle, TaskRegistry
@@ -27,13 +28,7 @@ def run_train(config: TrainConfig, registry: TaskRegistry) -> TrainServiceOutcom
     try:
         result = Trainer(task_handle=task).train(config)
     except AutoLabelerError as exc:
-        registry.fail_task(
-            task.task_id,
-            code=exc.code,
-            message=exc.message,
-            details=exc.details,
-            retryable=exc.retryable,
-        )
+        finish_error_task(registry, task, exc)
         return TrainServiceOutcome(success=False, task=task, result=None, error=exc)
     registry.succeed_task(task.task_id, result=_train_result_dict(result))
     return TrainServiceOutcome(success=True, task=task, result=result, error=None)

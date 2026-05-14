@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from api.services.common import finish_error_task
 from core.sampler import SampleConfig, SampleResult, Sampler
 from utils.exceptions import AutoLabelerError
 from utils.task_registry import TaskHandle, TaskRegistry
@@ -27,13 +28,7 @@ def run_sample(config: SampleConfig, registry: TaskRegistry) -> SampleServiceOut
     try:
         result = Sampler(task_handle=task).sample(config)
     except AutoLabelerError as exc:
-        registry.fail_task(
-            task.task_id,
-            code=exc.code,
-            message=exc.message,
-            details=exc.details,
-            retryable=exc.retryable,
-        )
+        finish_error_task(registry, task, exc)
         return SampleServiceOutcome(success=False, task=task, result=None, error=exc)
     registry.succeed_task(task.task_id, result=_sample_result_dict(result))
     return SampleServiceOutcome(success=True, task=task, result=result, error=None)

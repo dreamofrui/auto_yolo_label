@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TypeAlias
 
+from api.services.common import finish_error_task
 from core.label_inspector import (
     GetProductLabelsConfig,
     GetRunTreeConfig,
@@ -91,13 +92,7 @@ def _fail(
     exc: AutoLabelerError,
 ) -> LabelInspectorServiceOutcome:
     """Mark a label inspector task as failed."""
-    registry.fail_task(
-        task.task_id,
-        code=exc.code,
-        message=exc.message,
-        details=exc.details,
-        retryable=exc.retryable,
-    )
+    finish_error_task(registry, task, exc)
     return LabelInspectorServiceOutcome(
         success=False, task=task, result=None, error=exc
     )

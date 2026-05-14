@@ -49,6 +49,9 @@
 - (dev) `.gitignore` 增加 pytest/mypy 本地缓存和 `pytest_tmp_codex/` 临时目录（本地 M1.1 提交）
 - (utils) 调整 `TaskRegistry.cancel()` 为取消请求语义，新增 `finish_cancelled_task()` 确认取消终态，避免运行中任务被提前释放或晚到成功覆盖（本地 M1.1 修复）
 
+### Fixed
+- (entry) 共享 service 捕获 `TASK_CANCELLED` / `TRAIN_INTERRUPTED` 时现在写入 `cancelled` 任务状态，而不是误记为 `failed`。
+
 ### Deprecated
 - 重构前旧 `core/`、`utils/`、`gui/`、`tests/` 目录已在阶段 0 归档至 `legacy/`；当前同名目录均为新实现。
 - 旧目录命名 `vals/`（将在新版改为 `val/`，与 YOLO 标准一致）

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TypeAlias
 
+from api.services.common import finish_error_task
 from core.labelimg_launcher import (
     LabelImgConfig,
     LabelImgLaunchResult,
@@ -52,13 +53,7 @@ def launch_labelimg(
     try:
         result = (launcher or LabelImgLauncher()).launch(config)
     except AutoLabelerError as exc:
-        registry.fail_task(
-            task.task_id,
-            code=exc.code,
-            message=exc.message,
-            details=exc.details,
-            retryable=exc.retryable,
-        )
+        finish_error_task(registry, task, exc)
         return LabelImgServiceOutcome(success=False, task=task, result=None, error=exc)
     registry.succeed_task(task.task_id, result=_launch_result_dict(result))
     return LabelImgServiceOutcome(success=True, task=task, result=result, error=None)

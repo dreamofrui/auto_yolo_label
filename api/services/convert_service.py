@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from api.services.common import finish_error_task
 from core.converter import ConvertResult, Converter, TxtToXmlConfig, XmlToTxtConfig
 from utils.exceptions import AutoLabelerError
 from utils.task_registry import TaskHandle, TaskRegistry
@@ -40,13 +41,7 @@ def run_txt_to_xml(
     try:
         result = Converter(task_handle=task).txt_to_xml(config)
     except AutoLabelerError as exc:
-        registry.fail_task(
-            task.task_id,
-            code=exc.code,
-            message=exc.message,
-            details=exc.details,
-            retryable=exc.retryable,
-        )
+        finish_error_task(registry, task, exc)
         return TxtToXmlServiceOutcome(success=False, task=task, result=None, error=exc)
     registry.succeed_task(task.task_id, result=_txt_to_xml_result_dict(result))
     return TxtToXmlServiceOutcome(success=True, task=task, result=result, error=None)
@@ -61,13 +56,7 @@ def run_xml_to_txt(
     try:
         output_path = Converter(task_handle=task).xml_to_txt(config)
     except AutoLabelerError as exc:
-        registry.fail_task(
-            task.task_id,
-            code=exc.code,
-            message=exc.message,
-            details=exc.details,
-            retryable=exc.retryable,
-        )
+        finish_error_task(registry, task, exc)
         return XmlToTxtServiceOutcome(
             success=False, task=task, output_path=None, error=exc
         )
