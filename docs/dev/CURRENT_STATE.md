@@ -139,7 +139,7 @@
 
 - gui/workers/ 全部用 TaskHandle 替代旧信号
 - api/main.py + 8 个 routes/
-- examples/scan_via_desktop.py + examples/scan_via_http.py
+- 最小双入口示例覆盖 scan：examples/scan_via_desktop.py + examples/scan_via_http.py；其他模块由 API route tests 与 worker tests 覆盖。
 
 ### 5.6 M1 PR 收尾与边界复核
 
@@ -173,13 +173,13 @@
 
 **预计**：M1 工作量约 2-3 周（视新人熟练度）。
 
-### M2：HTTP 入口
+### M2：HTTP 入口硬化
 
 **完成标准**：
-- `api/` 目录下 main.py + 8 个 route 文件
-- HTTP 集成测试全部通过
-- `examples/*_via_http.py` 可跑
-- OpenAPI 文档自动生成可访问
+- `api/` 已有 main.py + 8 个 route 文件，后续只做硬化与产品化补齐
+- OpenAPI 文档自动生成可访问，并补充主要调用说明
+- 需要时补齐非 scan 模块的 HTTP examples
+- API 部署开关、错误响应和跨进程任务状态按实际 Web 接入场景复核
 
 ### M3：桌面 GUI 接入新 core
 
@@ -217,9 +217,9 @@
 
 **记住：宁可多问，不要私自决定。**
 
-## Latest Maintainer Notes
+## 10. 维护备注
 
-- 2026-05-14: M1.3 desktop and HTTP adapters are implemented and verified locally.
-- 2026-05-14: Added `docs/superpowers/skills/auto-yolo-boundary-review/SKILL.md` for reusable boundary review and temporary worker handoffs.
-- 2026-05-14: M1 full local validation completed; moving into PR readiness and parallel read-only boundary review.
-- `legacy/` remains read-only and unchanged.
+- 2026-05-14：M1.3 桌面 worker 与 HTTP adapters 已实现并完成本地验证。
+- 2026-05-14：新增 `docs/superpowers/skills/auto-yolo-boundary-review/SKILL.md`，用于复用边界审查与临时 worker 交接。
+- 2026-05-14：M1 本地全量验收已完成，当前进入 PR readiness 与并行只读边界审查。
+- `legacy/` 保持只读且无变更。

@@ -10,7 +10,7 @@
 ## [Unreleased]
 
 ### Added
-- (docs) Added `docs/superpowers/skills/auto-yolo-boundary-review/` to standardize boundary reviews, enterprise discipline checks, and temporary worker handoffs.
+- (docs) 新增 `docs/superpowers/skills/auto-yolo-boundary-review/`，用于统一边界审查、企业级纪律检查和临时 worker 交接。
 - 初始化重构基线（2026-05-13）
 - 新增规范文档目录 `docs/superpowers/specs/2026-05-13-auto-yolo-label-restructure/`
   - `README.md`：阅读顺序索引
@@ -50,12 +50,12 @@
 - (utils) 调整 `TaskRegistry.cancel()` 为取消请求语义，新增 `finish_cancelled_task()` 确认取消终态，避免运行中任务被提前释放或晚到成功覆盖（本地 M1.1 修复）
 
 ### Deprecated
-- 整个 `core/`、`utils/`、`gui/`、`tests/` 旧代码目录将在阶段 0 归档至 `legacy/`，仅作参考
+- 重构前旧 `core/`、`utils/`、`gui/`、`tests/` 目录已在阶段 0 归档至 `legacy/`；当前同名目录均为新实现。
 - 旧目录命名 `vals/`（将在新版改为 `val/`，与 YOLO 标准一致）
 - 旧 `Converter.convert_folder()` 默认删除源 TXT 的行为（新版默认 `delete_source=False`）
 
 ### Removed
-- 计划在重构期间删除：`utils/site_detector.py`、`core/conversion_rule.py`、`config/A9950_conversion_rules.yaml`
+- 已随旧代码归档到 `legacy/`：`utils/site_detector.py`、`core/conversion_rule.py`、`config/A9950_conversion_rules.yaml`
 
 ---
 
