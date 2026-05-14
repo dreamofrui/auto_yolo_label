@@ -157,6 +157,10 @@
   - 缓解：02-constraints.md 第 10 节和给新人的指令明确 4 小时时间盒
 - **风险**：legacy/ 的 `mapping.json` 格式与新版不兼容
   - 缓解：保持 ImageInfo 字段向后兼容，加新字段不删旧字段；遇兼容问题写迁移脚本
+- **风险**：桌面 worker 目前允许未注入 registry 时自建默认 `TaskRegistry`
+  - 缓解：examples/tests 均显式注入 registry；后续 M3 桌面入口接入时统一由应用层创建并注入共享 registry，再决定是否移除 worker 默认值
+- **风险**：桌面 worker 复用的共享 service 目前位于 `api.services` 命名空间
+  - 缓解：当前 service 内保持纯 Python，不 import FastAPI；后续边界硬化时迁移到中立 `services/` 包，避免 GUI 依赖 API 命名空间
 
 ---
 
