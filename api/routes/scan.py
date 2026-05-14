@@ -9,11 +9,11 @@ from api.schemas.scan import (
     ScanResponse,
     ScanResultResponse,
     ScanStatisticsResponse,
-    TaskResponse,
 )
+from api.services.common import task_response
 from api.services.scan_service import run_scan
 from core.scanner import ScanConfig, ScanResult
-from utils.task_registry import TaskHandle, TaskRegistry
+from utils.task_registry import TaskRegistry
 
 router = APIRouter(prefix="/api", tags=["scan"])
 
@@ -36,7 +36,7 @@ def scan_site(payload: ScanRequest, request: Request) -> ScanResponse:
         raise RuntimeError("scan outcome missing result")
     return ScanResponse(
         success=True,
-        task=_task_response(outcome.task),
+        task=task_response(outcome.task),
         result=_scan_response(outcome.result),
     )
 
@@ -44,18 +44,6 @@ def scan_site(payload: ScanRequest, request: Request) -> ScanResponse:
 def _registry(request: Request) -> TaskRegistry:
     """Return shared registry from application state."""
     return request.app.state.task_registry
-
-
-def _task_response(task: TaskHandle) -> TaskResponse:
-    """Convert TaskHandle to response schema."""
-    return TaskResponse(
-        task_id=task.task_id,
-        task_type=task.task_type,
-        status=task.status,
-        progress_current=task.progress_current,
-        progress_total=task.progress_total,
-        progress_message=task.progress_message,
-    )
 
 
 def _scan_response(result: ScanResult) -> ScanResultResponse:

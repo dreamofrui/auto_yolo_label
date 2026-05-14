@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from api.schemas.base import CamelModel
+from api.schemas.common import TaskResponse
 
 
 class ScanRequest(CamelModel):
@@ -31,17 +32,6 @@ class ScanResultResponse(CamelModel):
     statistics: ScanStatisticsResponse
     classes: list[str]
     products: dict[str, dict[str, int]]
-
-
-class TaskResponse(CamelModel):
-    """Serializable TaskHandle subset."""
-
-    task_id: str
-    task_type: str
-    status: str
-    progress_current: int
-    progress_total: int
-    progress_message: str
 
 
 class ScanResponse(CamelModel):

@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from api.routes.sample import router as sample_router
 from api.routes.scan import router as scan_router
 from utils.exceptions import AutoLabelerError
 from utils.task_registry import TaskRegistry
@@ -24,6 +25,7 @@ def create_app(task_registry: TaskRegistry | None = None) -> FastAPI:
     app = FastAPI(title="AutoLabeler API")
     app.state.task_registry = task_registry or TaskRegistry(Path.home() / ".autolabeler" / "tasks")
     app.include_router(scan_router)
+    app.include_router(sample_router)
 
     @app.exception_handler(AutoLabelerError)
     async def handle_app_error(request: Request, exc: AutoLabelerError) -> JSONResponse:
