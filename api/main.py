@@ -19,11 +19,15 @@ from utils.exceptions import AutoLabelerError
 from utils.task_registry import TaskRegistry
 
 
-def create_app(task_registry: TaskRegistry | None = None) -> FastAPI:
+def create_app(
+    task_registry: TaskRegistry | None = None,
+    allow_labelimg_launch: bool = False,
+) -> FastAPI:
     """Create the AutoLabeler HTTP application.
 
     Args:
         task_registry: Optional shared task registry for tests or embedding.
+        allow_labelimg_launch: Whether HTTP clients may launch local LabelImg.
 
     Returns:
         Configured FastAPI application.
@@ -32,6 +36,7 @@ def create_app(task_registry: TaskRegistry | None = None) -> FastAPI:
     app.state.task_registry = task_registry or TaskRegistry(
         Path.home() / ".autolabeler" / "tasks"
     )
+    app.state.allow_labelimg_launch = allow_labelimg_launch
     app.include_router(scan_router)
     app.include_router(sample_router)
     app.include_router(train_router)

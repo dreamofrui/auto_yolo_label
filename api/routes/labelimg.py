@@ -16,14 +16,22 @@ from api.services.common import task_response
 from api.services.labelimg_service import launch_labelimg, validate_labelimg
 from core.labelimg_launcher import (
     LabelImgConfig,
+    LabelImgError,
     LabelImgLaunchResult,
     LabelImgLauncher,
     LabelImgValidateConfig,
     LabelImgValidateResult,
 )
+from utils.exceptions import ErrorCode
 from utils.task_registry import TaskRegistry
 
 router = APIRouter(prefix="/api/labelimg", tags=["labelimg"])
+
+
+class LabelImgLaunchDisabledError(LabelImgError):
+    """Raised when HTTP LabelImg launch is disabled for this deployment."""
+
+    code = ErrorCode.LABELIMG_LAUNCH_DISABLED
 
 
 @router.post("/validate", response_model=LabelImgValidateResponse)
@@ -52,6 +60,11 @@ def launch_labeling_tool(
     payload: LabelImgLaunchRequest, request: Request
 ) -> LabelImgLaunchResponse:
     """Launch LabelImg via HTTP."""
+    if not _allow_launch(request):
+        raise LabelImgLaunchDisabledError(
+            "HTTP LabelImg launch is disabled",
+            details="Enable allow_labelimg_launch only on local GUI-capable deployments.",
+        )
     outcome = launch_labelimg(
         LabelImgConfig(
             python_path=payload.python_path,
@@ -82,6 +95,11 @@ def _launcher(request: Request) -> LabelImgLauncher | None:
     """Return optional injected LabelImg launcher from application state."""
     launcher = getattr(request.app.state, "labelimg_launcher", None)
     return launcher if isinstance(launcher, LabelImgLauncher) else launcher
+
+
+def _allow_launch(request: Request) -> bool:
+    """Return whether this API deployment may launch local GUI processes."""
+    return bool(getattr(request.app.state, "allow_labelimg_launch", False))
 
 
 def _validate_response(

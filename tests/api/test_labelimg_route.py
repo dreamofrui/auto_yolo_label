@@ -37,10 +37,14 @@ class FakeLauncher:
 
 
 def make_client(
-    registry: TaskRegistry, launcher: FakeLauncher | None = None
+    registry: TaskRegistry,
+    launcher: FakeLauncher | None = None,
+    allow_labelimg_launch: bool = False,
 ) -> TestClient:
     """Create a test client from the main API app."""
-    app = create_app(task_registry=registry)
+    app = create_app(
+        task_registry=registry, allow_labelimg_launch=allow_labelimg_launch
+    )
     if launcher is not None:
         app.state.labelimg_launcher = launcher
     return TestClient(app)
@@ -75,7 +79,7 @@ def test_labelimg_validate_route_returns_probe_result(tmp_path: Path) -> None:
 def test_labelimg_launch_route_returns_process_metadata(tmp_path: Path) -> None:
     """Launch route returns command metadata from the core launcher."""
     registry = TaskRegistry(tmp_path / "tasks")
-    client = make_client(registry, FakeLauncher())
+    client = make_client(registry, FakeLauncher(), allow_labelimg_launch=True)
     python_path = make_python(tmp_path / "python.exe")
     image_dir = tmp_path / "images"
     image_dir.mkdir()
@@ -113,7 +117,7 @@ def test_labelimg_validate_route_maps_missing_python_to_invalid_result(
 def test_labelimg_launch_route_maps_business_errors_to_json(tmp_path: Path) -> None:
     """Launch route raises core launch errors as stable JSON errors."""
     registry = TaskRegistry(tmp_path / "tasks")
-    client = make_client(registry)
+    client = make_client(registry, allow_labelimg_launch=True)
 
     response = client.post(
         "/api/labelimg/launch",
@@ -127,3 +131,22 @@ def test_labelimg_launch_route_maps_business_errors_to_json(tmp_path: Path) -> N
     payload = response.json()
     assert payload["success"] is False
     assert payload["error"]["code"] == ErrorCode.LABELIMG_PYTHON_NOT_FOUND.value
+
+
+def test_labelimg_launch_route_is_disabled_by_default(tmp_path: Path) -> None:
+    """HTTP launch route is disabled unless local GUI launch is allowed."""
+    registry = TaskRegistry(tmp_path / "tasks")
+    client = make_client(registry, FakeLauncher())
+    python_path = make_python(tmp_path / "python.exe")
+    image_dir = tmp_path / "images"
+    image_dir.mkdir()
+
+    response = client.post(
+        "/api/labelimg/launch",
+        json={"pythonPath": str(python_path), "imageDir": str(image_dir)},
+    )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["error"]["code"] == ErrorCode.LABELIMG_LAUNCH_DISABLED.value

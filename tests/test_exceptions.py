@@ -83,6 +83,7 @@ def test_error_code_contains_all_requirement_codes() -> None:
         "SAMPLE_IO",
         "LABELIMG_PYTHON_NOT_FOUND",
         "LABELIMG_NOT_INSTALLED",
+        "LABELIMG_LAUNCH_DISABLED",
         "LABELIMG_LAUNCH",
         "TRAIN_DATA_YAML_INVALID",
         "TRAIN_BASE_MODEL_NOT_FOUND",

@@ -561,6 +561,7 @@ class LabelImgLaunchResult:
 |--------|--------|----------|
 | `LabelImgPythonNotFoundError` | `LABELIMG_PYTHON_NOT_FOUND` | 指定 python 解释器不存在 |
 | `LabelImgNotInstalledError` | `LABELIMG_NOT_INSTALLED` | 该 Python 环境未安装 labelImg 包 |
+| `LabelImgLaunchDisabledError` | `LABELIMG_LAUNCH_DISABLED` | HTTP 部署未启用本地 GUI 启动能力 |
 | `LabelImgLaunchError` | `LABELIMG_LAUNCH` | 启动子进程失败 |
 
 #### 5.3.6 注意点
