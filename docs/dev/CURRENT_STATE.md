@@ -10,7 +10,7 @@
 
 **阶段 0 / 阶段 1 / M1.1 / M1.2 已完成**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；6 个 `utils/` 基础设施模块与 8 个 `core/` 业务模块已完成。
 
-下一步：进入 M1 集成场景测试与 M1.3 双调用入口，按规范接入桌面 worker 与 HTTP API。
+下一步：进入 M1.3 双调用入口，按规范接入桌面 worker 与 HTTP API。
 
 ---
 
@@ -39,10 +39,10 @@
 | api/main.py + routes/ | ⬜ 待开始 | 0% | - | M2 |
 | api/schemas/ | ⬜ 待开始 | 0% | - | M2 |
 | **集成测试** |  |  |  |  |
-| tests/integration/test_scenario_a.py（完整流程） | ⬜ 待开始 | - | ✅ 规范已写 | - |
-| tests/integration/test_scenario_b.py（跳过扫描） | ⬜ 待开始 | - | ✅ 规范已写 | - |
-| tests/integration/test_scenario_c.py（跳过训练） | ⬜ 待开始 | - | ✅ 规范已写 | - |
-| tests/integration/test_scenario_d.py（纯转换） | ⬜ 待开始 | - | ✅ 规范已写 | - |
+| tests/integration/test_scenario_a.py（完整流程） | ✅ 完成 | 通过 | ✅ 规范已写 | Scan → Sample → Train → Infer → Restore |
+| tests/integration/test_scenario_b.py（跳过扫描） | ✅ 完成 | 通过 | ✅ 规范已写 | 手写 mapping + database |
+| tests/integration/test_scenario_c.py（跳过训练） | ✅ 完成 | 通过 | ✅ 规范已写 | best.pt + custom images |
+| tests/integration/test_scenario_d.py（纯转换） | ✅ 完成 | 通过 | ✅ 规范已写 | Converter 独立调用 |
 
 图例：✅ 完成 / 🟡 进行中 / ⬜ 待开始 / ❌ 阻塞
 
@@ -69,16 +69,17 @@
 - 2026-05-14 完成 `core/label_inspector.py`：新增推理 run 列表、Code/Product 树统计、产品标签读取、控制文件过滤和原图路径推断
 - 2026-05-14 完成 `core/restorer.py`：新增 database/inference 标签还原、目标跳过/覆盖、单文件失败不中断、TaskHandle 进度取消和 mapping restored 标记
 - 2026-05-14 完成 `core/labelimg_launcher.py`：新增外部 Python / LabelImg 校验、LabelImg 启动命令构造、子进程启动异常映射和无 GUI 框架依赖的测试边界
+- 2026-05-14 完成 M1 四个集成场景测试：完整流程、跳过扫描、跳过训练和纯格式转换均已自动化覆盖
 
 ---
 
 ## 4. 进行中
 
-### 4.1 M1 集成场景与 M1.3 双调用入口
+### 4.1 M1.3 双调用入口
 - 负责人：Codex
 - 开始日期：2026-05-14
 - 当前进度：
-  - [ ] 编写 `tests/integration/test_scenario_{a,b,c,d}.py`
+  - [x] 编写 `tests/integration/test_scenario_{a,b,c,d}.py`
   - [ ] 设计 `api/` 薄入口与 pydantic schema
   - [ ] 设计 `gui/workers/` 对新 core + TaskHandle 的适配
   - [ ] 补齐 examples 桌面/HTTP 双调用示例

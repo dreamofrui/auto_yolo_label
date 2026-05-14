@@ -144,7 +144,7 @@ class Inferencer:
         manager: MappingManager | None = None
         targets: list[_InferTarget]
         if config.image_source == "custom":
-            targets = self._custom_targets(config.custom_images)
+            targets = self._custom_targets(config.custom_images, config.site_folder)
         else:
             manager = self._load_mapping(config, mapping_path)
             targets = self._mapping_targets(config, manager)
@@ -238,7 +238,7 @@ class Inferencer:
             )
         return targets
 
-    def _custom_targets(self, custom_images: list[Path] | None) -> list[_InferTarget]:
+    def _custom_targets(self, custom_images: list[Path] | None, site_folder: Path) -> list[_InferTarget]:
         """Resolve custom image targets independent of mapping.json."""
         if custom_images is None:
             raise InferImageNotFoundError("custom_images 不能为空")
@@ -246,7 +246,13 @@ class Inferencer:
         for image_path in custom_images:
             if not image_path.exists() or not image_path.is_file():
                 raise InferImageNotFoundError("待推理图片不存在", details=str(image_path))
-            targets.append(_InferTarget(image_path=image_path, output_relative=Path(f"{image_path.stem}.txt"), mapping_key=None))
+            targets.append(
+                _InferTarget(
+                    image_path=image_path,
+                    output_relative=_custom_output_relative(image_path, site_folder),
+                    mapping_key=None,
+                )
+            )
         return targets
 
     def _write_outputs(
@@ -314,6 +320,17 @@ def _resolve_batch_size(config: InferConfig, device: str) -> int:
     if config.batch_size == -1:
         return max(1, get_optimal_batch_size(device))
     return max(1, config.batch_size)
+
+
+def _custom_output_relative(image_path: Path, site_folder: Path) -> Path:
+    """Return custom inference output path, preserving direct Code/Product layout."""
+    try:
+        relative = image_path.relative_to(site_folder)
+    except ValueError:
+        return Path(f"{image_path.stem}.txt")
+    if len(relative.parts) == 3:
+        return Path(relative.parts[0]) / relative.parts[1] / f"{image_path.stem}.txt"
+    return Path(f"{image_path.stem}.txt")
 
 
 def _prediction_lines(result: object) -> list[str]:
