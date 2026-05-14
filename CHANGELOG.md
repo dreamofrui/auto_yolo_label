@@ -32,6 +32,7 @@
 - (inferencer) 新增 `core/inferencer.py`，实现 mapping/custom 图片推理、`inference_results/run_*` 输出、空预测 TXT、推理参数快照和 inferred 统计标记（本地 M1.2 提交）
 - (label-inspector) 新增 `core/label_inspector.py`，实现推理 run 列表、Code/Product 树统计、产品标签读取、控制文件过滤和原图路径推断（本地 M1.2 提交）
 - (restorer) 新增 `core/restorer.py`，实现 database/inference 标签还原、目标跳过/覆盖、单文件失败不中断、TaskHandle 进度取消和 mapping restored 标记（本地 M1.2 提交）
+- (labelimg-launcher) 新增 `core/labelimg_launcher.py`，实现外部 Python / LabelImg 校验、LabelImg 子进程启动和结构化异常映射（本地 M1.2 提交）
 
 ### Changed
 - (docs) `docs/dev/CURRENT_STATE.md` 重置为重构基线状态（2026-05-13）
