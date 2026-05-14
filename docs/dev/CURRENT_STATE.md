@@ -8,9 +8,9 @@
 
 ## 1. 一句话现状
 
-**阶段 0 / 阶段 1 / M1.1 已完成，M1.2 已推进至 `core/label_inspector.py`**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；6 个 `utils/` 基础设施模块已重写；`scanner` 到 `label_inspector` 的核心模块已完成。
+**阶段 0 / 阶段 1 / M1.1 已完成，M1.2 已推进至 `core/restorer.py`**。旧代码、旧测试、旧配置和旧桌面资产已移动到 `legacy/`，仅作只读参考；6 个 `utils/` 基础设施模块已重写；`scanner` 到 `restorer` 的核心模块已完成。
 
-下一步：进入 `core/restorer.py`，继续按规范推进 M1.2 核心业务模块。
+下一步：进入 `core/labelimg_launcher.py`，继续按规范完成 M1.2 核心业务模块。
 
 ---
 
@@ -32,8 +32,8 @@
 | trainer.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 Ultralytics YOLO 薄包装、参数校验、结果解析和 TaskHandle epoch 进度 |
 | inferencer.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 mapping/custom 推理、run 输出、空预测文件和 inferred 标记 |
 | label_inspector.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 run 列表、Code/Product 树和产品标签查询 |
-| restorer.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：标签还原模块，注意过滤 classes.txt |
-| labelimg_launcher.py | ⬜ 待开始 | 0% | ✅ 规范已写 | 保留集成 |
+| restorer.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 database/inference 标签还原、跳过/覆盖规则和 mapping restored 标记 |
+| labelimg_launcher.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：外部 LabelImg 集成 |
 | **入口层** |  |  |  |  |
 | gui/workers/* | ⬜ 待开始 | - | - | M3 接入新 core |
 | api/main.py + routes/ | ⬜ 待开始 | 0% | - | M2 |
@@ -67,18 +67,19 @@
 - 2026-05-13 完成 `core/trainer.py`：新增训练输入输出 dataclass、data.yaml / base model 校验、Ultralytics YOLO 训练薄包装、metrics 解析和 epoch 进度回调
 - 2026-05-13 完成 `core/inferencer.py`：新增 mapping/custom 图片推理、run 目录输出、空预测 TXT、推理参数快照和 mapping inferred 统计标记
 - 2026-05-14 完成 `core/label_inspector.py`：新增推理 run 列表、Code/Product 树统计、产品标签读取、控制文件过滤和原图路径推断
+- 2026-05-14 完成 `core/restorer.py`：新增 database/inference 标签还原、目标跳过/覆盖、单文件失败不中断、TaskHandle 进度取消和 mapping restored 标记
 
 ---
 
 ## 4. 进行中
 
-### 4.1 core/restorer.py
+### 4.1 core/labelimg_launcher.py
 - 负责人：Codex
 - 开始日期：2026-05-14
 - 当前进度：
-  - [ ] 读取 `01-requirements.md` 中 Restorer 章节
-  - [ ] 编写 restorer 测试
-  - [ ] 实现 Restorer 还原接口
+  - [ ] 读取 `01-requirements.md` 中 LabelImgLauncher 章节
+  - [ ] 编写 labelimg_launcher 测试
+  - [ ] 实现 LabelImgLauncher validate / launch 接口
   - [ ] 运行纪律检查和目标测试
 - 阻塞项：无
 
