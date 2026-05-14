@@ -24,7 +24,7 @@
 | device.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | CPU/CUDA/MPS 检测和 batch size 建议 |
 | path_encoder.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | encode/decode/to_relative_path 已实现 |
 | mapping_manager.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | MappingData / ImageInfo / 状态查询已实现 |
-| task_registry.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | TaskHandle / TaskRegistry / JSON 持久化已实现 |
+| task_registry.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | TaskHandle / TaskRegistry / JSON 持久化和取消确认语义已实现 |
 | **核心业务（core/）** |  |  |  |  |
 | scanner.py | ✅ 完成 | 目标测试通过 | ✅ 规范已写 | 已实现 Code/Product 扫描、mapping/classes 输出、XML 校验和 TaskHandle 取消 |
 | sampler.py | 🟡 进行中 | 0% | ✅ 规范已写 | 下一步：抽样模块 |
@@ -61,6 +61,7 @@
 - 2026-05-13 完成 `utils/mapping_manager.py`：新增 mapping.json dataclass 缓存、原子保存、状态标记和推理候选查询
 - 2026-05-13 完成 `utils/task_registry.py`：新增任务句柄、生命周期转换、取消标记、错误信息和 JSON 持久化
 - 2026-05-13 完成 `core/scanner.py`：新增扫描输入输出 dataclass、Code/Product 两级扫描、mapping/classes 生成、XML 标签一致性校验和 TaskHandle 取消检查
+- 2026-05-13 修正 `utils/task_registry.py` 取消语义：运行中任务的 `cancel()` 仅请求 core 循环停止，`finish_cancelled_task()` 负责确认终态，避免晚到成功覆盖取消结果
 
 ---
 

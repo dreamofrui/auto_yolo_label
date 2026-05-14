@@ -72,17 +72,37 @@ def test_fail_task_stores_error_info(tmp_path: Path) -> None:
     assert failed.error.details == "boom"
 
 
-def test_cancel_marks_handle_for_core_loop(tmp_path: Path) -> None:
-    """Cancellation sets both status and the core-loop cancellation flag."""
+def test_cancel_requests_core_loop_stop_without_finishing_task(tmp_path: Path) -> None:
+    """Cancellation requests keep active tasks reserved until core acknowledges."""
     registry = TaskRegistry(task_dir=tmp_path)
     handle = registry.create_task("infer")
     registry.start_task(handle.task_id)
 
     registry.cancel(handle.task_id)
 
+    requested = registry.get(handle.task_id)
+    assert requested.status == "running"
+    assert requested.is_cancel_requested is True
+    assert requested.finished_at is None
+
+    with pytest.raises(TaskAlreadyRunningError):
+        registry.create_task("infer")
+
+
+def test_finish_cancelled_task_terminal_state_blocks_late_success(tmp_path: Path) -> None:
+    """Cancelled tasks stay cancelled after core acknowledges cancellation."""
+    registry = TaskRegistry(task_dir=tmp_path)
+    handle = registry.create_task("restore")
+    registry.start_task(handle.task_id, total=3)
+    registry.cancel(handle.task_id)
+
+    registry.finish_cancelled_task(handle.task_id, message="用户取消")
+    registry.succeed_task(handle.task_id, result={"ok": True})
+
     cancelled = registry.get(handle.task_id)
     assert cancelled.status == "cancelled"
-    assert cancelled.is_cancel_requested is True
+    assert cancelled.progress_message == "用户取消"
+    assert cancelled.result is None
     assert cancelled.finished_at is not None
 
 

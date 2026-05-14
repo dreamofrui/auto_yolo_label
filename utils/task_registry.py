@@ -127,6 +127,8 @@ class TaskRegistry:
         """Update task progress fields."""
         with self._lock:
             handle = self.get(task_id)
+            if handle.status in _TERMINAL_STATUSES:
+                return handle
             handle.progress_current = current
             if total is not None:
                 handle.progress_total = total
@@ -139,6 +141,8 @@ class TaskRegistry:
         """Append one log line to a task."""
         with self._lock:
             handle = self.get(task_id)
+            if handle.status in _TERMINAL_STATUSES:
+                return handle
             handle.logs.append(message)
             self._persist(handle)
             return handle
@@ -147,6 +151,8 @@ class TaskRegistry:
         """Mark a task as succeeded."""
         with self._lock:
             handle = self.get(task_id)
+            if handle.status in _TERMINAL_STATUSES:
+                return handle
             handle.status = "succeeded"
             handle.progress_current = handle.progress_total
             handle.progress_message = "完成"
@@ -167,6 +173,8 @@ class TaskRegistry:
         """Mark a task as failed with serializable error info."""
         with self._lock:
             handle = self.get(task_id)
+            if handle.status in _TERMINAL_STATUSES:
+                return handle
             handle.status = "failed"
             handle.error = ErrorInfo(
                 code=code.value,
@@ -179,11 +187,27 @@ class TaskRegistry:
             return handle
 
     def cancel(self, task_id: str) -> TaskHandle:
-        """Cancel a task and request core loops to stop."""
+        """Request cancellation and leave active tasks reserved until acknowledged."""
         with self._lock:
             handle = self.get(task_id)
+            if handle.status in _TERMINAL_STATUSES:
+                return handle
+            handle.is_cancel_requested = True
+            if handle.status == "queued":
+                handle.status = "cancelled"
+                handle.finished_at = _now()
+            self._persist(handle)
+            return handle
+
+    def finish_cancelled_task(self, task_id: str, message: str = "已取消") -> TaskHandle:
+        """Mark a cancellation request as fully acknowledged by the core loop."""
+        with self._lock:
+            handle = self.get(task_id)
+            if handle.status in _TERMINAL_STATUSES:
+                return handle
             handle.is_cancel_requested = True
             handle.status = "cancelled"
+            handle.progress_message = message
             handle.finished_at = _now()
             self._persist(handle)
             return handle

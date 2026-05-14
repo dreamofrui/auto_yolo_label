@@ -31,6 +31,7 @@
 - (docs) `docs/dev/CURRENT_STATE.md` 重置为重构基线状态（2026-05-13）
 - (legacy) 将旧代码、旧测试、旧配置和旧桌面资产归档到 `legacy/`，后续仅作只读参考（本地阶段 0 提交）
 - (dev) `.gitignore` 增加 pytest/mypy 本地缓存和 `pytest_tmp_codex/` 临时目录（本地 M1.1 提交）
+- (utils) 调整 `TaskRegistry.cancel()` 为取消请求语义，新增 `finish_cancelled_task()` 确认取消终态，避免运行中任务被提前释放或晚到成功覆盖（本地 M1.1 修复）
 
 ### Deprecated
 - 整个 `core/`、`utils/`、`gui/`、`tests/` 旧代码目录将在阶段 0 归档至 `legacy/`，仅作参考
