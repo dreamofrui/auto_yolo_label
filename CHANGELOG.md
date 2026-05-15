@@ -15,6 +15,7 @@ All notable changes to this repo are recorded here.
 - (cli) Added a minimal JSON scan adapter at `python -m cli.main scan <request.json>` for future Node.js subprocess integration.
 - (cli) Added a matching JSON sample adapter at `python -m cli.main sample <request.json>`.
 - (cli) Added read-only JSON inspect adapters for listing inference runs, reading run trees, and reading product labels.
+- (cli) Added JSON convert adapters for TXT-to-XML and XML-to-TXT annotation conversion.
 
 ### Removed
 - (web) Removed current-mainline API routes, schemas, HTTP examples, API reference docs, and API tests.
