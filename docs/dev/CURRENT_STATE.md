@@ -27,4 +27,5 @@ When behavior or scope changes, update:
 
 - Old API routes, schemas, HTTP examples, and web-specific specs were removed from the active tree.
 - `python -m cli.main scan <request.json>` and `python -m cli.main sample <request.json>` are the first working JSON boundaries for future Node.js subprocess calls.
+- Read-only inspection is exposed through `python -m cli.main inspect list-runs|run-tree|product-labels <request.json>`.
 - Other CLI commands should follow the same thin-adapter pattern only when needed.
