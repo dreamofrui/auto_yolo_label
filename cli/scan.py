@@ -30,7 +30,12 @@ def run_scan_command(request_path: Path) -> int:
         outcome = run_scan(config, registry)
     except AutoLabelerError as exc:
         write_json(
-            {"success": False, "task": None, "result": None, "error": error_payload(exc)}
+            {
+                "success": False,
+                "task": None,
+                "result": None,
+                "error": error_payload(exc),
+            }
         )
         return 1
 
