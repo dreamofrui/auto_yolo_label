@@ -13,6 +13,7 @@ All notable changes to this repo are recorded here.
 
 ### Added
 - (cli) Added a minimal JSON scan adapter at `python -m cli.main scan <request.json>` for future Node.js subprocess integration.
+- (cli) Added a matching JSON sample adapter at `python -m cli.main sample <request.json>`.
 
 ### Removed
 - (web) Removed current-mainline API routes, schemas, HTTP examples, API reference docs, and API tests.

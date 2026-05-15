@@ -10,6 +10,7 @@ from pathlib import Path
 from PIL import Image
 
 from cli.main import run
+from core.scanner import ScanConfig, Scanner
 
 
 def make_image(path: Path) -> None:
@@ -91,3 +92,90 @@ def test_cli_scan_module_entrypoint_outputs_json(tmp_path: Path) -> None:
     output = json.loads(result.stdout)
     assert output["success"] is True
     assert output["result"]["statistics"]["totalImages"] == 1
+
+
+def test_cli_sample_outputs_success_json(tmp_path: Path, capsys: object) -> None:
+    """Sample command reads JSON input and writes dataset output details."""
+    site = tmp_path / "site"
+    make_image(site / "CodeA" / "Product1" / "a1.jpg")
+    Scanner().scan(ScanConfig(site_folder=site))
+    request_path = tmp_path / "sample.json"
+    request_path.write_text(
+        json.dumps(
+            {
+                "siteFolder": str(site),
+                "outputDir": str(tmp_path / "database"),
+                "taskDir": str(tmp_path / "tasks"),
+                "count": 1,
+                "fullThreshold": 1,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = run(["sample", str(request_path)])
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["success"] is True
+    assert output["task"]["status"] == "succeeded"
+    assert output["result"]["statistics"]["sampledCount"] == 1
+    assert output["result"]["datasetDir"].endswith("database")
+    assert output["result"]["paths"]["imagesTrain"].endswith("images/train")
+
+
+def test_cli_sample_outputs_error_json(tmp_path: Path, capsys: object) -> None:
+    """Sample command reports missing mapping errors as JSON."""
+    site = tmp_path / "site"
+    site.mkdir()
+    request_path = tmp_path / "sample.json"
+    request_path.write_text(
+        json.dumps(
+            {
+                "siteFolder": str(site),
+                "outputDir": str(tmp_path / "database"),
+                "taskDir": str(tmp_path / "tasks"),
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = run(["sample", str(request_path)])
+
+    assert exit_code == 1
+    output = json.loads(capsys.readouterr().out)
+    assert output["success"] is False
+    assert output["task"]["status"] == "failed"
+    assert output["error"]["code"] == "SAMPLE_MAPPING_NOT_FOUND"
+
+
+def test_cli_sample_module_entrypoint_outputs_json(tmp_path: Path) -> None:
+    """Node-style subprocess callers can run the sample command."""
+    site = tmp_path / "site"
+    make_image(site / "CodeA" / "Product1" / "a1.jpg")
+    Scanner().scan(ScanConfig(site_folder=site))
+    request_path = tmp_path / "sample.json"
+    request_path.write_text(
+        json.dumps(
+            {
+                "siteFolder": str(site),
+                "outputDir": str(tmp_path / "database"),
+                "taskDir": str(tmp_path / "tasks"),
+                "count": 1,
+                "fullThreshold": 1,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-m", "cli.main", "sample", str(request_path)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    output = json.loads(result.stdout)
+    assert output["success"] is True
+    assert output["result"]["statistics"]["sampledCount"] == 1

@@ -26,5 +26,5 @@ When behavior or scope changes, update:
 ## Notes
 
 - Old API routes, schemas, HTTP examples, and web-specific specs were removed from the active tree.
-- `python -m cli.main scan <request.json>` is the first working JSON boundary for future Node.js subprocess calls.
+- `python -m cli.main scan <request.json>` and `python -m cli.main sample <request.json>` are the first working JSON boundaries for future Node.js subprocess calls.
 - Other CLI commands should follow the same thin-adapter pattern only when needed.
