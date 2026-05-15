@@ -16,6 +16,7 @@ from cli.labelimg import run_validate_command
 from cli.restore import run_restore_command
 from cli.sample import run_sample_command
 from cli.scan import run_scan_command
+from cli.train import run_train_command
 
 
 def run(argv: Sequence[str] | None = None) -> int:
@@ -26,6 +27,8 @@ def run(argv: Sequence[str] | None = None) -> int:
     scan_parser.add_argument("request_json")
     sample_parser = subparsers.add_parser("sample")
     sample_parser.add_argument("request_json")
+    train_parser = subparsers.add_parser("train")
+    train_parser.add_argument("request_json")
     restore_parser = subparsers.add_parser("restore")
     restore_parser.add_argument("request_json")
     labelimg_parser = subparsers.add_parser("labelimg")
@@ -58,6 +61,8 @@ def run(argv: Sequence[str] | None = None) -> int:
         return run_scan_command(Path(args.request_json))
     if args.command == "sample":
         return run_sample_command(Path(args.request_json))
+    if args.command == "train":
+        return run_train_command(Path(args.request_json))
     if args.command == "restore":
         return run_restore_command(Path(args.request_json))
     if args.command == "labelimg":

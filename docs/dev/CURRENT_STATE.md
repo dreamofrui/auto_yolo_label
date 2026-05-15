@@ -27,6 +27,7 @@ When behavior or scope changes, update:
 
 - Old API routes, schemas, HTTP examples, and web-specific specs were removed from the active tree.
 - `python -m cli.main scan <request.json>` and `python -m cli.main sample <request.json>` are the first working JSON boundaries for future Node.js subprocess calls.
+- YOLO training is exposed through `python -m cli.main train <request.json>`.
 - Annotation conversion is exposed through `python -m cli.main convert txt-to-xml|xml-to-txt <request.json>`.
 - Label restoration is exposed through `python -m cli.main restore <request.json>`.
 - LabelImg environment validation is exposed through `python -m cli.main labelimg validate <request.json>`; launching remains desktop-owned for now.
