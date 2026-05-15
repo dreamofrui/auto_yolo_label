@@ -17,6 +17,7 @@ All notable changes to this repo are recorded here.
 - (cli) Added read-only JSON inspect adapters for listing inference runs, reading run trees, and reading product labels.
 - (cli) Added JSON convert adapters for TXT-to-XML and XML-to-TXT annotation conversion.
 - (cli) Added a JSON restore adapter for copying labels back to original product folders.
+- (cli) Added a JSON LabelImg validate adapter while leaving GUI launch out of the CLI surface.
 
 ### Removed
 - (web) Removed current-mainline API routes, schemas, HTTP examples, API reference docs, and API tests.

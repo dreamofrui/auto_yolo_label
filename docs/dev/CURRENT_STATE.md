@@ -29,5 +29,6 @@ When behavior or scope changes, update:
 - `python -m cli.main scan <request.json>` and `python -m cli.main sample <request.json>` are the first working JSON boundaries for future Node.js subprocess calls.
 - Annotation conversion is exposed through `python -m cli.main convert txt-to-xml|xml-to-txt <request.json>`.
 - Label restoration is exposed through `python -m cli.main restore <request.json>`.
+- LabelImg environment validation is exposed through `python -m cli.main labelimg validate <request.json>`; launching remains desktop-owned for now.
 - Read-only inspection is exposed through `python -m cli.main inspect list-runs|run-tree|product-labels <request.json>`.
 - Other CLI commands should follow the same thin-adapter pattern only when needed.
