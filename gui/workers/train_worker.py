@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from api.services.train_service import run_train
 from core.trainer import TrainConfig, TrainResult
+from runtime.services.train_service import run_train
 from utils.exceptions import ErrorInfo
 from utils.task_registry import TaskHandle, TaskRegistry
 

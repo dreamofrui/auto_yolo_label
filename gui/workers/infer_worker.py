@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from api.services.infer_service import run_infer
 from core.inferencer import InferConfig, InferResult
+from runtime.services.infer_service import run_infer
 from utils.exceptions import ErrorInfo
 from utils.task_registry import TaskHandle, TaskRegistry
 

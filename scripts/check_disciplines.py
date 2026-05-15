@@ -11,13 +11,13 @@
 
 未机器化的纪律（PR review 把关）：
     Rule 2: 入口只接受 dataclass（需上下文判断）
-    Rule 8: API 边界 camelCase ↔ snake_case 自动转换
+    Rule 8: CLI/JSON 边界集中转换
     Rule 9: 耗时 > 1 秒任务必须 TaskHandle
     Rule 10: 不允许假设前置模块跑过
 
 用法:
     python scripts/check_disciplines.py
-    python scripts/check_disciplines.py --paths core utils api
+    python scripts/check_disciplines.py --paths core utils runtime gui
 退出码:
     0 - 全部通过
     1 - 至少一条违规
@@ -36,7 +36,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # 默认检查的严格区域
-STRICT_DIRS = ["core", "utils", "api"]
+STRICT_DIRS = ["core", "utils", "runtime"]
 
 # 跳过的归档区域（即使被传入也跳过）
 ARCHIVE_DIRS = ["legacy", "tests/fixtures", "__pycache__", ".venv", "venv"]
@@ -105,7 +105,7 @@ def check_rule3_no_implicit_env(files: list[Path]) -> list[str]:
     failures: list[str] = []
     for f in files:
         rel = _rel(f)
-        if not rel.startswith(("core/", "utils/", "api/")):
+        if not rel.startswith(("core/", "utils/", "runtime/")):
             continue
         text = f.read_text(encoding="utf-8", errors="replace")
         for m in _RULE3_PATTERN.finditer(text):
@@ -127,7 +127,7 @@ def check_rule4_use_pathlib(files: list[Path]) -> list[str]:
     failures: list[str] = []
     for f in files:
         rel = _rel(f)
-        if not rel.startswith(("core/", "utils/", "api/")):
+        if not rel.startswith(("core/", "utils/", "runtime/")):
             continue
         text = f.read_text(encoding="utf-8", errors="replace")
         for m in _RULE4_PATTERN.finditer(text):
@@ -153,7 +153,7 @@ def check_rule5_no_direct_mapping_json(files: list[Path]) -> list[str]:
         # MappingManager 自身允许
         if rel.endswith("/mapping_manager.py"):
             continue
-        if not rel.startswith(("core/", "utils/", "api/", "gui/")):
+        if not rel.startswith(("core/", "utils/", "runtime/", "gui/")):
             continue
         text = f.read_text(encoding="utf-8", errors="replace")
         for m in _RULE5_PATTERN.finditer(text):
@@ -204,7 +204,7 @@ def check_rule6_exception_inherits_base(files: list[Path]) -> list[str]:
     failures: list[str] = []
     for f in files:
         rel = _rel(f)
-        if not rel.startswith(("core/", "utils/", "api/")):
+        if not rel.startswith(("core/", "utils/", "runtime/")):
             continue
         try:
             tree = ast.parse(f.read_text(encoding="utf-8", errors="replace"))

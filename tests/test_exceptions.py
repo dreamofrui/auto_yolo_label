@@ -17,7 +17,7 @@ from utils.exceptions import (
 
 
 def test_auto_labeler_error_keeps_message_details_and_retryable() -> None:
-    """AutoLabelerError exposes a stable API for GUI and HTTP handlers."""
+    """AutoLabelerError exposes a stable API for GUI handlers."""
     error = AutoLabelerError(
         "处理失败",
         details="stack trace",

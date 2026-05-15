@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from api.services.convert_service import run_txt_to_xml, run_xml_to_txt
 from core.converter import ConvertResult, TxtToXmlConfig, XmlToTxtConfig
+from runtime.services.convert_service import run_txt_to_xml, run_xml_to_txt
 from utils.exceptions import ErrorInfo
 from utils.task_registry import TaskHandle, TaskRegistry
 

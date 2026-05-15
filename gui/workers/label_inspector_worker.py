@@ -5,11 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from api.services.label_inspector_service import (
-    get_product_labels,
-    get_run_tree,
-    list_runs,
-)
 from core.label_inspector import (
     GetProductLabelsConfig,
     GetRunTreeConfig,
@@ -17,6 +12,11 @@ from core.label_inspector import (
     ListRunsConfig,
     ProductLabel,
     RunTreeNode,
+)
+from runtime.services.label_inspector_service import (
+    get_product_labels,
+    get_run_tree,
+    list_runs,
 )
 from utils.exceptions import ErrorInfo
 from utils.task_registry import TaskHandle, TaskRegistry

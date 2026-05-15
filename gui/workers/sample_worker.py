@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from api.services.sample_service import run_sample
 from core.sampler import SampleConfig, SampleResult
+from runtime.services.sample_service import run_sample
 from utils.exceptions import ErrorInfo
 from utils.task_registry import TaskHandle, TaskRegistry
 

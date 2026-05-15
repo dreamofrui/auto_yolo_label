@@ -1,4 +1,4 @@
-"""In-process task registry shared by desktop and HTTP entry points."""
+"""In-process task registry shared by desktop and future CLI entry points."""
 
 from __future__ import annotations
 
