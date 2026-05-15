@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Sequence
 
 from cli.convert import run_txt_to_xml_command, run_xml_to_txt_command
+from cli.infer import run_infer_command
 from cli.inspect import (
     run_list_runs_command,
     run_product_labels_command,
@@ -29,6 +30,8 @@ def run(argv: Sequence[str] | None = None) -> int:
     sample_parser.add_argument("request_json")
     train_parser = subparsers.add_parser("train")
     train_parser.add_argument("request_json")
+    infer_parser = subparsers.add_parser("infer")
+    infer_parser.add_argument("request_json")
     restore_parser = subparsers.add_parser("restore")
     restore_parser.add_argument("request_json")
     labelimg_parser = subparsers.add_parser("labelimg")
@@ -63,6 +66,8 @@ def run(argv: Sequence[str] | None = None) -> int:
         return run_sample_command(Path(args.request_json))
     if args.command == "train":
         return run_train_command(Path(args.request_json))
+    if args.command == "infer":
+        return run_infer_command(Path(args.request_json))
     if args.command == "restore":
         return run_restore_command(Path(args.request_json))
     if args.command == "labelimg":

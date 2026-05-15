@@ -15,6 +15,7 @@ All notable changes to this repo are recorded here.
 - (cli) Added a minimal JSON scan adapter at `python -m cli.main scan <request.json>` for future Node.js subprocess integration.
 - (cli) Added a matching JSON sample adapter at `python -m cli.main sample <request.json>`.
 - (cli) Added a JSON train adapter for YOLO training requests.
+- (cli) Added a JSON infer adapter for YOLO inference requests.
 - (cli) Added read-only JSON inspect adapters for listing inference runs, reading run trees, and reading product labels.
 - (cli) Added JSON convert adapters for TXT-to-XML and XML-to-TXT annotation conversion.
 - (cli) Added a JSON restore adapter for copying labels back to original product folders.
