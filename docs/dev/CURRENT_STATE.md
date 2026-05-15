@@ -13,6 +13,7 @@ AutoLabeler is being rewritten as desktop-first. The stable core is the priority
 - Keep `utils/` as shared infrastructure.
 - Keep `gui/workers/` thin desktop adapters.
 - Put shared runtime/service code in `runtime/`.
+- Use `cli/` only for thin JSON adapters over `runtime/services`.
 - Treat `legacy/` as read-only reference material.
 
 ## Doc Sync
@@ -25,4 +26,5 @@ When behavior or scope changes, update:
 ## Notes
 
 - Old API routes, schemas, HTTP examples, and web-specific specs were removed from the active tree.
-- New work should prefer CLI / JSON boundaries over new Web/API surfaces.
+- `python -m cli.main scan <request.json>` is the first working JSON boundary for future Node.js subprocess calls.
+- Other CLI commands should follow the same thin-adapter pattern only when needed.

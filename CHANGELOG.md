@@ -11,6 +11,9 @@ All notable changes to this repo are recorded here.
 - (runtime) Moved shared service code from `api/services` to `runtime/services`.
 - (gui) Updated desktop workers to call `runtime/services` instead of API-owned services.
 
+### Added
+- (cli) Added a minimal JSON scan adapter at `python -m cli.main scan <request.json>` for future Node.js subprocess integration.
+
 ### Removed
 - (web) Removed current-mainline API routes, schemas, HTTP examples, API reference docs, and API tests.
 - (docs) Removed stale implementation plans, progress templates, and old web-centric restructuring specs from the active docs.
