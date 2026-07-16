@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from core.restorer import (
+    IndependentRestoreConfig,
     RestoreConfig,
     RestoreInvalidSourceTypeError,
     RestoreMappingNotFoundError,
     RestoreSourceNotFoundError,
     Restorer,
 )
-from utils.exceptions import ErrorCode, TaskCancelledError
+from utils.exceptions import AutoLabelerError, ErrorCode, TaskCancelledError
 from utils.mapping_manager import ImageInfo, MappingManager
 from utils.path_encoder import PathEncoder
 from utils.task_registry import TaskHandle
@@ -46,7 +49,7 @@ def make_site_with_mapping(site: Path) -> MappingManager:
     for name in ("a1.jpg", "a2.jpg", "a3.png"):
         image_path = site / "CodeA" / "Product1" / name
         image_path.parent.mkdir(parents=True, exist_ok=True)
-        image_path.write_bytes(b"image")
+        Image.new("RGB", (100, 100), color=(255, 0, 0)).save(image_path)
         manager.add_image(
             encoder.encode("CodeA", "Product1", name),
             ImageInfo(
@@ -67,6 +70,12 @@ def write_label(path: Path, text: str = "0 0.5 0.5 0.2 0.2\n") -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def write_classes(path: Path) -> None:
+    """Write a minimal classes.txt file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("CodeA\n", encoding="utf-8")
+
+
 def test_restorer_constructs_successfully() -> None:
     """Restorer can be constructed with default dependencies."""
     restorer = Restorer()
@@ -81,8 +90,9 @@ def test_database_restore_copies_train_and_val_labels_and_marks_mapping(
     site = tmp_path / "site"
     database = tmp_path / "database"
     make_site_with_mapping(site)
-    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt", "train\n")
-    write_label(database / "labels" / "val" / "CodeA__Product1__a2.txt", "val\n")
+    write_classes(database / "classes.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt")
+    write_label(database / "labels" / "val" / "CodeA__Product1__a2.txt")
 
     result = Restorer().restore(
         RestoreConfig(site_folder=site, source_type="database", database_dir=database)
@@ -92,14 +102,240 @@ def test_database_restore_copies_train_and_val_labels_and_marks_mapping(
     assert result.success == 2
     assert result.skipped == 0
     assert result.failed == 0
-    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(
+    assert (site / "CodeA" / "Product1" / "a1.xml").read_text(
         encoding="utf-8"
-    ) == "train\n"
-    assert (site / "CodeA" / "Product1" / "a2.txt").read_text(
+    ).startswith("<annotation")
+    assert (site / "CodeA" / "Product1" / "a2.xml").read_text(
         encoding="utf-8"
-    ) == "val\n"
+    ).startswith("<annotation")
     mapping = MappingManager(site / ".autolabeler" / "mapping.json").load()
     assert mapping.get_statistics()["restored_count"] == 2
+
+
+def test_inference_restore_uses_run_labels_and_writes_xml(tmp_path: Path) -> None:
+    """Flow inference restore reads run/labels and writes VOC XML beside images."""
+    site = tmp_path / "site"
+    make_site_with_mapping(site)
+    run = site / ".autolabeler" / "inference_results" / "run_20260513_103000"
+    write_classes(run / "classes.txt")
+    write_label(run / "labels" / "CodeA" / "Product1" / "a1.txt")
+
+    result = Restorer().restore(
+        RestoreConfig(
+            site_folder=site, source_type="inference", run_id="run_20260513_103000"
+        )
+    )
+
+    assert result.success == 1
+    assert (site / "CodeA" / "Product1" / "a1.xml").exists()
+    assert not (site / "CodeA" / "Product1" / "a1.txt").exists()
+
+
+def test_flow_restore_preflight_reports_impact_without_writing(tmp_path: Path) -> None:
+    """Flow restore preflight reports write impact without creating XML files."""
+    site = tmp_path / "site"
+    make_site_with_mapping(site)
+    mapping_path = site / ".autolabeler" / "mapping.json"
+    mapping_before = mapping_path.read_text(encoding="utf-8")
+    run = site / ".autolabeler" / "inference_results" / "run_20260513_103000"
+    write_classes(run / "classes.txt")
+    write_label(run / "labels" / "CodeA" / "Product1" / "a1.txt")
+
+    result = Restorer().preflight(
+        RestoreConfig(
+            site_folder=site,
+            source_type="inference",
+            run_id="run_20260513_103000",
+        )
+    )
+
+    assert result.can_execute is True
+    assert result.mode == "flow-inference"
+    assert result.total_labels == 1
+    assert result.matched_images == 1
+    assert result.xml_to_write == 1
+    assert result.classes_path == run / "classes.txt"
+    assert result.target_folders == [site / "CodeA" / "Product1"]
+    assert not (site / "CodeA" / "Product1" / "a1.xml").exists()
+    assert mapping_path.read_text(encoding="utf-8") == mapping_before
+
+
+def test_independent_restore_preflight_reports_impact_without_writing(
+    tmp_path: Path,
+) -> None:
+    """Independent restore preflight validates matching labels without writing XML."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    (image_root / "Product1").mkdir(parents=True)
+    Image.new("RGB", (100, 100), color=(255, 0, 0)).save(
+        image_root / "Product1" / "a.jpg"
+    )
+    write_classes(label_root / "classes.txt")
+    write_label(label_root / "Product1" / "a.txt")
+
+    result = Restorer().preflight_independent(
+        IndependentRestoreConfig(image_root=image_root, label_root=label_root)
+    )
+
+    assert result.can_execute is True
+    assert result.mode == "independent"
+    assert result.total_labels == 1
+    assert result.xml_to_write == 1
+    assert result.classes_path == label_root / "classes.txt"
+    assert result.target_folders == [image_root / "Product1"]
+    assert not (image_root / "Product1" / "a.xml").exists()
+
+
+def test_independent_restore_uses_explicit_classes_file(
+    tmp_path: Path,
+) -> None:
+    """Independent restore can use a selected classes.txt outside label_root."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    classes_file = tmp_path / "metadata" / "classes.txt"
+    (image_root / "Product1").mkdir(parents=True)
+    Image.new("RGB", (100, 100), color=(255, 0, 0)).save(
+        image_root / "Product1" / "a.jpg"
+    )
+    write_classes(classes_file)
+    write_label(label_root / "Product1" / "a.txt")
+
+    config = IndependentRestoreConfig(
+        image_root=image_root,
+        label_root=label_root,
+        classes_file=classes_file,
+    )
+
+    preflight = Restorer().preflight_independent(config)
+    result = Restorer().restore_independent(config)
+
+    assert preflight.classes_path == classes_file
+    assert result.success == 1
+    assert (image_root / "Product1" / "a.xml").exists()
+
+
+def test_independent_restore_does_not_fallback_when_explicit_classes_is_empty(
+    tmp_path: Path,
+) -> None:
+    """A selected empty classes.txt blocks instead of falling back silently."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    classes_file = tmp_path / "metadata" / "classes.txt"
+    (image_root / "Product1").mkdir(parents=True)
+    Image.new("RGB", (100, 100), color=(255, 0, 0)).save(
+        image_root / "Product1" / "a.jpg"
+    )
+    write_classes(label_root / "classes.txt")
+    classes_file.parent.mkdir(parents=True)
+    classes_file.write_text("", encoding="utf-8")
+    write_label(label_root / "Product1" / "a.txt")
+
+    with pytest.raises(RestoreSourceNotFoundError) as exc_info:
+        Restorer().preflight_independent(
+            IndependentRestoreConfig(
+                image_root=image_root,
+                label_root=label_root,
+                classes_file=classes_file,
+            )
+        )
+
+    assert exc_info.value.details == str(classes_file)
+
+
+def test_independent_restore_matches_label_and_image_relative_paths(
+    tmp_path: Path,
+) -> None:
+    """Independent restore needs no mapping and writes XML beside matching images."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    (image_root / "Product1").mkdir(parents=True)
+    Image.new("RGB", (100, 100), color=(255, 0, 0)).save(
+        image_root / "Product1" / "a.jpg"
+    )
+    write_classes(label_root / "classes.txt")
+    write_label(label_root / "Product1" / "a.txt")
+
+    result = Restorer().restore_independent(
+        IndependentRestoreConfig(
+            image_root=image_root,
+            label_root=label_root,
+        )
+    )
+
+    assert result.success == 1
+    assert (image_root / "Product1" / "a.xml").exists()
+
+
+def test_independent_restore_writes_labelimg_style_pretty_voc_xml(
+    tmp_path: Path,
+) -> None:
+    """Restored XML includes folder/path metadata and is readable in Notepad."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    (image_root / "Product1").mkdir(parents=True)
+    Image.new("RGB", (100, 100), color=(255, 0, 0)).save(
+        image_root / "Product1" / "a.jpg"
+    )
+    write_classes(label_root / "classes.txt")
+    write_label(label_root / "Product1" / "a.txt")
+
+    Restorer().restore_independent(
+        IndependentRestoreConfig(image_root=image_root, label_root=label_root)
+    )
+
+    xml_path = image_root / "Product1" / "a.xml"
+    xml_text = xml_path.read_text(encoding="utf-8")
+    root = ElementTree.fromstring(xml_text)
+
+    assert root.findtext("folder") == "Product1"
+    assert root.findtext("filename") == "a.jpg"
+    assert root.findtext("path") == str(image_root / "Product1" / "a.jpg")
+    assert root.findtext("source/database") == "Unknown"
+    assert "\n  <folder>" in xml_text
+    assert "\n  <object>" in xml_text
+
+
+def test_independent_restore_blocks_ambiguous_same_stem_images(
+    tmp_path: Path,
+) -> None:
+    """Independent restore rejects multiple same-relative image candidates."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    (image_root / "Product1").mkdir(parents=True)
+    Image.new("RGB", (100, 100), color=(255, 0, 0)).save(
+        image_root / "Product1" / "a.jpg"
+    )
+    Image.new("RGB", (100, 100), color=(0, 255, 0)).save(
+        image_root / "Product1" / "a.png"
+    )
+    write_classes(label_root / "classes.txt")
+    write_label(label_root / "Product1" / "a.txt")
+
+    with pytest.raises(RestoreSourceNotFoundError):
+        Restorer().restore_independent(
+            IndependentRestoreConfig(image_root=image_root, label_root=label_root)
+        )
+
+    assert not (image_root / "Product1" / "a.xml").exists()
+
+
+def test_flow_restore_blocks_ambiguous_same_stem_images(tmp_path: Path) -> None:
+    """Flow restore rejects multiple same-stem images beside the target XML."""
+    site = tmp_path / "site"
+    database = tmp_path / "database"
+    make_site_with_mapping(site)
+    Image.new("RGB", (100, 100), color=(0, 255, 0)).save(
+        site / "CodeA" / "Product1" / "a1.png"
+    )
+    write_classes(database / "classes.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt")
+
+    with pytest.raises(RestoreSourceNotFoundError):
+        Restorer().restore(
+            RestoreConfig(site_folder=site, source_type="database", database_dir=database)
+        )
+
+    assert not (site / "CodeA" / "Product1" / "a1.xml").exists()
 
 
 def test_inference_restore_by_run_id_copies_labels_to_original_products(
@@ -113,10 +349,17 @@ def test_inference_restore_by_run_id_copies_labels_to_original_products(
         / ".autolabeler"
         / "inference_results"
         / "run_20260513_103000"
+        / "labels"
         / "CodeA"
         / "Product1"
         / "a1.txt",
-        "inferred\n",
+    )
+    write_classes(
+        site
+        / ".autolabeler"
+        / "inference_results"
+        / "run_20260513_103000"
+        / "classes.txt"
     )
 
     result = Restorer().restore(
@@ -126,9 +369,7 @@ def test_inference_restore_by_run_id_copies_labels_to_original_products(
     )
 
     assert result.success == 1
-    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(
-        encoding="utf-8"
-    ) == "inferred\n"
+    assert (site / "CodeA" / "Product1" / "a1.xml").exists()
 
 
 def test_inference_restore_by_explicit_run_dir(tmp_path: Path) -> None:
@@ -136,7 +377,8 @@ def test_inference_restore_by_explicit_run_dir(tmp_path: Path) -> None:
     site = tmp_path / "site"
     run_dir = tmp_path / "runs" / "run_custom"
     make_site_with_mapping(site)
-    write_label(run_dir / "CodeA" / "Product1" / "a2.txt", "custom\n")
+    write_classes(run_dir / "classes.txt")
+    write_label(run_dir / "labels" / "CodeA" / "Product1" / "a2.txt")
 
     result = Restorer().restore(
         RestoreConfig(
@@ -146,27 +388,24 @@ def test_inference_restore_by_explicit_run_dir(tmp_path: Path) -> None:
 
     assert result.total == 1
     assert result.success == 1
-    assert (site / "CodeA" / "Product1" / "a2.txt").read_text(
-        encoding="utf-8"
-    ) == "custom\n"
+    assert (site / "CodeA" / "Product1" / "a2.xml").exists()
 
 
-def test_restore_skips_existing_target_when_overwrite_false(tmp_path: Path) -> None:
-    """Existing restored TXT files are skipped unless overwrite is enabled."""
+def test_restore_blocks_existing_target_when_overwrite_false(tmp_path: Path) -> None:
+    """Existing XML blocks restore unless overwrite is enabled."""
     site = tmp_path / "site"
     database = tmp_path / "database"
     make_site_with_mapping(site)
-    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt", "new\n")
-    write_label(site / "CodeA" / "Product1" / "a1.txt", "old\n")
+    write_classes(database / "classes.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt")
+    (site / "CodeA" / "Product1" / "a1.xml").write_text("old\n", encoding="utf-8")
 
-    result = Restorer().restore(
-        RestoreConfig(site_folder=site, source_type="database", database_dir=database)
-    )
+    with pytest.raises(RestoreSourceNotFoundError):
+        Restorer().restore(
+            RestoreConfig(site_folder=site, source_type="database", database_dir=database)
+        )
 
-    assert result.total == 1
-    assert result.success == 0
-    assert result.skipped == 1
-    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(
+    assert (site / "CodeA" / "Product1" / "a1.xml").read_text(
         encoding="utf-8"
     ) == "old\n"
 
@@ -176,8 +415,9 @@ def test_restore_overwrites_existing_target_when_overwrite_true(tmp_path: Path) 
     site = tmp_path / "site"
     database = tmp_path / "database"
     make_site_with_mapping(site)
-    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt", "new\n")
-    write_label(site / "CodeA" / "Product1" / "a1.txt", "old\n")
+    write_classes(database / "classes.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt")
+    (site / "CodeA" / "Product1" / "a1.xml").write_text("old\n", encoding="utf-8")
 
     result = Restorer().restore(
         RestoreConfig(
@@ -190,27 +430,66 @@ def test_restore_overwrites_existing_target_when_overwrite_true(tmp_path: Path) 
 
     assert result.success == 1
     assert result.skipped == 0
-    assert (site / "CodeA" / "Product1" / "a1.txt").read_text(
+    assert (site / "CodeA" / "Product1" / "a1.xml").read_text(
         encoding="utf-8"
-    ) == "new\n"
+    ).startswith("<annotation")
 
 
-def test_restore_skips_already_restored_mapping_entry(tmp_path: Path) -> None:
-    """Mapping entries already marked restored are skipped by default."""
+def test_restore_rolls_back_xml_written_before_later_write_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Restore removes XML written by the same run if a later write fails."""
+    site = tmp_path / "site"
+    database = tmp_path / "database"
+    make_site_with_mapping(site)
+    write_classes(database / "classes.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a2.txt")
+    from core import restorer as restorer_module
+
+    original_write = restorer_module._write_xml_text
+    calls = 0
+
+    def flaky_write(target_path: Path, xml_text: str) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise restorer_module.RestoreSourceNotFoundError(
+                "Restored XML cannot be written", details=str(target_path)
+            )
+        original_write(target_path, xml_text)
+
+    monkeypatch.setattr(restorer_module, "_write_xml_text", flaky_write)
+
+    with pytest.raises(RestoreSourceNotFoundError):
+        Restorer().restore(
+            RestoreConfig(site_folder=site, source_type="database", database_dir=database)
+        )
+
+    assert not (site / "CodeA" / "Product1" / "a1.xml").exists()
+    assert not (site / "CodeA" / "Product1" / "a2.xml").exists()
+    mapping = MappingManager(site / ".autolabeler" / "mapping.json").load()
+    assert mapping.get_statistics()["restored_count"] == 0
+
+
+def test_restore_does_not_skip_restored_mapping_entry_without_xml(
+    tmp_path: Path,
+) -> None:
+    """Mapping restored state does not replace XML target preflight."""
     site = tmp_path / "site"
     database = tmp_path / "database"
     manager = make_site_with_mapping(site)
     manager.mark_restored("CodeA__Product1__a1.jpg")
     manager.save()
-    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt", "new\n")
+    write_classes(database / "classes.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt")
 
     result = Restorer().restore(
         RestoreConfig(site_folder=site, source_type="database", database_dir=database)
     )
 
-    assert result.success == 0
-    assert result.skipped == 1
-    assert not (site / "CodeA" / "Product1" / "a1.txt").exists()
+    assert result.success == 1
+    assert (site / "CodeA" / "Product1" / "a1.xml").exists()
 
 
 def test_restore_filters_control_files(tmp_path: Path) -> None:
@@ -218,7 +497,8 @@ def test_restore_filters_control_files(tmp_path: Path) -> None:
     site = tmp_path / "site"
     database = tmp_path / "database"
     make_site_with_mapping(site)
-    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt", "label\n")
+    write_classes(database / "classes.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt")
     write_label(database / "labels" / "train" / "classes.txt", "CodeA\n")
     write_label(database / "labels" / "train" / "data.yaml", "path: .\n")
     write_label(database / "labels" / "train" / "README.txt", "notes\n")
@@ -229,79 +509,66 @@ def test_restore_filters_control_files(tmp_path: Path) -> None:
 
     assert result.total == 1
     assert result.success == 1
-    assert not (site / "CodeA" / "Product1" / "classes.txt").exists()
+    assert not (site / "CodeA" / "Product1" / "classes.xml").exists()
 
 
-def test_database_unknown_encoded_label_records_failure_and_continues(
+def test_database_unknown_encoded_label_blocks_before_writing(
     tmp_path: Path,
 ) -> None:
-    """Unknown database labels are per-file failures and do not stop later files."""
+    """Unknown database labels fail preflight and do not write later XML."""
     site = tmp_path / "site"
     database = tmp_path / "database"
     make_site_with_mapping(site)
-    write_label(database / "labels" / "train" / "CodeA__Product1__missing.txt", "bad\n")
-    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt", "good\n")
+    write_classes(database / "classes.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__missing.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt")
 
-    result = Restorer().restore(
-        RestoreConfig(site_folder=site, source_type="database", database_dir=database)
-    )
+    with pytest.raises(RestoreSourceNotFoundError):
+        Restorer().restore(
+            RestoreConfig(site_folder=site, source_type="database", database_dir=database)
+        )
 
-    assert result.total == 2
-    assert result.success == 1
-    assert result.failed == 1
-    assert result.errors[0].target_path is None
-    assert (site / "CodeA" / "Product1" / "a1.txt").exists()
+    assert not (site / "CodeA" / "Product1" / "a1.xml").exists()
 
 
-def test_inference_unknown_relative_label_records_failure_and_continues(
+def test_inference_unknown_relative_label_blocks_before_writing(
     tmp_path: Path,
 ) -> None:
-    """Inference labels with no matching mapping image are per-file failures."""
+    """Inference labels with no matching mapping image fail preflight."""
     site = tmp_path / "site"
     make_site_with_mapping(site)
     run = site / ".autolabeler" / "inference_results" / "run_20260513_103000"
-    write_label(run / "CodeA" / "Product1" / "missing.txt", "bad\n")
-    write_label(run / "CodeA" / "Product1" / "a2.txt", "good\n")
+    write_classes(run / "classes.txt")
+    write_label(run / "labels" / "CodeA" / "Product1" / "missing.txt")
+    write_label(run / "labels" / "CodeA" / "Product1" / "a2.txt")
 
-    result = Restorer().restore(
-        RestoreConfig(
-            site_folder=site, source_type="inference", run_id="run_20260513_103000"
+    with pytest.raises(RestoreSourceNotFoundError):
+        Restorer().restore(
+            RestoreConfig(
+                site_folder=site, source_type="inference", run_id="run_20260513_103000"
+            )
         )
-    )
 
-    assert result.success == 1
-    assert result.failed == 1
-    assert result.errors[0].target_path is None
-    assert (site / "CodeA" / "Product1" / "a2.txt").exists()
+    assert not (site / "CodeA" / "Product1" / "a2.xml").exists()
 
 
-def test_copy_failure_records_error_and_continues(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_invalid_label_blocks_before_writing(
+    tmp_path: Path,
 ) -> None:
-    """Copy errors are recorded per file and later labels continue."""
+    """Invalid labels fail preflight and do not write later XML."""
     site = tmp_path / "site"
     database = tmp_path / "database"
     make_site_with_mapping(site)
-    failing_source = database / "labels" / "train" / "CodeA__Product1__a1.txt"
-    write_label(failing_source, "bad\n")
-    write_label(database / "labels" / "train" / "CodeA__Product1__a2.txt", "good\n")
+    write_classes(database / "classes.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt", "bad\n")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a2.txt")
 
-    def fake_copy2(source: Path, target: Path) -> Path:
-        if source == failing_source:
-            raise OSError("disk full")
-        target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
-        return target
+    with pytest.raises(AutoLabelerError):
+        Restorer().restore(
+            RestoreConfig(site_folder=site, source_type="database", database_dir=database)
+        )
 
-    monkeypatch.setattr("core.restorer.shutil.copy2", fake_copy2)
-
-    result = Restorer().restore(
-        RestoreConfig(site_folder=site, source_type="database", database_dir=database)
-    )
-
-    assert result.success == 1
-    assert result.failed == 1
-    assert "disk full" in result.errors[0].reason
-    assert (site / "CodeA" / "Product1" / "a2.txt").exists()
+    assert not (site / "CodeA" / "Product1" / "a2.xml").exists()
 
 
 def test_missing_mapping_raises_restore_mapping_not_found(tmp_path: Path) -> None:
@@ -368,7 +635,8 @@ def test_task_handle_progress_updates(tmp_path: Path) -> None:
     site = tmp_path / "site"
     database = tmp_path / "database"
     make_site_with_mapping(site)
-    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt", "label\n")
+    write_classes(database / "classes.txt")
+    write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt")
     handle = make_task_handle()
 
     Restorer(task_handle=handle).restore(
@@ -385,6 +653,7 @@ def test_cancelled_task_raises_task_cancelled(tmp_path: Path) -> None:
     site = tmp_path / "site"
     database = tmp_path / "database"
     make_site_with_mapping(site)
+    write_classes(database / "classes.txt")
     write_label(database / "labels" / "train" / "CodeA__Product1__a1.txt", "label\n")
     handle = make_task_handle(cancelled=True)
 

@@ -125,5 +125,5 @@ def test_scenario_a_scan_sample_label_train_infer_restore(
     assert train_result.best_model.exists()
     assert infer_result.statistics.success == 2
     assert restore_result.success == 2
-    assert (site / "CodeA" / "Product1" / "a1.txt").exists()
-    assert (site / "CodeA" / "Product1" / "a2.txt").exists()
+    assert (site / "CodeA" / "Product1" / "a1.xml").exists()
+    assert (site / "CodeA" / "Product1" / "a2.xml").exists()

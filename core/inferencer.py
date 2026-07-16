@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import importlib
 import json
+import shutil
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -21,7 +23,8 @@ from utils.exceptions import (
 from utils.mapping_manager import MappedImage, MappingManager
 from utils.task_registry import TaskHandle
 
-_VALID_IMAGE_SOURCES = {"unsampled", "all", "custom"}
+_VALID_IMAGE_SOURCES = {"unsampled", "all", "custom", "folder"}
+_SUPPORTED_IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".bmp")
 
 
 class _YoloModel(Protocol):
@@ -45,6 +48,9 @@ class InferConfig:
     save_to_separate_dir: bool = True
     image_source: str = "unsampled"
     custom_images: list[Path] | None = None
+    image_folder: Path | None = None
+    overwrite_output: bool = False
+    label_y_offset_px: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -63,10 +69,11 @@ class InferStatistics:
 class InferResult:
     """Inferencer output contract."""
 
-    mapping_path: Path
+    mapping_path: Path | None
     run_id: str
     inference_output_dir: Path
     config_path: Path
+    classes_path: Path | None
     statistics: InferStatistics
 
 
@@ -116,15 +123,18 @@ class Inferencer:
         self,
         mapping_manager: MappingManager | None = None,
         task_handle: TaskHandle | None = None,
+        progress_callback: Callable[[int, int, str], None] | None = None,
     ) -> None:
         """Create an inferencer with optional mapping and task dependencies.
 
         Args:
             mapping_manager: Optional mapping manager for tests or callers.
             task_handle: Optional task state used for progress and cancellation.
+            progress_callback: Optional callback for persisting/reporting progress.
         """
         self._mapping_manager = mapping_manager
         self._task_handle = task_handle
+        self._progress_callback = progress_callback
 
     def infer(self, config: InferConfig) -> InferResult:
         """Run inference for mapped or custom images.
@@ -150,6 +160,8 @@ class Inferencer:
         targets: list[_InferTarget]
         if config.image_source == "custom":
             targets = self._custom_targets(config.custom_images, config.site_folder)
+        elif config.image_source == "folder":
+            targets = self._folder_targets(config.image_folder)
         else:
             manager = self._load_mapping(config, mapping_path)
             targets = self._mapping_targets(config, manager)
@@ -164,24 +176,21 @@ class Inferencer:
         output_dir = (
             output_base_dir / run_id if config.save_to_separate_dir else output_base_dir
         )
+        if output_dir.exists() and any(output_dir.iterdir()) and not config.overwrite_output:
+            raise InferImageNotFoundError(
+                "inference output directory is not empty", details=str(output_dir)
+            )
+        if output_dir.exists() and config.overwrite_output:
+            shutil.rmtree(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         self._set_progress(0, len(targets), "准备推理")
 
         logger.info("开始推理: {} 张图片", len(targets))
-        try:
-            results = model.predict(
-                source=[str(target.image_path) for target in targets],
-                conf=config.confidence,
-                iou=config.iou,
-                device=device,
-                batch=batch_size,
-                save=False,
-                verbose=False,
-            )
-        except Exception as exc:
-            raise InferModelLoadError("模型推理失败", details=str(exc)) from exc
-
-        statistics = self._write_outputs(output_dir, targets, results)
+        labels_dir = output_dir / "labels"
+        statistics = self._predict_and_write_outputs(
+            labels_dir, targets, model, config, device, batch_size
+        )
+        classes_path = _write_model_classes(output_dir, model)
         if manager is not None:
             manager.mark_inferred(
                 [
@@ -197,10 +206,11 @@ class Inferencer:
         )
         self._set_progress(statistics.processed, statistics.pending, "推理完成")
         return InferResult(
-            mapping_path=mapping_path,
+            mapping_path=mapping_path if manager is not None else None,
             run_id=run_id,
             inference_output_dir=output_dir,
             config_path=config_path,
+            classes_path=classes_path,
             statistics=statistics,
         )
 
@@ -289,32 +299,74 @@ class Inferencer:
             )
         return targets
 
-    def _write_outputs(
+    def _folder_targets(self, image_folder: Path | None) -> list[_InferTarget]:
+        """Resolve independent folder targets without mapping.json."""
+        if image_folder is None or not image_folder.exists() or not image_folder.is_dir():
+            raise InferImageNotFoundError(
+                "image_folder is invalid", details="" if image_folder is None else str(image_folder)
+            )
+        image_paths = sorted(
+            path
+            for path in image_folder.rglob("*")
+            if path.is_file() and path.suffix.lower() in _SUPPORTED_IMAGE_SUFFIXES
+        )
+        if not image_paths:
+            raise InferImageNotFoundError(
+                "image_folder contains no supported images", details=str(image_folder)
+            )
+        return [
+            _InferTarget(
+                image_path=image_path,
+                output_relative=image_path.relative_to(image_folder).with_suffix(".txt"),
+                mapping_key=None,
+            )
+            for image_path in image_paths
+        ]
+
+    def _predict_and_write_outputs(
         self,
         output_dir: Path,
         targets: list[_InferTarget],
-        results: list[object],
+        model: _YoloModel,
+        config: InferConfig,
+        device: str,
+        batch_size: int,
     ) -> InferStatistics:
-        """Write prediction TXT files and return statistics."""
+        """Run YOLO in bounded chunks and write prediction TXT files."""
         success = 0
         failed = 0
         predicted = 0
         empty_prediction = 0
-        for index, target in enumerate(targets, start=1):
+        for start in range(0, len(targets), batch_size):
             self._raise_if_cancelled()
-            result = results[index - 1] if index - 1 < len(results) else None
-            output_path = output_dir / target.output_relative
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            lines = _prediction_lines(result)
-            output_path.write_text(
-                "".join(f"{line}\n" for line in lines), encoding="utf-8"
-            )
-            if lines:
-                predicted += 1
-            else:
-                empty_prediction += 1
-            success += 1
-            self._set_progress(index, len(targets), f"已推理 {index}/{len(targets)}")
+            chunk = targets[start : start + batch_size]
+            try:
+                results = model.predict(
+                    source=[str(target.image_path) for target in chunk],
+                    conf=config.confidence,
+                    iou=config.iou,
+                    device=device,
+                    batch=batch_size,
+                    save=False,
+                    verbose=False,
+                )
+            except Exception as exc:
+                raise InferModelLoadError("模型推理失败", details=str(exc)) from exc
+            for offset, target in enumerate(chunk):
+                self._raise_if_cancelled()
+                result = results[offset] if offset < len(results) else None
+                output_path = output_dir / target.output_relative
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                lines = _prediction_lines(result, config.label_y_offset_px)
+                output_path.write_text(
+                    "".join(f"{line}\n" for line in lines), encoding="utf-8"
+                )
+                if lines:
+                    predicted += 1
+                else:
+                    empty_prediction += 1
+                success += 1
+                self._set_progress(success, len(targets), f"已推理 {success}/{len(targets)}")
         return InferStatistics(
             pending=len(targets),
             processed=success + failed,
@@ -332,11 +384,12 @@ class Inferencer:
 
     def _set_progress(self, current: int, total: int, message: str) -> None:
         """Update task progress fields when a task handle is available."""
-        if self._task_handle is None:
-            return
-        self._task_handle.progress_current = current
-        self._task_handle.progress_total = total
-        self._task_handle.progress_message = message
+        if self._task_handle is not None:
+            self._task_handle.progress_current = current
+            self._task_handle.progress_total = total
+            self._task_handle.progress_message = message
+        if self._progress_callback is not None:
+            self._progress_callback(current, total, message)
 
 
 def _load_yolo_model(model_path: Path) -> _YoloModel:
@@ -344,6 +397,33 @@ def _load_yolo_model(model_path: Path) -> _YoloModel:
     module = importlib.import_module("ultralytics")
     yolo_class = getattr(module, "YOLO")
     return cast(_YoloModel, yolo_class(str(model_path)))
+
+
+def _write_model_classes(output_dir: Path, model: _YoloModel) -> Path | None:
+    """Write model class names beside one inference run when available."""
+    names = getattr(model, "names", None)
+    if names is None:
+        return None
+    class_names = _model_class_names(names)
+    if not class_names:
+        return None
+    classes_path = output_dir / "classes.txt"
+    classes_path.write_text(
+        "".join(f"{name}\n" for name in class_names), encoding="utf-8"
+    )
+    return classes_path
+
+
+def _model_class_names(names: object) -> list[str]:
+    """Normalize common Ultralytics class-name containers."""
+    if isinstance(names, dict):
+        if not names:
+            return []
+        max_index = max(int(index) for index in names)
+        return [str(names.get(index, "")) for index in range(max_index + 1)]
+    if isinstance(names, (list, tuple)):
+        return [str(name) for name in names]
+    return []
 
 
 def _run_id() -> str:
@@ -369,7 +449,7 @@ def _custom_output_relative(image_path: Path, site_folder: Path) -> Path:
     return Path(f"{image_path.stem}.txt")
 
 
-def _prediction_lines(result: object) -> list[str]:
+def _prediction_lines(result: object, label_y_offset_px: float = 0.0) -> list[str]:
     """Convert a YOLO prediction result object to YOLO TXT lines."""
     boxes = [] if result is None else getattr(result, "boxes", [])
     lines: list[str] = []
@@ -377,10 +457,44 @@ def _prediction_lines(result: object) -> list[str]:
         class_id = int(_scalar(getattr(box, "cls", 0)))
         xywhn = getattr(box, "xywhn", (0.0, 0.0, 0.0, 0.0))
         values = _xywhn_values(xywhn)
+        if label_y_offset_px:
+            values = _shift_y_center(values, label_y_offset_px, result)
         lines.append(
             f"{class_id} {values[0]:.6f} {values[1]:.6f} {values[2]:.6f} {values[3]:.6f}"
         )
     return lines
+
+
+def _shift_y_center(
+    values: tuple[float, float, float, float],
+    offset_px: float,
+    result: object,
+) -> tuple[float, float, float, float]:
+    """Shift normalized y-center by a pixel offset while preserving box size."""
+    image_height = _result_image_height(result)
+    if image_height <= 0:
+        return values
+    x_center, y_center, width, height = values
+    shifted_y = y_center + (offset_px / image_height)
+    if height >= 1:
+        shifted_y = 0.5
+    else:
+        min_center = height / 2
+        max_center = 1 - min_center
+        shifted_y = min(max(shifted_y, min_center), max_center)
+    return (x_center, shifted_y, width, height)
+
+
+def _result_image_height(result: object) -> float:
+    """Read image height from common Ultralytics result attributes."""
+    orig_shape = getattr(result, "orig_shape", None)
+    if isinstance(orig_shape, (list, tuple)) and orig_shape:
+        return float(orig_shape[0])
+    orig_img = getattr(result, "orig_img", None)
+    shape = getattr(orig_img, "shape", None)
+    if isinstance(shape, (list, tuple)) and shape:
+        return float(shape[0])
+    return 0.0
 
 
 def _xywhn_values(value: object) -> tuple[float, float, float, float]:
@@ -427,11 +541,15 @@ def _write_config_snapshot(
     payload = {
         "run_id": run_id,
         "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "mode": "independent" if config.image_source in {"custom", "folder"} else "flow",
+        "source_mode": config.image_source,
+        "image_root": str(config.image_folder or config.site_folder),
         "model_path": str(config.model_path),
         "confidence": config.confidence,
         "iou": config.iou,
         "device": device,
         "batch_size": batch_size,
+        "label_y_offset_px": config.label_y_offset_px,
         "image_count": statistics.pending,
         "predicted_count": statistics.predicted,
         "empty_prediction_count": statistics.empty_prediction,

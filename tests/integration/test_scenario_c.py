@@ -48,6 +48,8 @@ def make_mapping_for_custom_site(site: Path, image_name: str) -> None:
     """Create mapping for restoring a custom inference run."""
     encoder = PathEncoder()
     image_path = site / "CodeA" / "Product1" / image_name
+    (site / ".autolabeler").mkdir(parents=True, exist_ok=True)
+    (site / ".autolabeler" / "classes.txt").write_text("CodeA\n", encoding="utf-8")
     manager = MappingManager(site / ".autolabeler" / "mapping.json").create_new(site)
     manager.add_class(0, "CodeA")
     manager.add_image(
@@ -88,7 +90,9 @@ def test_scenario_c_external_model_custom_infer_then_restore(
         )
     )
 
-    produced = infer_result.inference_output_dir / "CodeA" / "Product1" / "a1.txt"
+    produced = (
+        infer_result.inference_output_dir / "labels" / "CodeA" / "Product1" / "a1.txt"
+    )
     assert produced.exists()
 
     restore_result = Restorer().restore(
@@ -96,4 +100,4 @@ def test_scenario_c_external_model_custom_infer_then_restore(
     )
 
     assert restore_result.success == 1
-    assert (site / "CodeA" / "Product1" / "a1.txt").exists()
+    assert (site / "CodeA" / "Product1" / "a1.xml").exists()

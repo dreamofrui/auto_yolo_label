@@ -1,4 +1,4 @@
-"""Read-only inspection of inference label runs."""
+"""Read-only preparation of inference labels for LabelImg review."""
 
 from __future__ import annotations
 
@@ -8,10 +8,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
-from utils.exceptions import AutoLabelerError, ErrorCode
+from utils.exceptions import AutoLabelerError, ErrorCode, PathNotFoundError
+from utils.mapping_manager import MappedImage, MappingManager
 
 _CONTROL_FILE_NAMES = {"classes.txt", "data.yaml", "readme.txt"}
-_SUPPORTED_IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".bmp")
 
 
 @dataclass(frozen=True)
@@ -63,12 +63,13 @@ class RunTreeNode:
 
 @dataclass(frozen=True)
 class ProductLabel:
-    """One label file and its best-effort source image path."""
+    """One review image and its editable label path."""
 
     image_name: str
-    image_path: Path | None
+    image_path: Path
     label_path: Path
     object_count: int
+    missing_label: bool = False
 
 
 class InspectorError(AutoLabelerError):
@@ -89,19 +90,29 @@ class InspectorProductNotFoundError(InspectorError):
     code = ErrorCode.INSPECTOR_PRODUCT_NOT_FOUND
 
 
+class InspectorMappingNotFoundError(InspectorError):
+    """Raised when flow review cannot load mapping.json."""
+
+    code = ErrorCode.INSPECTOR_MAPPING_NOT_FOUND
+
+
+class InspectorClassesNotFoundError(InspectorError):
+    """Raised when flow review cannot load a non-empty classes.txt."""
+
+    code = ErrorCode.INSPECTOR_CLASSES_NOT_FOUND
+
+
+class InspectorOriginalImageMissingError(InspectorError):
+    """Raised when mapped source images are missing from disk."""
+
+    code = ErrorCode.INSPECTOR_ORIGINAL_IMAGE_MISSING
+
+
 class LabelInspector:
-    """Browse inference results without depending on mapping.json."""
+    """Prepare flow-mode inference runs for LabelImg review."""
 
     def list_runs(self, config: ListRunsConfig) -> list[InferenceRun]:
-        """List inference runs under `site_folder`.
-
-        Args:
-            config: Site folder to inspect.
-
-        Returns:
-            Run metadata sorted by run id descending. Invalid or missing
-            `inference_config.json` files are reported as absent.
-        """
+        """List inference runs under `site_folder`."""
         inference_root = _inference_root(config.site_folder)
         if not inference_root.exists() or not inference_root.is_dir():
             return []
@@ -122,23 +133,15 @@ class LabelInspector:
         return runs
 
     def get_run_tree(self, config: GetRunTreeConfig) -> list[RunTreeNode]:
-        """Return Code/Product label counts for one inference run.
-
-        Args:
-            config: Site folder and run id to inspect.
-
-        Returns:
-            A sorted list of product nodes with TXT and empty-TXT counts.
-
-        Raises:
-            InspectorRunNotFoundError: If the run directory does not exist.
-        """
-        run_dir = _run_dir(config.site_folder, config.run_id)
-        if not run_dir.exists() or not run_dir.is_dir():
-            raise InspectorRunNotFoundError("推理 run 不存在", details=str(run_dir))
+        """Return Code/Product label counts from `run/labels/...`."""
+        labels_root = _labels_root(config.site_folder, config.run_id)
+        if not labels_root.exists() or not labels_root.is_dir():
+            raise InspectorRunNotFoundError(
+                "Inference run labels do not exist", details=str(labels_root)
+            )
 
         nodes: list[RunTreeNode] = []
-        for code_dir in sorted(item for item in run_dir.iterdir() if item.is_dir()):
+        for code_dir in sorted(item for item in labels_root.iterdir() if item.is_dir()):
             for product_dir in sorted(
                 item for item in code_dir.iterdir() if item.is_dir()
             ):
@@ -157,43 +160,48 @@ class LabelInspector:
         return nodes
 
     def get_product_labels(self, config: GetProductLabelsConfig) -> list[ProductLabel]:
-        """Return labels and source image paths for one product.
-
-        Args:
-            config: Site folder, run id, Code, and Product to inspect.
-
-        Returns:
-            Sorted label records with object counts.
-
-        Raises:
-            InspectorRunNotFoundError: If the run directory does not exist.
-            InspectorProductNotFoundError: If the product label directory does not exist.
-        """
-        run_dir = _run_dir(config.site_folder, config.run_id)
-        if not run_dir.exists() or not run_dir.is_dir():
-            raise InspectorRunNotFoundError("推理 run 不存在", details=str(run_dir))
-        product_dir = run_dir / config.code / config.product
+        """Return mapped review images and editable label paths for one node."""
+        labels_root = _labels_root(config.site_folder, config.run_id)
+        if not labels_root.exists() or not labels_root.is_dir():
+            raise InspectorRunNotFoundError(
+                "Inference run labels do not exist", details=str(labels_root)
+            )
+        product_dir = labels_root / config.code / config.product
         if not product_dir.exists() or not product_dir.is_dir():
             raise InspectorProductNotFoundError(
-                "推理产品目录不存在", details=str(product_dir)
+                "Inference product labels do not exist", details=str(product_dir)
+            )
+
+        _load_classes(config.site_folder)
+        mapped_images = _mapped_product_images(
+            _load_mapping(config.site_folder), config.code, config.product
+        )
+        missing_images = [
+            config.site_folder / Path(mapped.info.original_relative)
+            for mapped in mapped_images
+            if not (config.site_folder / Path(mapped.info.original_relative)).is_file()
+        ]
+        if missing_images:
+            raise InspectorOriginalImageMissingError(
+                "Original images are missing",
+                details=", ".join(path.as_posix() for path in missing_images),
             )
 
         labels: list[ProductLabel] = []
-        for label_path in _label_files(product_dir):
-            image_path = _find_original_image(
-                config.site_folder, config.code, config.product, label_path.stem
-            )
+        for mapped in mapped_images:
+            image_path = config.site_folder / Path(mapped.info.original_relative)
+            label_path = product_dir / f"{Path(mapped.info.original_name).stem}.txt"
+            missing_label = not label_path.exists()
             labels.append(
                 ProductLabel(
-                    image_name=(
-                        image_path.name if image_path is not None else label_path.stem
-                    ),
+                    image_name=image_path.name,
                     image_path=image_path,
                     label_path=label_path,
-                    object_count=_object_count(label_path),
+                    object_count=0 if missing_label else _object_count(label_path),
+                    missing_label=missing_label,
                 )
             )
-        return labels
+        return sorted(labels, key=lambda item: item.label_path.name)
 
 
 def _inference_root(site_folder: Path) -> Path:
@@ -204,6 +212,55 @@ def _inference_root(site_folder: Path) -> Path:
 def _run_dir(site_folder: Path, run_id: str) -> Path:
     """Return one inference run directory."""
     return _inference_root(site_folder) / run_id
+
+
+def _labels_root(site_folder: Path, run_id: str) -> Path:
+    """Return one inference run labels root."""
+    return _run_dir(site_folder, run_id) / "labels"
+
+
+def _load_mapping(site_folder: Path) -> MappingManager:
+    """Load flow-mode mapping for review."""
+    mapping_path = site_folder / ".autolabeler" / "mapping.json"
+    try:
+        return MappingManager(mapping_path).load()
+    except PathNotFoundError as exc:
+        raise InspectorMappingNotFoundError(
+            "mapping.json does not exist", details=str(mapping_path)
+        ) from exc
+
+
+def _load_classes(site_folder: Path) -> list[str]:
+    """Load non-empty flow-mode classes.txt for review."""
+    classes_path = site_folder / ".autolabeler" / "classes.txt"
+    if not classes_path.exists() or not classes_path.is_file():
+        raise InspectorClassesNotFoundError(
+            "classes.txt does not exist", details=str(classes_path)
+        )
+    classes = [
+        line.strip()
+        for line in classes_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    if not classes:
+        raise InspectorClassesNotFoundError(
+            "classes.txt is empty", details=str(classes_path)
+        )
+    return classes
+
+
+def _mapped_product_images(
+    manager: MappingManager, code: str, product: str
+) -> list[MappedImage]:
+    """Return mapping records for one Code/Product pair."""
+    return sorted(
+        (
+            mapped
+            for mapped in manager.get_sampled_images() + manager.get_unsampled_images()
+            if mapped.info.code == code and mapped.info.product == product
+        ),
+        key=lambda mapped: mapped.info.original_name,
+    )
 
 
 def _read_config(config_path: Path) -> dict[str, object] | None:
@@ -249,25 +306,3 @@ def _object_count(label_path: Path) -> int:
         )
     except OSError:
         return 0
-
-
-def _find_original_image(
-    site_folder: Path, code: str, product: str, stem: str
-) -> Path | None:
-    """Find a source image with a matching stem and supported suffix."""
-    product_dir = site_folder / code / product
-    if not product_dir.exists() or not product_dir.is_dir():
-        return None
-    suffix_order = {
-        suffix: index for index, suffix in enumerate(_SUPPORTED_IMAGE_SUFFIXES)
-    }
-    candidates = [
-        path
-        for path in product_dir.iterdir()
-        if path.is_file() and path.stem == stem and path.suffix.lower() in suffix_order
-    ]
-    if not candidates:
-        return None
-    return sorted(
-        candidates, key=lambda path: (suffix_order[path.suffix.lower()], path.name)
-    )[0]

@@ -17,6 +17,9 @@ from core.converter import (
     ConvertXmlParseError,
     Converter,
     TxtToXmlConfig,
+    XmlDatasetAnalyzeConfig,
+    XmlDatasetConvertConfig,
+    XmlDatasetPreflightError,
     XmlToTxtConfig,
 )
 from utils.exceptions import ErrorCode, TaskCancelledError
@@ -101,6 +104,195 @@ def make_task_handle(task_type: str = "convert") -> TaskHandle:
         finished_at=None,
         is_cancel_requested=False,
     )
+
+
+def test_analyze_xml_dataset_collects_sorted_classes_and_skip_counts(
+    tmp_path: Path,
+) -> None:
+    """Preflight reports classes, valid pairs, skipped files, and no writes."""
+    source = tmp_path / "source"
+    output = tmp_path / "dataset"
+    make_image(source / "GroupA" / "a.jpg", size=(100, 100))
+    write_xml(
+        source / "GroupA" / "a.xml",
+        objects=[
+            {"name": "zebra", "xmin": 10, "ymin": 10, "xmax": 50, "ymax": 50},
+            {"name": "ant", "xmin": 20, "ymin": 20, "xmax": 60, "ymax": 60},
+        ],
+    )
+    make_image(source / "GroupA" / "missing_xml.jpg")
+    write_xml(
+        source / "GroupA" / "missing_image.xml",
+        objects=[{"name": "zebra", "xmin": 1, "ymin": 1, "xmax": 2, "ymax": 2}],
+    )
+
+    analysis = Converter().analyze_xml_dataset(
+        XmlDatasetAnalyzeConfig(source_dir=source, output_dir=output)
+    )
+
+    assert analysis.collected_classes == ["ant", "zebra"]
+    assert analysis.valid_pair_count == 1
+    assert analysis.skipped_image_count == 1
+    assert analysis.skipped_xml_count == 1
+    assert analysis.blocking_issues == []
+    assert analysis.output_conflicts == []
+    assert not output.exists()
+
+
+def test_convert_xml_dataset_writes_standard_dataset_after_class_confirmation(
+    tmp_path: Path,
+) -> None:
+    """Confirmed XML dataset conversion copies every valid pair into YOLO output."""
+    source = tmp_path / "source"
+    output = tmp_path / "dataset"
+    for name in ("a", "b"):
+        make_image(source / "GroupA" / f"{name}.jpg", size=(100, 100))
+        write_xml(
+            source / "GroupA" / f"{name}.xml",
+            width=100,
+            height=100,
+            objects=[{"name": "cat", "xmin": 25, "ymin": 25, "xmax": 75, "ymax": 75}],
+        )
+    make_image(source / "GroupB" / "c.png", size=(100, 100))
+    write_xml(
+        source / "GroupB" / "c.xml",
+        width=100,
+        height=100,
+        objects=[{"name": "dog", "xmin": 10, "ymin": 10, "xmax": 30, "ymax": 30}],
+    )
+
+    result = Converter().convert_xml_dataset(
+        XmlDatasetConvertConfig(
+            source_dir=source,
+            output_dir=output,
+            confirmed_classes=["dog", "cat"],
+            train_ratio=0.5,
+        )
+    )
+
+    assert result.dataset_dir == output
+    assert result.class_count == 2
+    assert result.total_pairs == 3
+    assert result.train_count == 2
+    assert result.val_count == 1
+    assert (output / "images" / "train" / "a.jpg").exists()
+    assert (output / "images" / "val" / "b.jpg").exists()
+    assert (output / "images" / "train" / "c.png").exists()
+    assert (output / "labels" / "train" / "a.txt").read_text(
+        encoding="utf-8"
+    ).startswith("1 ")
+    assert (output / "labels" / "train" / "c.txt").read_text(
+        encoding="utf-8"
+    ).startswith("0 ")
+    assert (output / "classes.txt").read_text(encoding="utf-8") == "dog\ncat\n"
+    assert "train: images/train" in (output / "data.yaml").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_convert_xml_dataset_quotes_yaml_class_names(tmp_path: Path) -> None:
+    """Class names are quoted in data.yaml so special characters stay valid."""
+    source = tmp_path / "source"
+    output = tmp_path / "dataset"
+    make_image(source / "a.jpg", size=(100, 100))
+    write_xml(
+        source / "a.xml",
+        width=100,
+        height=100,
+        objects=[
+            {"name": "part: A", "xmin": 25, "ymin": 25, "xmax": 75, "ymax": 75},
+            {"name": "O'Brien", "xmin": 10, "ymin": 10, "xmax": 30, "ymax": 30},
+        ],
+    )
+
+    Converter().convert_xml_dataset(
+        XmlDatasetConvertConfig(
+            source_dir=source,
+            output_dir=output,
+            confirmed_classes=["part: A", "O'Brien"],
+        )
+    )
+
+    data_yaml = (output / "data.yaml").read_text(encoding="utf-8")
+    assert "names: ['part: A', 'O''Brien']" in data_yaml
+
+
+def test_convert_xml_dataset_blocks_missing_provided_class_before_writes(
+    tmp_path: Path,
+) -> None:
+    """Object names absent from confirmed classes block conversion atomically."""
+    source = tmp_path / "source"
+    output = tmp_path / "dataset"
+    make_image(source / "a.jpg", size=(100, 100))
+    write_xml(
+        source / "a.xml",
+        objects=[{"name": "dog", "xmin": 10, "ymin": 10, "xmax": 20, "ymax": 20}],
+    )
+
+    with pytest.raises(XmlDatasetPreflightError) as exc_info:
+        Converter().convert_xml_dataset(
+            XmlDatasetConvertConfig(
+                source_dir=source,
+                output_dir=output,
+                confirmed_classes=["cat"],
+            )
+        )
+
+    assert "dog" in (exc_info.value.details or "")
+    assert not output.exists()
+
+
+def test_convert_xml_dataset_blocks_output_filename_conflicts(
+    tmp_path: Path,
+) -> None:
+    """Same output image or label names from different folders block preflight."""
+    source = tmp_path / "source"
+    output = tmp_path / "dataset"
+    for folder in ("left", "right"):
+        make_image(source / folder / "same.jpg", size=(100, 100))
+        write_xml(
+            source / folder / "same.xml",
+            objects=[{"name": "cat", "xmin": 10, "ymin": 10, "xmax": 20, "ymax": 20}],
+        )
+
+    analysis = Converter().analyze_xml_dataset(
+        XmlDatasetAnalyzeConfig(source_dir=source, output_dir=output, classes=["cat"])
+    )
+
+    assert analysis.output_conflicts
+    assert any("same.jpg" in issue for issue in analysis.output_conflicts)
+    with pytest.raises(XmlDatasetPreflightError):
+        Converter().convert_xml_dataset(
+            XmlDatasetConvertConfig(
+                source_dir=source,
+                output_dir=output,
+                confirmed_classes=["cat"],
+            )
+        )
+    assert not output.exists()
+
+
+def test_analyze_xml_dataset_blocks_malformed_xml(tmp_path: Path) -> None:
+    """Malformed same-stem XML is a blocking preflight issue."""
+    source = tmp_path / "source"
+    output = tmp_path / "dataset"
+    make_image(source / "a.jpg", size=(100, 100))
+    (source / "a.xml").write_text("<annotation>", encoding="utf-8")
+
+    analysis = Converter().analyze_xml_dataset(
+        XmlDatasetAnalyzeConfig(source_dir=source, output_dir=output)
+    )
+
+    assert analysis.valid_pair_count == 0
+    assert analysis.blocking_issues
+    with pytest.raises(XmlDatasetPreflightError):
+        Converter().convert_xml_dataset(
+            XmlDatasetConvertConfig(
+                source_dir=source,
+                output_dir=output,
+                confirmed_classes=["cat"],
+            )
+        )
 
 
 def test_converter_constructs_successfully() -> None:

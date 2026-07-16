@@ -125,12 +125,22 @@ def test_resolve_device_accepts_explicit_values() -> None:
     assert resolve_device("mps", FakeProbe()) == "mps"
     assert resolve_device("0", FakeProbe()) == "0"
     assert resolve_device("0,1", FakeProbe()) == "0,1"
+    assert resolve_device("gpu", FakeProbe(cuda_available=True, cuda_count=1)) == "0"
+    assert resolve_device("gpu", FakeProbe(mps_available=True)) == "mps"
+
+
+def test_resolve_device_rejects_gpu_when_no_accelerator() -> None:
+    """GPU is an explicit request and fails when no accelerator is available."""
+    with pytest.raises(ValidationError) as exc_info:
+        resolve_device("gpu", FakeProbe())
+
+    assert exc_info.value.code.value == "VALIDATION_ERROR"
 
 
 def test_resolve_device_rejects_invalid_values() -> None:
     """Unsupported device strings raise a validation error."""
     with pytest.raises(ValidationError) as exc_info:
-        resolve_device("gpu", FakeProbe())
+        resolve_device("tpu", FakeProbe())
 
     assert exc_info.value.code.value == "VALIDATION_ERROR"
 

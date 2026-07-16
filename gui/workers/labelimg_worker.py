@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
-from pathlib import Path
 
 from core.labelimg_launcher import (
     LabelImgConfig,
@@ -12,8 +12,13 @@ from core.labelimg_launcher import (
     LabelImgValidateConfig,
     LabelImgValidateResult,
 )
-from runtime.services.labelimg_service import launch_labelimg, validate_labelimg
-from utils.exceptions import ErrorInfo
+from gui.workers._task_lifecycle import (
+    default_task_registry,
+    finish_worker_error,
+    finish_worker_success,
+    start_worker_task,
+)
+from utils.exceptions import AutoLabelerError, ErrorInfo
 from utils.task_registry import TaskHandle, TaskRegistry
 
 
@@ -36,27 +41,43 @@ class LabelImgWorker:
         launcher: LabelImgLauncher | None = None,
     ) -> None:
         """Create a LabelImg worker with optional dependencies."""
-        self._registry = registry or TaskRegistry(
-            Path.home() / ".autolabeler" / "tasks"
-        )
+        self._registry = registry or default_task_registry()
         self._launcher = launcher
 
     def validate(self, config: LabelImgValidateConfig) -> LabelImgWorkerOutcome:
         """Validate LabelImg and return a desktop-friendly outcome."""
-        outcome = validate_labelimg(config, self._registry, self._launcher)
-        return LabelImgWorkerOutcome(
-            success=outcome.success,
-            task=outcome.task,
-            result=outcome.result,
-            error=None if outcome.error is None else outcome.error.to_error_info(),
-        )
+        task = start_worker_task(self._registry, "labelimg", "验证 LabelImg 环境")
+        try:
+            result = (self._launcher or _default_launcher()).validate(config)
+        except AutoLabelerError as exc:
+            error = finish_worker_error(self._registry, task, exc)
+            return LabelImgWorkerOutcome(False, task, None, error)
+        finish_worker_success(self._registry, task, result)
+        return LabelImgWorkerOutcome(True, task, result, None)
+
+    def preflight(self, config: LabelImgConfig) -> LabelImgWorkerOutcome:
+        """Preflight LabelImg launch inputs without starting LabelImg."""
+        task = start_worker_task(self._registry, "labelimg", "预检 LabelImg 输入")
+        try:
+            result = (self._launcher or _default_launcher()).preflight(config)
+        except AutoLabelerError as exc:
+            error = finish_worker_error(self._registry, task, exc)
+            return LabelImgWorkerOutcome(False, task, None, error)
+        finish_worker_success(self._registry, task, result)
+        return LabelImgWorkerOutcome(True, task, result, None)
 
     def launch(self, config: LabelImgConfig) -> LabelImgWorkerOutcome:
         """Launch LabelImg and return a desktop-friendly outcome."""
-        outcome = launch_labelimg(config, self._registry, self._launcher)
-        return LabelImgWorkerOutcome(
-            success=outcome.success,
-            task=outcome.task,
-            result=outcome.result,
-            error=None if outcome.error is None else outcome.error.to_error_info(),
-        )
+        task = start_worker_task(self._registry, "labelimg", "启动 LabelImg")
+        try:
+            result = (self._launcher or _default_launcher()).launch(config)
+        except AutoLabelerError as exc:
+            error = finish_worker_error(self._registry, task, exc)
+            return LabelImgWorkerOutcome(False, task, None, error)
+        finish_worker_success(self._registry, task, result)
+        return LabelImgWorkerOutcome(True, task, result, None)
+
+
+def _default_launcher() -> LabelImgLauncher:
+    """Create the desktop launcher with the current process environment."""
+    return LabelImgLauncher(environment=os.environ)

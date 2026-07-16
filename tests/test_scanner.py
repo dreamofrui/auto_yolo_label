@@ -10,7 +10,6 @@ from core.scanner import (
     ScanConfig,
     ScanEmptyError,
     ScanInvalidStructureError,
-    ScanLabelMismatchError,
     ScanPathNotFoundError,
     Scanner,
 )
@@ -64,7 +63,6 @@ def test_scan_builds_mapping_and_classes_for_site_structure(tmp_path: Path) -> N
     make_image(site / "AlphaCode" / "Product1" / "A_001.jpg")
     make_image(site / "AlphaCode" / "Product1" / "A_002.PNG")
     make_image(site / "AlphaCode" / "Product2" / "A_003.bmp")
-    make_image(site / "AlphaCode" / "Product2" / "nested" / "ignored.jpg")
 
     result = Scanner().scan(ScanConfig(site_folder=site))
 
@@ -96,7 +94,6 @@ def test_scan_builds_mapping_and_classes_for_site_structure(tmp_path: Path) -> N
     assert alpha_image.original_name == "A_002.PNG"
     assert alpha_image.format == ".png"
     assert alpha_image.label_source == "none"
-    assert mapping.get_image_info("AlphaCode__Product2__ignored.jpg") is None
 
 
 def test_scan_writes_to_custom_output_dir(tmp_path: Path) -> None:
@@ -131,13 +128,77 @@ def test_scan_missing_code_product_structure_raises_invalid_structure(
         Scanner().scan(ScanConfig(site_folder=site))
 
 
-def test_scan_valid_structure_without_images_raises_empty(tmp_path: Path) -> None:
-    """A valid site tree with no supported images raises ScanEmptyError."""
+def test_scan_reports_invalid_images_when_no_code_product_dirs_exist(
+    tmp_path: Path,
+) -> None:
+    """Sites with only misplaced images report the invalid image paths."""
     site = tmp_path / "site"
-    (site / "CodeA" / "ProductA").mkdir(parents=True)
-    (site / "CodeA" / "ProductA" / "notes.txt").write_text(
-        "not image", encoding="utf-8"
-    )
+    make_image(site / "orphan.jpg")
+
+    with pytest.raises(ScanInvalidStructureError) as exc_info:
+        Scanner().scan(ScanConfig(site_folder=site))
+
+    assert "orphan.jpg" in str(exc_info.value.details)
+
+
+def test_scan_rejects_images_directly_under_site_root(tmp_path: Path) -> None:
+    """Images directly under the site root fail the scan instead of being ignored."""
+    site = tmp_path / "site"
+    make_image(site / "orphan.jpg")
+    make_image(site / "CodeA" / "ProductA" / "valid.jpg")
+
+    with pytest.raises(ScanInvalidStructureError) as exc_info:
+        Scanner().scan(ScanConfig(site_folder=site))
+
+    assert "orphan.jpg" in str(exc_info.value.details)
+
+
+def test_scan_rejects_images_directly_under_code_folder(tmp_path: Path) -> None:
+    """Images directly under a Code folder fail because Product is missing."""
+    site = tmp_path / "site"
+    make_image(site / "CodeA" / "orphan.jpg")
+    make_image(site / "CodeA" / "ProductA" / "valid.jpg")
+
+    with pytest.raises(ScanInvalidStructureError) as exc_info:
+        Scanner().scan(ScanConfig(site_folder=site))
+
+    assert "CodeA" in str(exc_info.value.details)
+
+
+def test_scan_rejects_nested_images_below_product_folder(tmp_path: Path) -> None:
+    """Images nested below Product folders fail because scan requires direct children."""
+    site = tmp_path / "site"
+    make_image(site / "CodeA" / "ProductA" / "valid.jpg")
+    make_image(site / "CodeA" / "ProductA" / "nested" / "deep.jpg")
+
+    with pytest.raises(ScanInvalidStructureError) as exc_info:
+        Scanner().scan(ScanConfig(site_folder=site))
+
+    assert "nested" in str(exc_info.value.details)
+
+
+def test_scan_rejects_same_product_same_stem_different_suffixes(
+    tmp_path: Path,
+) -> None:
+    """Images in one Code/Product cannot share a stem with different suffixes."""
+    site = tmp_path / "site"
+    make_image(site / "CodeA" / "ProductA" / "image001.jpg")
+    make_image(site / "CodeA" / "ProductA" / "image001.png")
+
+    with pytest.raises(ScanInvalidStructureError) as exc_info:
+        Scanner().scan(ScanConfig(site_folder=site))
+
+    details = str(exc_info.value.details)
+    assert "image001.jpg" in details
+    assert "image001.png" in details
+
+
+def test_scan_valid_structure_without_images_raises_empty(tmp_path: Path) -> None:
+    """A valid site tree with labels but no supported images raises ScanEmptyError."""
+    site = tmp_path / "site"
+    product_dir = site / "CodeA" / "ProductA"
+    product_dir.mkdir(parents=True)
+    write_xml(product_dir / "IMG_001.xml", ["CodeA"])
 
     with pytest.raises(ScanEmptyError):
         Scanner().scan(ScanConfig(site_folder=site))
@@ -152,27 +213,31 @@ def test_scan_rejects_reserved_separator_in_filename(tmp_path: Path) -> None:
         Scanner().scan(ScanConfig(site_folder=site))
 
 
-def test_scan_rejects_xml_label_mismatch(tmp_path: Path) -> None:
-    """Existing XML labels must match the containing Code name."""
+def test_scan_ignores_existing_xml_labels_by_default(tmp_path: Path) -> None:
+    """Existing XML labels are ignored during Flow scan metadata creation."""
     site = tmp_path / "site"
     image_path = site / "CodeA" / "ProductA" / "IMG_001.jpg"
     make_image(image_path)
     write_xml(image_path.with_suffix(".xml"), ["OtherCode"])
 
-    with pytest.raises(ScanLabelMismatchError):
-        Scanner().scan(ScanConfig(site_folder=site))
-
-
-def test_scan_can_skip_existing_xml_validation(tmp_path: Path) -> None:
-    """XML label mismatches are ignored when validation is disabled."""
-    site = tmp_path / "site"
-    image_path = site / "CodeA" / "ProductA" / "IMG_001.jpg"
-    make_image(image_path)
-    write_xml(image_path.with_suffix(".xml"), ["OtherCode"])
-
-    result = Scanner().scan(ScanConfig(site_folder=site, validate_existing_xml=False))
+    result = Scanner().scan(ScanConfig(site_folder=site))
 
     assert result.statistics.total_images == 1
+
+
+def test_scan_rejects_non_image_non_xml_files_in_product_folder(
+    tmp_path: Path,
+) -> None:
+    """Product folders may contain supported images and XML labels only."""
+    site = tmp_path / "site"
+    make_image(site / "CodeA" / "ProductA" / "IMG_001.jpg")
+    notes_path = site / "CodeA" / "ProductA" / "notes.txt"
+    notes_path.write_text("not a label", encoding="utf-8")
+
+    with pytest.raises(ScanInvalidStructureError) as exc_info:
+        Scanner().scan(ScanConfig(site_folder=site))
+
+    assert "notes.txt" in str(exc_info.value.details)
 
 
 def test_scan_cancelled_task_raises_task_cancelled(tmp_path: Path) -> None:

@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 pytest_tmp_codex/
+.pytest-autolabeler*/
 
 # C extensions
 *.so
@@ -132,6 +133,14 @@ runs/
 .autolabeler/
 mapping.json
 *.bak
+
+# Local real/test datasets and model weights (do not commit)
+tests/A9940/
+tests/A9940_database/
+tests/A9940_database_yolo/
+tests/A9940_model/
+tests/A9950/
+*.pt
 
 # Claude settings
 .claude/

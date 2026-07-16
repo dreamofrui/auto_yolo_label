@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -142,3 +143,99 @@ def test_startup_marks_running_tasks_interrupted(tmp_path: Path) -> None:
     assert reloaded.get(queued.task_id).status == "interrupted"
     assert reloaded.get(running.task_id).status == "interrupted"
     assert reloaded.get(running.task_id).finished_at is not None
+
+
+def test_delete_task_removes_terminal_task_file(tmp_path: Path) -> None:
+    """Terminal tasks can be manually removed from memory and disk."""
+    registry = TaskRegistry(task_dir=tmp_path)
+    handle = registry.create_task("scan")
+    registry.start_task(handle.task_id)
+    registry.succeed_task(handle.task_id, result={"ok": True})
+
+    assert registry.delete_task(handle.task_id) is True
+
+    assert not (tmp_path / f"{handle.task_id}.json").exists()
+    assert registry.list_tasks() == []
+
+
+def test_delete_task_keeps_active_task(tmp_path: Path) -> None:
+    """Active tasks are not deleted from the registry."""
+    registry = TaskRegistry(task_dir=tmp_path)
+    handle = registry.create_task("infer")
+    registry.start_task(handle.task_id)
+
+    assert registry.delete_task(handle.task_id) is False
+
+    assert (tmp_path / f"{handle.task_id}.json").exists()
+    assert registry.get(handle.task_id).status == "running"
+
+
+def test_delete_task_keeps_non_terminal_task(tmp_path: Path) -> None:
+    """Only explicit terminal statuses can be manually deleted."""
+    registry = TaskRegistry(task_dir=tmp_path)
+    handle = registry.create_task("infer")
+    handle.status = "paused"
+    registry._persist(handle)
+
+    assert registry.delete_task(handle.task_id) is False
+
+    assert (tmp_path / f"{handle.task_id}.json").exists()
+    assert registry.get(handle.task_id).status == "paused"
+
+
+def test_cleanup_finished_tasks_removes_records_older_than_retention(
+    tmp_path: Path,
+) -> None:
+    """Retention cleanup removes only finished tasks older than the cutoff."""
+    registry = TaskRegistry(task_dir=tmp_path)
+    old_finished = registry.create_task("convert")
+    registry.start_task(old_finished.task_id)
+    registry.succeed_task(old_finished.task_id)
+    recent_finished = registry.create_task("scan")
+    registry.start_task(recent_finished.task_id)
+    registry.succeed_task(recent_finished.task_id)
+    active = registry.create_task("infer")
+    registry.start_task(active.task_id)
+
+    old_finished.finished_at = "2026-05-10 09:00:00"
+    old_finished.created_at = "2026-05-10 08:59:00"
+    recent_finished.finished_at = "2026-05-25 09:00:00"
+    recent_finished.created_at = "2026-05-25 08:59:00"
+    active.created_at = "2026-05-01 08:59:00"
+    registry._persist(old_finished)
+    registry._persist(recent_finished)
+    registry._persist(active)
+
+    removed = registry.cleanup_finished_older_than(
+        days=10,
+        now=datetime(2026, 5, 28, 12, 0, 0),
+    )
+
+    assert removed == 1
+    assert [task.task_id for task in registry.list_tasks()] == [
+        active.task_id,
+        recent_finished.task_id,
+    ]
+    assert not (tmp_path / f"{old_finished.task_id}.json").exists()
+    assert (tmp_path / f"{active.task_id}.json").exists()
+
+
+def test_cleanup_finished_tasks_keeps_non_terminal_records(
+    tmp_path: Path,
+) -> None:
+    """Retention cleanup never deletes unknown non-terminal task states."""
+    registry = TaskRegistry(task_dir=tmp_path)
+    paused = registry.create_task("infer")
+    paused.status = "paused"
+    paused.created_at = "2026-05-01 08:59:00"
+    paused.finished_at = "2026-05-01 09:00:00"
+    registry._persist(paused)
+
+    removed = registry.cleanup_finished_older_than(
+        days=10,
+        now=datetime(2026, 5, 28, 12, 0, 0),
+    )
+
+    assert removed == 0
+    assert (tmp_path / f"{paused.task_id}.json").exists()
+    assert registry.get(paused.task_id).status == "paused"

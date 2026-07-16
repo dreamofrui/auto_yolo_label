@@ -6,7 +6,7 @@ import json
 import threading
 import uuid
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -105,6 +105,44 @@ class TaskRegistry:
         """Return all known tasks sorted by creation time."""
         with self._lock:
             return sorted(self._tasks.values(), key=lambda task: task.created_at)
+
+    def delete_task(self, task_id: str) -> bool:
+        """Delete a terminal task from memory and disk.
+
+        Active tasks are not deleted because cancellation must go through the
+        task-specific stop flow.
+        """
+        with self._lock:
+            handle = self.get(task_id)
+            if handle.status not in _TERMINAL_STATUSES:
+                return False
+            self._tasks.pop(task_id, None)
+            path = self.task_dir / f"{task_id}.json"
+            if path.exists():
+                path.unlink()
+            return True
+
+    def cleanup_finished_older_than(
+        self, days: int, now: datetime | None = None
+    ) -> int:
+        """Delete terminal task records older than a retention window."""
+        cutoff = (now or datetime.now()) - timedelta(days=days)
+        removed = 0
+        with self._lock:
+            task_ids = list(self._tasks)
+            for task_id in task_ids:
+                handle = self._tasks[task_id]
+                if handle.status not in _TERMINAL_STATUSES:
+                    continue
+                timestamp = _parse_time(handle.finished_at or handle.created_at)
+                if timestamp is None or timestamp >= cutoff:
+                    continue
+                self._tasks.pop(task_id, None)
+                path = self.task_dir / f"{task_id}.json"
+                if path.exists():
+                    path.unlink()
+                removed += 1
+        return removed
 
     def start_task(self, task_id: str, total: int = 0, message: str = "") -> TaskHandle:
         """Mark a task as running."""
@@ -252,6 +290,16 @@ def _new_task_id(task_type: str) -> str:
 def _now() -> str:
     """Return the current wall-clock timestamp."""
     return datetime.now().strftime(_TIME_FORMAT)
+
+
+def _parse_time(value: str | None) -> datetime | None:
+    """Parse a persisted task timestamp."""
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, _TIME_FORMAT)
+    except ValueError:
+        return None
 
 
 def _task_to_dict(handle: TaskHandle) -> dict[str, Any]:

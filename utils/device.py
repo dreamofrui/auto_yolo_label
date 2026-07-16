@@ -134,7 +134,7 @@ def resolve_device(requested: str = "auto", probe: DeviceProbe | None = None) ->
     """Resolve a user device value to a YOLO-compatible device string.
 
     Args:
-        requested: Device request: "auto", "cpu", "mps", "0", or "0,1".
+        requested: Device request: "auto", "cpu", "gpu", "mps", "0", or "0,1".
         probe: Optional probe for tests or alternate hardware backends.
 
     Returns:
@@ -149,13 +149,20 @@ def resolve_device(requested: str = "auto", probe: DeviceProbe | None = None) ->
         if info.device == "cuda":
             return info.device_id
         return info.device
+    if normalized == "gpu":
+        info = get_device_info(probe)
+        if info.device == "cuda":
+            return info.device_id
+        if info.device == "mps":
+            return "mps"
+        raise ValidationError("GPU 不可用", details="no CUDA or MPS device detected")
     if normalized in {"cpu", "mps"}:
         return normalized
     if _is_cuda_id_list(normalized):
         return normalized
     raise ValidationError(
         "设备参数无效",
-        details=f"device must be auto/cpu/mps or CUDA ids, got {requested!r}",
+        details=f"device must be auto/cpu/gpu/mps or CUDA ids, got {requested!r}",
     )
 
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from core.sampler import SampleConfig
+from core.sampler import IndependentSampleConfig, SampleConfig
 from core.scanner import ScanConfig, Scanner
 from gui.workers.sample_worker import SampleWorker
 from utils.task_registry import TaskRegistry
@@ -42,6 +42,52 @@ def test_sample_worker_runs_core_sample_and_updates_task(tmp_path: Path) -> None
     assert outcome.success is True
     assert outcome.result is not None
     assert outcome.result.statistics.sampled_count == 1
+    assert registry.get(outcome.task.task_id).status == "succeeded"
+
+
+def test_sample_worker_preflights_flow_sample(tmp_path: Path) -> None:
+    """Desktop sample worker exposes non-writing Flow preflight."""
+    site = tmp_path / "site"
+    make_scanned_site(site)
+    registry = TaskRegistry(task_dir=tmp_path / "tasks")
+
+    outcome = SampleWorker(registry=registry).preflight(
+        SampleConfig(
+            site_folder=site,
+            output_dir=tmp_path / "database",
+            count=1,
+            full_threshold=1,
+        )
+    )
+
+    assert outcome.success is True
+    assert outcome.result is not None
+    assert outcome.result.statistics.sampled_count == 1
+    assert outcome.result.copy_count == 1
+    assert not (tmp_path / "database").exists()
+
+
+def test_sample_worker_runs_independent_sample(tmp_path: Path) -> None:
+    """Desktop sample worker exposes independent sampling without mapping."""
+    source = tmp_path / "source"
+    image = source / "Product1" / "a1.jpg"
+    make_image(image)
+    registry = TaskRegistry(task_dir=tmp_path / "tasks")
+
+    outcome = SampleWorker(registry=registry).run_independent(
+        IndependentSampleConfig(
+            source_dir=source,
+            output_dir=tmp_path / "database",
+            count=1,
+            full_threshold=1,
+        )
+    )
+
+    assert outcome.success is True
+    assert outcome.result is not None
+    assert outcome.result.mapping_path is None
+    assert outcome.result.statistics.sampled_count == 1
+    assert not image.exists()
     assert registry.get(outcome.task.task_id).status == "succeeded"
 
 

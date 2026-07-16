@@ -3,11 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 
-from core.restorer import RestoreConfig, RestoreResult
-from runtime.services.restore_service import run_restore
-from utils.exceptions import ErrorInfo
+from core.restorer import (
+    IndependentRestoreConfig,
+    RestoreConfig,
+    RestorePreflightResult,
+    RestoreResult,
+    Restorer,
+)
+from gui.workers._task_lifecycle import (
+    default_task_registry,
+    finish_worker_error,
+    finish_worker_success,
+    start_worker_task,
+)
+from utils.exceptions import AutoLabelerError, ErrorInfo
 from utils.task_registry import TaskHandle, TaskRegistry
 
 
@@ -21,21 +31,72 @@ class RestoreWorkerOutcome:
     error: ErrorInfo | None
 
 
+@dataclass(frozen=True)
+class RestorePreflightOutcome:
+    """Desktop restore preflight outcome."""
+
+    success: bool
+    result: RestorePreflightResult | None
+    error: ErrorInfo | None
+
+
 class RestoreWorker:
     """Thin desktop adapter for Restorer.restore."""
 
     def __init__(self, registry: TaskRegistry | None = None) -> None:
         """Create a restore worker with an optional shared registry."""
-        self._registry = registry or TaskRegistry(
-            Path.home() / ".autolabeler" / "tasks"
-        )
+        self._registry = registry or default_task_registry()
 
     def run(self, config: RestoreConfig) -> RestoreWorkerOutcome:
         """Run restore and return a desktop-friendly outcome."""
-        outcome = run_restore(config, self._registry)
-        return RestoreWorkerOutcome(
-            success=outcome.success,
-            task=outcome.task,
-            result=outcome.result,
-            error=None if outcome.error is None else outcome.error.to_error_info(),
-        )
+        task = start_worker_task(self._registry, "restore", "准备还原")
+        try:
+            result = Restorer(task_handle=task).restore(config)
+        except AutoLabelerError as exc:
+            error = finish_worker_error(self._registry, task, exc)
+            return RestoreWorkerOutcome(False, task, None, error)
+        finish_worker_success(self._registry, task, result)
+        return RestoreWorkerOutcome(True, task, result, None)
+
+    def preflight(self, config: RestoreConfig) -> RestorePreflightOutcome:
+        """Run Flow restore preflight and return desktop-friendly details."""
+        try:
+            result = Restorer().preflight(config)
+        except Exception as exc:
+            if hasattr(exc, "to_error_info"):
+                return RestorePreflightOutcome(
+                    success=False,
+                    result=None,
+                    error=exc.to_error_info(),
+                )
+            raise
+        return RestorePreflightOutcome(success=True, result=result, error=None)
+
+    def run_independent(
+        self, config: IndependentRestoreConfig
+    ) -> RestoreWorkerOutcome:
+        """Run independent restore and return a desktop-friendly outcome."""
+        task = start_worker_task(self._registry, "restore", "准备独立还原")
+        try:
+            result = Restorer(task_handle=task).restore_independent(config)
+        except AutoLabelerError as exc:
+            error = finish_worker_error(self._registry, task, exc)
+            return RestoreWorkerOutcome(False, task, None, error)
+        finish_worker_success(self._registry, task, result)
+        return RestoreWorkerOutcome(True, task, result, None)
+
+    def preflight_independent(
+        self, config: IndependentRestoreConfig
+    ) -> RestorePreflightOutcome:
+        """Run Independent restore preflight and return desktop-friendly details."""
+        try:
+            result = Restorer().preflight_independent(config)
+        except Exception as exc:
+            if hasattr(exc, "to_error_info"):
+                return RestorePreflightOutcome(
+                    success=False,
+                    result=None,
+                    error=exc.to_error_info(),
+                )
+            raise
+        return RestorePreflightOutcome(success=True, result=result, error=None)

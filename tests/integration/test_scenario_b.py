@@ -62,6 +62,8 @@ def make_mapping(site: Path, image_name: str) -> None:
     """Create mapping.json without calling Scanner."""
     encoder = PathEncoder()
     image_path = site / "CodeA" / "Product1" / image_name
+    (site / ".autolabeler").mkdir(parents=True, exist_ok=True)
+    (site / ".autolabeler" / "classes.txt").write_text("CodeA\n", encoding="utf-8")
     manager = MappingManager(site / ".autolabeler" / "mapping.json").create_new(site)
     manager.add_class(0, "CodeA")
     manager.add_image(
@@ -83,18 +85,21 @@ def write_database(database: Path) -> Path:
     """Create an already-sampled YOLO database."""
     (database / "images" / "train").mkdir(parents=True)
     (database / "labels" / "train").mkdir(parents=True)
+    (database / "images" / "val").mkdir(parents=True)
+    (database / "labels" / "val").mkdir(parents=True)
     make_image(database / "images" / "train" / "CodeA__Product1__a1.jpg")
     (database / "labels" / "train" / "CodeA__Product1__a1.txt").write_text(
         "0 0.5 0.5 0.2 0.2\n",
         encoding="utf-8",
     )
+    (database / "classes.txt").write_text("CodeA\n", encoding="utf-8")
     data_yaml = database / "data.yaml"
     data_yaml.write_text(
         "\n".join(
             (
                 f"path: {database}",
                 "train: images/train",
-                "val: images/train",
+                "val: images/val",
                 "nc: 1",
                 "names: [CodeA]",
                 "",
@@ -147,4 +152,4 @@ def test_scenario_b_train_infer_restore_without_scanner(
     assert train_result.best_model.exists()
     assert infer_result.statistics.success == 1
     assert restore_result.success == 1
-    assert (site / "CodeA" / "Product1" / "a1.txt").exists()
+    assert (site / "CodeA" / "Product1" / "a1.xml").exists()

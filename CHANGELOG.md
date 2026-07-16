@@ -4,23 +4,84 @@ All notable changes to this repo are recorded here.
 
 ## [Unreleased]
 
-### Changed
-- (docs) Reduced the top-level operational docs to a compact desktop-first guide set.
-- (docs) Removed stale stage/progress workflow text and old Web / FastAPI mainline phrasing.
-- (docs) Reframed the current direction around desktop-first core stability, CLI / JSON preview boundaries, and read-only `legacy/`.
-- (runtime) Moved shared service code from `api/services` to `runtime/services`.
-- (gui) Updated desktop workers to call `runtime/services` instead of API-owned services.
+### Product / GUI
 
-### Added
-- (cli) Added a minimal JSON scan adapter at `python -m cli.main scan <request.json>` for future Node.js subprocess integration.
-- (cli) Added a matching JSON sample adapter at `python -m cli.main sample <request.json>`.
-- (cli) Added a JSON train adapter for YOLO training requests.
-- (cli) Added a JSON infer adapter for YOLO inference requests.
-- (cli) Added read-only JSON inspect adapters for listing inference runs, reading run trees, and reading product labels.
-- (cli) Added JSON convert adapters for TXT-to-XML and XML-to-TXT annotation conversion.
-- (cli) Added a JSON restore adapter for copying labels back to original product folders.
-- (cli) Added a JSON LabelImg validate adapter while leaving GUI launch out of the CLI surface.
+- Updated Task Center rows so action buttons remain visible with long summaries,
+  and added clickable 运行中/需要处理 summary filters with a return action to
+  the full task list.
+- Changed Scan to ignore existing VOC XML label files during Flow metadata
+  creation and to block unsupported non-image/non-XML files in Product folders.
+- Added explicit training CUDA device choices with clear labels for `All GPUs`,
+  `GPU 0`, `GPU 1`, and `GPU 0+1`, plus usage-manual guidance for multi-GPU
+  batch and workers semantics.
+- Changed Independent Sample output to default to a structure-preserving XML
+  labeling folder for LabelImg workflows, while keeping YOLO dataset output as
+  an explicit option.
+- Added the PySide6 desktop shell with login, homepage, left navigation, task
+  center, usage manual, settings, and concrete pages for Scan, Sample, Label,
+  Train, Infer, Review, Restore, and Convert.
+- Added a YOLO/VOC switch to the LabelImg labeling page; VOC mode opens an
+  image folder and writes Pascal VOC XML beside images.
+- Fixed VOC LabelImg launch so validation no longer displays CLI help text and
+  A/D image navigation no longer opens the save-directory picker.
+- Changed LabelImg preflight to validate current mode inputs before launch and
+  cleaned launch logs so internal wrapper code is not shown in the GUI.
+- Refreshed the PySide6 desktop GUI visual hierarchy, including the login page
+  and dense tool-page status/risk/result surfaces, without changing module
+  inputs, outputs, worker interfaces, or confirmation boundaries.
+- Changed homepage module entries to use neutral default cards with whole-card
+  hover and click behavior, removing the previous default Sample emphasis.
+- Added the shared `gui/path_picker.py` path input widget and
+  `gui/task_runner.py` task runner abstraction for GUI execution.
+
+### Architecture
+
+- Reframed the active architecture around the PySide6 desktop GUI, stable
+  framework-free `core/`, and thin `gui/workers/` adapters that call `core/`
+  directly.
+- Added standard YOLO/VOC annotation helpers used by restore and conversion
+  flows.
+- Added worker-level cancellation lifecycle handling after removing the
+  temporary runtime service layer.
+
+### Server Scripts
+
+- Kept standalone server training/prediction scripts documented in their own
+  folder; they remain separate from the desktop GUI architecture.
+- Added an optional inference label Y-offset parameter for desktop inference
+  and `server_scripts/predict_yolo.py`, so consistently high saved boxes can be
+  shifted down by source-image pixels without changing box size.
+
+### Documentation
+
+- Added contributor rules requiring bug fixes to be traced to specific
+  functions and call paths, with a lightweight flow for small single-function
+  fixes.
+- Tightened the product contract in `docs/dev/PRODUCT_SPEC.md` around Flow and
+  Independent modes, mapping ownership, safe preflight behavior, LabelImg
+  review, training, inference, restore, and conversion.
+- Tightened the GUI contract in `docs/dev/UI_SPEC.md` around the workbench
+  shell, tool pages, task feedback, settings, manual page, and page-level
+  verification expectations.
+- Simplified repository instructions in `AGENTS.md` so contributor rules point
+  only to retained long-term docs.
+- Rewrote `README.md` as the compact project entry point.
+- Added `docs/dev/ONBOARDING_SUMMARY.md` as a handoff guide for engineers
+  taking over maintenance or new feature work.
+- Added the onboarding guide to first-read documentation entry points and
+  extended it with a code-level module maintenance map.
+
+### Tests
+
+- Added scanner coverage for ignoring XML label files and rejecting unsupported
+  Product-folder files.
 
 ### Removed
-- (web) Removed current-mainline API routes, schemas, HTTP examples, API reference docs, and API tests.
-- (docs) Removed stale implementation plans, progress templates, and old web-centric restructuring specs from the active docs.
+
+- Deleted the inactive `cli/` surface and its CLI JSON tests.
+- Deleted the temporary `runtime/services` layer; desktop workers now call
+  `core/` directly.
+- Removed obsolete web/API docs, stale implementation plans, current-state
+  journals, static GUI mockups, old user guides, project-specific scratch
+  notes, and repo-local agent skill docs from the active documentation set.
+- Removed `CLAUDE.md`; `AGENTS.md` is now the single contributor-rule entry.

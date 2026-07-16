@@ -86,8 +86,20 @@ def make_task_handle(cancelled: bool = False) -> TaskHandle:
 
 
 def write_data_yaml(path: Path) -> None:
-    """Write a minimal YOLO data.yaml."""
+    """Write a minimal valid YOLO dataset and data.yaml."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    (path.parent / "images" / "train").mkdir(parents=True)
+    (path.parent / "images" / "val").mkdir(parents=True)
+    (path.parent / "labels" / "train").mkdir(parents=True)
+    (path.parent / "labels" / "val").mkdir(parents=True)
+    (path.parent / "images" / "train" / "train1.jpg").write_bytes(b"image")
+    (path.parent / "images" / "val" / "val1.jpg").write_bytes(b"image")
+    (path.parent / "labels" / "train" / "train1.txt").write_text(
+        "0 0.5 0.5 0.2 0.2\n", encoding="utf-8"
+    )
+    (path.parent / "labels" / "val" / "val1.txt").write_text(
+        "0 0.5 0.5 0.2 0.2\n", encoding="utf-8"
+    )
     path.write_text(
         "\n".join(
             (
@@ -101,6 +113,222 @@ def write_data_yaml(path: Path) -> None:
         ),
         encoding="utf-8",
     )
+
+
+def test_train_empty_train_images_blocks_training(tmp_path: Path) -> None:
+    """Training requires at least one train image."""
+    data_yaml = tmp_path / "data.yaml"
+    write_data_yaml(data_yaml)
+    (tmp_path / "images" / "train" / "train1.jpg").unlink()
+    model = tmp_path / "model.pt"
+    model.write_bytes(b"model")
+
+    with pytest.raises(TrainDataYamlInvalidError, match="images/train"):
+        Trainer().train(
+            TrainConfig(
+                data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"
+            )
+        )
+
+
+def test_train_empty_classes_blocks_training(tmp_path: Path) -> None:
+    """Training requires non-empty data.yaml classes."""
+    data_yaml = tmp_path / "data.yaml"
+    write_data_yaml(data_yaml)
+    data_yaml.write_text(
+        "\n".join(
+            (
+                f"path: {tmp_path}",
+                "train: images/train",
+                "val: images/val",
+                "nc: 0",
+                "names: []",
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+    model = tmp_path / "model.pt"
+    model.write_bytes(b"model")
+
+    with pytest.raises(TrainDataYamlInvalidError, match="classes"):
+        Trainer().train(
+            TrainConfig(
+                data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"
+            )
+        )
+
+
+def test_train_requires_at_least_one_valid_train_label(tmp_path: Path) -> None:
+    """Training requires one non-empty valid YOLO row in labels/train."""
+    data_yaml = tmp_path / "data.yaml"
+    write_data_yaml(data_yaml)
+    (tmp_path / "labels" / "train" / "train1.txt").write_text("", encoding="utf-8")
+    model = tmp_path / "model.pt"
+    model.write_bytes(b"model")
+
+    with pytest.raises(TrainDataYamlInvalidError, match="labels/train"):
+        Trainer().train(
+            TrainConfig(
+                data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"
+            )
+        )
+
+
+def test_train_rejects_zero_width_train_label(tmp_path: Path) -> None:
+    """YOLO train labels need positive normalized width and height."""
+    data_yaml = tmp_path / "data.yaml"
+    write_data_yaml(data_yaml)
+    (tmp_path / "labels" / "train" / "train1.txt").write_text(
+        "0 0.5 0.5 0.0 0.2\n", encoding="utf-8"
+    )
+    model = tmp_path / "model.pt"
+    model.write_bytes(b"model")
+
+    with pytest.raises(TrainDataYamlInvalidError, match="labels/train"):
+        Trainer().train(
+            TrainConfig(
+                data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"
+            )
+        )
+
+
+def test_train_blocks_any_invalid_train_label_row(tmp_path: Path) -> None:
+    """A train label file cannot mix valid and invalid rows."""
+    data_yaml = tmp_path / "data.yaml"
+    write_data_yaml(data_yaml)
+    (tmp_path / "labels" / "train" / "train1.txt").write_text(
+        "0 0.5 0.5 0.2 0.2\n0 nan 0.5 0.2 0.2\n", encoding="utf-8"
+    )
+    model = tmp_path / "model.pt"
+    model.write_bytes(b"model")
+
+    with pytest.raises(TrainDataYamlInvalidError, match="invalid"):
+        Trainer().train(
+            TrainConfig(
+                data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"
+            )
+        )
+
+
+def test_train_requires_standard_images_train_path(tmp_path: Path) -> None:
+    """Trainer only accepts the standard images/train split path."""
+    data_yaml = tmp_path / "data.yaml"
+    write_data_yaml(data_yaml)
+    (tmp_path / "train_images").mkdir()
+    (tmp_path / "labels" / "train_images").mkdir()
+    (tmp_path / "train_images" / "custom.jpg").write_bytes(b"image")
+    (tmp_path / "labels" / "train_images" / "custom.txt").write_text(
+        "0 0.5 0.5 0.2 0.2\n", encoding="utf-8"
+    )
+    data_yaml.write_text(
+        "\n".join(
+            (
+                f"path: {tmp_path}",
+                "train: train_images",
+                "val: images/val",
+                "nc: 1",
+                "names: [CodeA]",
+                "",
+            )
+        ),
+        encoding="utf-8",
+    )
+    model = tmp_path / "model.pt"
+    model.write_bytes(b"model")
+
+    with pytest.raises(TrainDataYamlInvalidError, match="images/train"):
+        Trainer().train(
+            TrainConfig(
+                data_yaml=data_yaml, base_model=model, output_dir=tmp_path / "runs"
+            )
+        )
+
+
+def test_train_reports_validation_warnings_and_label_counts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Validation gaps warn while missing and empty labels are counted."""
+    data_yaml = tmp_path / "data.yaml"
+    write_data_yaml(data_yaml)
+    (tmp_path / "images" / "train" / "negative.jpg").write_bytes(b"image")
+    (tmp_path / "images" / "train" / "empty.jpg").write_bytes(b"image")
+    (tmp_path / "labels" / "train" / "empty.txt").write_text("", encoding="utf-8")
+    (tmp_path / "images" / "val" / "val1.jpg").unlink()
+    (tmp_path / "labels" / "val" / "val1.txt").unlink()
+    model = tmp_path / "model.pt"
+    model.write_bytes(b"model")
+    run_dir = tmp_path / "runs" / "train"
+    monkeypatch.setattr("core.trainer._load_yolo_model", lambda base_model: FakeYOLO(run_dir))
+
+    result = Trainer().train(
+        TrainConfig(
+            data_yaml=data_yaml,
+            base_model=model,
+            output_dir=tmp_path / "runs",
+            batch_size=1,
+        )
+    )
+
+    assert result.preflight["train_images"] == 3
+    assert result.preflight["missing_train_labels"] == 1
+    assert result.preflight["empty_train_labels"] == 1
+    assert "images/val is empty" in result.warnings
+    assert "labels/val is empty" in result.warnings
+
+
+def test_train_refuses_non_empty_fixed_output_without_overwrite(tmp_path: Path) -> None:
+    """A fixed existing train output must be confirmed before reuse."""
+    data_yaml = tmp_path / "data.yaml"
+    write_data_yaml(data_yaml)
+    model = tmp_path / "model.pt"
+    model.write_bytes(b"model")
+    run_dir = tmp_path / "runs" / "train"
+    run_dir.mkdir(parents=True)
+    (run_dir / "old.txt").write_text("old", encoding="utf-8")
+
+    with pytest.raises(TrainDataYamlInvalidError, match="output"):
+        Trainer().train(
+            TrainConfig(
+                data_yaml=data_yaml,
+                base_model=model,
+                output_dir=tmp_path / "runs",
+                run_name="train",
+            )
+        )
+
+
+def test_train_creates_new_run_by_default_when_train_dir_exists(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Default training output avoids reusing an existing train directory."""
+    data_yaml = tmp_path / "data.yaml"
+    write_data_yaml(data_yaml)
+    model = tmp_path / "model.pt"
+    model.write_bytes(b"model")
+    old_run_dir = tmp_path / "runs" / "train"
+    old_run_dir.mkdir(parents=True)
+    (old_run_dir / "old.txt").write_text("old", encoding="utf-8")
+    fake = FakeYOLO(tmp_path / "runs" / "unused")
+    monkeypatch.setattr("core.trainer._load_yolo_model", lambda base_model: fake)
+    monkeypatch.setattr("core.trainer.resolve_device", lambda requested: "cpu")
+
+    result = Trainer().train(
+        TrainConfig(
+            data_yaml=data_yaml,
+            base_model=model,
+            output_dir=tmp_path / "runs",
+            batch_size=1,
+        )
+    )
+
+    assert result.output_dir != old_run_dir
+    assert result.output_dir.name.startswith("train_")
+    assert (old_run_dir / "old.txt").read_text(encoding="utf-8") == "old"
+    assert fake.train_kwargs is not None
+    assert fake.train_kwargs["name"] == result.output_dir.name
 
 
 def test_trainer_constructs_successfully() -> None:
@@ -174,6 +402,7 @@ def test_train_success_returns_weights_metrics_and_effective_config(
             data_yaml=data_yaml,
             base_model=model,
             output_dir=tmp_path / "runs",
+            run_name="train",
             epochs=2,
             batch_size=-1,
         )
@@ -187,6 +416,8 @@ def test_train_success_returns_weights_metrics_and_effective_config(
     assert result.metrics.best_epoch == 1
     assert result.metrics.best_map50 == 0.7
     assert result.metrics.final_map50_95 == 0.4
+    assert result.log_file == run_dir / "results.csv"
+    assert result.preflight["classes"] == ["CodeA"]
     assert fake.train_kwargs is not None
     assert fake.train_kwargs["data"] == str(data_yaml)
     assert fake.train_kwargs["project"] == str(tmp_path / "runs")
@@ -212,6 +443,7 @@ def test_task_handle_progress_updates_from_epoch_callback(
             data_yaml=data_yaml,
             base_model=model,
             output_dir=tmp_path / "runs",
+            run_name="train",
             epochs=3,
             batch_size=2,
         )
@@ -220,6 +452,40 @@ def test_task_handle_progress_updates_from_epoch_callback(
     assert handle.progress_current == 1
     assert handle.progress_total == 3
     assert "Epoch 1/3" in handle.progress_message
+
+
+def test_progress_callback_receives_epoch_updates(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Trainer emits epoch progress to an optional persistence callback."""
+    data_yaml = tmp_path / "data.yaml"
+    write_data_yaml(data_yaml)
+    model = tmp_path / "model.pt"
+    model.write_bytes(b"model")
+    updates: list[tuple[int, int, str]] = []
+    fake = FakeYOLO(tmp_path / "runs" / "train")
+    monkeypatch.setattr("core.trainer._load_yolo_model", lambda base_model: fake)
+
+    Trainer(
+        task_handle=make_task_handle(),
+        progress_callback=lambda current, total, message: updates.append(
+            (current, total, message)
+        ),
+    ).train(
+        TrainConfig(
+            data_yaml=data_yaml,
+            base_model=model,
+            output_dir=tmp_path / "runs",
+            run_name="train",
+            epochs=3,
+            batch_size=2,
+        )
+    )
+
+    assert updates
+    assert updates[0][0:2] == (1, 3)
+    assert "Epoch 1/3" in updates[0][2]
 
 
 def test_cancelled_task_raises_train_interrupted(

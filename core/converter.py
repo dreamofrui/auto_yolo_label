@@ -6,11 +6,16 @@ import shutil
 import xml.etree.ElementTree as ElementTree
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TypeAlias
+from typing import Sequence, TypeAlias
 
 from loguru import logger
 from PIL import Image
 
+from core.annotation_formats import (
+    AnnotationFormatError,
+    parse_voc_xml_text,
+    voc_objects_to_yolo_label_text,
+)
 from utils.exceptions import (
     AutoLabelerError,
     ErrorCode,
@@ -42,6 +47,66 @@ class XmlToTxtConfig:
     xml_path: Path
     classes: list[str]
     output_path: Path
+
+
+@dataclass(frozen=True)
+class XmlDatasetAnalyzeConfig:
+    """Preflight config for XML directory to YOLO dataset conversion."""
+
+    source_dir: Path
+    output_dir: Path
+    train_ratio: float = 0.9
+    classes: list[str] | None = None
+    overwrite_output: bool = False
+
+
+@dataclass(frozen=True)
+class XmlDatasetAnalysis:
+    """Preflight result for XML directory to YOLO dataset conversion."""
+
+    collected_classes: list[str]
+    valid_pair_count: int
+    skipped_image_count: int
+    skipped_xml_count: int
+    blocking_issues: list[str] = field(default_factory=list)
+    output_conflicts: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class XmlDatasetConvertConfig:
+    """Conversion config after class confirmation."""
+
+    source_dir: Path
+    output_dir: Path
+    confirmed_classes: list[str]
+    train_ratio: float = 0.9
+    overwrite_output: bool = False
+
+
+@dataclass(frozen=True)
+class XmlDatasetPaths:
+    """Standard YOLO dataset output paths."""
+
+    images_train: Path
+    images_val: Path
+    labels_train: Path
+    labels_val: Path
+    classes_txt: Path
+    data_yaml: Path
+
+
+@dataclass(frozen=True)
+class XmlDatasetConvertResult:
+    """Result of XML directory to YOLO dataset conversion."""
+
+    dataset_dir: Path
+    paths: XmlDatasetPaths
+    total_pairs: int
+    train_count: int
+    val_count: int
+    class_count: int
+    skipped_image_count: int
+    skipped_xml_count: int
 
 
 @dataclass(frozen=True)
@@ -118,6 +183,37 @@ class ConvertXmlParseError(ConvertError):
     code = ErrorCode.CONVERT_XML_PARSE
 
 
+class XmlDatasetPreflightError(ConvertError):
+    """Raised when XML dataset preflight blocks conversion."""
+
+    code = ErrorCode.VALIDATION_ERROR
+
+
+@dataclass(frozen=True)
+class _XmlDatasetPair:
+    """One valid source image/XML pair."""
+
+    image_path: Path
+    xml_path: Path
+    group_dir: Path
+
+
+@dataclass(frozen=True)
+class _PlannedXmlDatasetPair:
+    """One valid source pair assigned to a dataset split."""
+
+    pair: _XmlDatasetPair
+    split: str
+
+
+@dataclass(frozen=True)
+class _XmlDatasetPreflight:
+    """Internal preflight data for analysis and conversion."""
+
+    analysis: XmlDatasetAnalysis
+    pairs: list[_XmlDatasetPair]
+
+
 class Converter:
     """Convert annotations between YOLO TXT and VOC XML formats."""
 
@@ -134,6 +230,64 @@ class Converter:
         """
         self._mapping_manager = mapping_manager
         self._task_handle = task_handle
+
+    def analyze_xml_dataset(
+        self, config: XmlDatasetAnalyzeConfig
+    ) -> XmlDatasetAnalysis:
+        """Analyze an image/XML directory before building a YOLO dataset."""
+        return _preflight_xml_dataset(config).analysis
+
+    def convert_xml_dataset(
+        self, config: XmlDatasetConvertConfig
+    ) -> XmlDatasetConvertResult:
+        """Convert confirmed image/XML pairs into a standard YOLO dataset."""
+        self._raise_if_cancelled()
+        if not config.confirmed_classes:
+            raise XmlDatasetPreflightError("confirmed_classes must not be empty")
+        analyze_config = XmlDatasetAnalyzeConfig(
+            source_dir=config.source_dir,
+            output_dir=config.output_dir,
+            train_ratio=config.train_ratio,
+            classes=config.confirmed_classes,
+            overwrite_output=config.overwrite_output,
+        )
+        preflight = _preflight_xml_dataset(analyze_config)
+        blocking = (
+            preflight.analysis.blocking_issues + preflight.analysis.output_conflicts
+        )
+        if blocking:
+            raise XmlDatasetPreflightError(
+                "XML dataset preflight failed", details="; ".join(blocking)
+            )
+
+        if config.output_dir.exists() and config.overwrite_output:
+            shutil.rmtree(config.output_dir)
+
+        paths = _xml_dataset_paths(config.output_dir)
+        _ensure_xml_dataset_dirs(paths)
+        plan = _plan_xml_dataset_pairs(preflight.pairs, config.train_ratio)
+        self._set_progress(0, len(plan), "Preparing XML dataset conversion")
+        for index, planned in enumerate(plan, start=1):
+            self._raise_if_cancelled()
+            self._set_progress(
+                index - 1, len(plan), f"Converting {planned.pair.image_path.name}"
+            )
+            _write_xml_dataset_pair(planned, paths, config.confirmed_classes)
+            self._set_progress(index, len(plan), f"Converted {index}/{len(plan)}")
+
+        _write_xml_dataset_classes(paths.classes_txt, config.confirmed_classes)
+        _write_xml_dataset_yaml(paths.data_yaml, config.output_dir, config.confirmed_classes)
+        self._set_progress(len(plan), len(plan), "XML dataset conversion complete")
+        return XmlDatasetConvertResult(
+            dataset_dir=config.output_dir,
+            paths=paths,
+            total_pairs=len(plan),
+            train_count=sum(1 for item in plan if item.split == "train"),
+            val_count=sum(1 for item in plan if item.split == "val"),
+            class_count=len(config.confirmed_classes),
+            skipped_image_count=preflight.analysis.skipped_image_count,
+            skipped_xml_count=preflight.analysis.skipped_xml_count,
+        )
 
     def txt_to_xml(self, config: TxtToXmlConfig) -> ConvertResult:
         """Convert YOLO TXT files under a folder to VOC XML files.
@@ -295,6 +449,211 @@ def _annotation_txt_files(folder: Path, recursive: bool) -> list[Path]:
     return sorted(
         path for path in pattern if path.name.lower() not in _CONTROL_FILE_NAMES
     )
+
+
+def _preflight_xml_dataset(
+    config: XmlDatasetAnalyzeConfig,
+) -> _XmlDatasetPreflight:
+    """Collect all issues before any XML dataset writes happen."""
+    blocking_issues: list[str] = []
+    output_conflicts: list[str] = []
+    pairs: list[_XmlDatasetPair] = []
+    classes_seen: set[str] = set()
+
+    if not config.source_dir.exists() or not config.source_dir.is_dir():
+        blocking_issues.append(f"source_dir does not exist: {config.source_dir}")
+    if config.train_ratio <= 0 or config.train_ratio > 1:
+        blocking_issues.append("train_ratio must be in (0, 1]")
+
+    images: list[Path] = []
+    xmls: list[Path] = []
+    if not blocking_issues:
+        images = _xml_dataset_images(config.source_dir)
+        xmls = _xml_dataset_xmls(config.source_dir)
+        xml_keys = {_same_stem_key(path) for path in xmls}
+        image_keys = {_same_stem_key(path) for path in images}
+        skipped_image_count = sum(1 for image in images if _same_stem_key(image) not in xml_keys)
+        skipped_xml_count = sum(1 for xml_path in xmls if _same_stem_key(xml_path) not in image_keys)
+
+        for image_path in images:
+            xml_path = image_path.with_suffix(".xml")
+            if not xml_path.exists():
+                continue
+            try:
+                annotation = parse_voc_xml_text(xml_path.read_text(encoding="utf-8"))
+            except (AnnotationFormatError, OSError) as exc:
+                blocking_issues.append(f"{xml_path}: {exc}")
+                continue
+            pairs.append(
+                _XmlDatasetPair(
+                    image_path=image_path,
+                    xml_path=xml_path,
+                    group_dir=image_path.parent,
+                )
+            )
+            classes_seen.update(obj.name for obj in annotation.objects)
+    else:
+        skipped_image_count = 0
+        skipped_xml_count = 0
+
+    if not blocking_issues and not pairs:
+        blocking_issues.append("no valid image/XML pairs found")
+
+    classes = list(config.classes) if config.classes is not None else sorted(classes_seen)
+    missing_classes = sorted(classes_seen.difference(classes))
+    if missing_classes:
+        blocking_issues.append(f"XML classes missing from provided classes: {', '.join(missing_classes)}")
+
+    if not config.overwrite_output and _is_non_empty_dir(config.output_dir):
+        output_conflicts.append(f"output directory is not empty: {config.output_dir}")
+    output_conflicts.extend(_xml_dataset_name_conflicts(pairs))
+
+    analysis = XmlDatasetAnalysis(
+        collected_classes=classes,
+        valid_pair_count=len(pairs),
+        skipped_image_count=skipped_image_count,
+        skipped_xml_count=skipped_xml_count,
+        blocking_issues=blocking_issues,
+        output_conflicts=output_conflicts,
+    )
+    return _XmlDatasetPreflight(analysis=analysis, pairs=pairs)
+
+
+def _xml_dataset_images(source_dir: Path) -> list[Path]:
+    """Return supported images under source_dir in stable order."""
+    return sorted(
+        path
+        for path in source_dir.rglob("*")
+        if path.is_file() and path.suffix.lower() in _SUPPORTED_IMAGE_SUFFIXES
+    )
+
+
+def _xml_dataset_xmls(source_dir: Path) -> list[Path]:
+    """Return XML files under source_dir in stable order."""
+    return sorted(path for path in source_dir.rglob("*.xml") if path.is_file())
+
+
+def _same_stem_key(path: Path) -> tuple[Path, str]:
+    """Match same-stem image/XML files within the same directory."""
+    return (path.parent, path.stem)
+
+
+def _is_non_empty_dir(path: Path) -> bool:
+    """Return whether a directory exists and contains any entry."""
+    return path.exists() and path.is_dir() and any(path.iterdir())
+
+
+def _xml_dataset_name_conflicts(pairs: Sequence[_XmlDatasetPair]) -> list[str]:
+    """Find output filename conflicts before split assignment."""
+    image_names: dict[str, Path] = {}
+    label_names: dict[str, Path] = {}
+    conflicts: list[str] = []
+    for pair in pairs:
+        image_name = pair.image_path.name
+        label_name = f"{pair.image_path.stem}.txt"
+        if image_name in image_names:
+            conflicts.append(f"duplicate output image filename: {image_name}")
+        else:
+            image_names[image_name] = pair.image_path
+        if label_name in label_names:
+            conflicts.append(f"duplicate output label filename: {label_name}")
+        else:
+            label_names[label_name] = pair.image_path
+    return conflicts
+
+
+def _xml_dataset_paths(dataset_dir: Path) -> XmlDatasetPaths:
+    """Build standard YOLO dataset paths."""
+    return XmlDatasetPaths(
+        images_train=dataset_dir / "images" / "train",
+        images_val=dataset_dir / "images" / "val",
+        labels_train=dataset_dir / "labels" / "train",
+        labels_val=dataset_dir / "labels" / "val",
+        classes_txt=dataset_dir / "classes.txt",
+        data_yaml=dataset_dir / "data.yaml",
+    )
+
+
+def _ensure_xml_dataset_dirs(paths: XmlDatasetPaths) -> None:
+    """Create standard YOLO dataset directories."""
+    for path in (
+        paths.images_train,
+        paths.images_val,
+        paths.labels_train,
+        paths.labels_val,
+    ):
+        path.mkdir(parents=True, exist_ok=True)
+
+
+def _plan_xml_dataset_pairs(
+    pairs: Sequence[_XmlDatasetPair], train_ratio: float
+) -> list[_PlannedXmlDatasetPair]:
+    """Assign every valid pair to train/val, split within each image folder."""
+    grouped: dict[Path, list[_XmlDatasetPair]] = {}
+    for pair in pairs:
+        grouped.setdefault(pair.group_dir, []).append(pair)
+
+    plan: list[_PlannedXmlDatasetPair] = []
+    for group_dir in sorted(grouped):
+        group_pairs = sorted(grouped[group_dir], key=lambda pair: pair.image_path.name)
+        train_count = _xml_dataset_train_count(len(group_pairs), train_ratio)
+        for index, pair in enumerate(group_pairs):
+            split = "train" if index < train_count else "val"
+            plan.append(_PlannedXmlDatasetPair(pair=pair, split=split))
+    return plan
+
+
+def _xml_dataset_train_count(total: int, train_ratio: float) -> int:
+    """Calculate train count while preserving a val sample when possible."""
+    if total <= 1:
+        return total
+    return max(1, min(total - 1, int(total * train_ratio)))
+
+
+def _write_xml_dataset_pair(
+    planned: _PlannedXmlDatasetPair, paths: XmlDatasetPaths, classes: Sequence[str]
+) -> None:
+    """Copy one source image and write its converted YOLO label."""
+    image_dir = paths.images_train if planned.split == "train" else paths.images_val
+    label_dir = paths.labels_train if planned.split == "train" else paths.labels_val
+    image_path = planned.pair.image_path
+    xml_path = planned.pair.xml_path
+    annotation = parse_voc_xml_text(xml_path.read_text(encoding="utf-8"))
+    label_text = voc_objects_to_yolo_label_text(
+        annotation.objects,
+        annotation.image_size,
+        classes,
+    )
+    shutil.copy2(image_path, image_dir / image_path.name)
+    (label_dir / f"{image_path.stem}.txt").write_text(label_text, encoding="utf-8")
+
+
+def _write_xml_dataset_classes(classes_path: Path, classes: Sequence[str]) -> None:
+    """Write classes.txt with one class per line."""
+    classes_path.write_text("".join(f"{name}\n" for name in classes), encoding="utf-8")
+
+
+def _write_xml_dataset_yaml(
+    data_yaml: Path, dataset_dir: Path, classes: Sequence[str]
+) -> None:
+    """Write the small YOLO data.yaml file."""
+    names = ", ".join(_yaml_single_quote(name) for name in classes)
+    content = "\n".join(
+        (
+            f"path: {dataset_dir.resolve()}",
+            "train: images/train",
+            "val: images/val",
+            f"nc: {len(classes)}",
+            f"names: [{names}]",
+            "",
+        )
+    )
+    data_yaml.write_text(content, encoding="utf-8")
+
+
+def _yaml_single_quote(value: str) -> str:
+    """Return a minimal single-quoted YAML scalar."""
+    return "'" + value.replace("'", "''") + "'"
 
 
 def _find_image_for_txt(txt_path: Path) -> Path | None:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ElementTree
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,7 +25,6 @@ class ScanConfig:
     site_folder: Path
     output_dir: Path | None = None
     supported_formats: tuple[str, ...] = (".jpg", ".jpeg", ".png", ".bmp")
-    validate_existing_xml: bool = True
 
 
 @dataclass(frozen=True)
@@ -76,12 +74,6 @@ class ScanInvalidStructureError(ScannerError):
     code = ErrorCode.SCAN_INVALID_STRUCTURE
 
 
-class ScanLabelMismatchError(ScannerError):
-    """Raised when an existing XML label does not match the Code folder."""
-
-    code = ErrorCode.SCAN_LABEL_MISMATCH
-
-
 class ScanEmptyError(ScannerError):
     """Raised when no supported images are found."""
 
@@ -118,7 +110,6 @@ class Scanner:
         Raises:
             ScanPathNotFoundError: If site_folder does not exist.
             ScanInvalidStructureError: If Code/Product structure is invalid.
-            ScanLabelMismatchError: If existing XML labels do not match Code.
             ScanEmptyError: If no supported images are found.
             TaskCancelledError: If the injected task requests cancellation.
         """
@@ -139,6 +130,9 @@ class Scanner:
                 "站点路径不是目录", details=str(site_folder)
             )
 
+        self._validate_supported_images_are_direct_products(
+            site_folder, supported_formats
+        )
         code_product_dirs = self._find_code_product_dirs(site_folder)
         if not code_product_dirs:
             logger.error("扫描站点缺少 Code/Product 两级目录: {}", site_folder)
@@ -150,6 +144,7 @@ class Scanner:
         if not candidates:
             logger.error("扫描站点未找到图片: {}", site_folder)
             raise ScanEmptyError("未找到任何支持的图片", details=str(site_folder))
+        self._validate_unique_stems_per_product(candidates)
 
         self._set_progress(0, len(candidates), "开始扫描")
         classes = sorted({candidate.code for candidate in candidates})
@@ -165,8 +160,7 @@ class Scanner:
             self._set_progress(
                 index - 1, len(candidates), f"扫描 {candidate.path.name}"
             )
-            if config.validate_existing_xml:
-                self._validate_existing_xml(candidate)
+
             encoded_name = self._encode_candidate(candidate)
             manager.add_image(
                 encoded_name,
@@ -224,44 +218,78 @@ class Scanner:
         code_product_dirs: list[tuple[str, str, Path]],
         supported_formats: frozenset[str],
     ) -> list[_ImageCandidate]:
-        """Collect direct child image files from Product directories."""
+        """Collect direct Product images and reject unsupported Product files."""
         candidates: list[_ImageCandidate] = []
+        invalid_files: list[Path] = []
         for code, product, product_dir in code_product_dirs:
             self._raise_if_cancelled()
-            for image_path in sorted(
+            for child_path in sorted(
                 (path for path in product_dir.iterdir() if path.is_file()),
                 key=lambda path: path.name,
             ):
-                if image_path.suffix.lower() in supported_formats:
+                suffix = child_path.suffix.lower()
+                if suffix in supported_formats:
                     candidates.append(
-                        _ImageCandidate(path=image_path, code=code, product=product)
+                        _ImageCandidate(path=child_path, code=code, product=product)
                     )
+                elif suffix != ".xml":
+                    invalid_files.append(child_path)
+        if invalid_files:
+            details = "; ".join(path.as_posix() for path in invalid_files[:20])
+            raise ScanInvalidStructureError(
+                "Product folders may contain only supported images and XML labels",
+                details=details,
+            )
         return candidates
 
-    def _validate_existing_xml(self, candidate: _ImageCandidate) -> None:
-        """Validate same-name XML object labels when the XML exists."""
-        xml_path = candidate.path.with_suffix(".xml")
-        if not xml_path.exists():
-            return
-        try:
-            root = ElementTree.parse(xml_path).getroot()
-        except ElementTree.ParseError as exc:
-            logger.error("XML 解析失败: {}", xml_path)
-            raise ScanLabelMismatchError(
-                "XML 标签解析失败", details=str(xml_path)
-            ) from exc
-
-        object_names = [
-            name.text.strip()
-            for name in root.findall(".//object/name")
-            if name.text and name.text.strip()
-        ]
-        if not object_names or any(name != candidate.code for name in object_names):
-            logger.error("XML 标签与 Code 不一致: {}", xml_path)
-            raise ScanLabelMismatchError(
-                "XML 标签与 Code 不一致",
-                details=f"{xml_path}: expected {candidate.code}, found {object_names}",
+    def _validate_supported_images_are_direct_products(
+        self, site_folder: Path, supported_formats: frozenset[str]
+    ) -> None:
+        """Reject supported images outside the required Code/Product layout."""
+        invalid_paths: list[Path] = []
+        for image_path in sorted(
+            site_folder.rglob("*"), key=lambda path: path.as_posix()
+        ):
+            self._raise_if_cancelled()
+            if (
+                not image_path.is_file()
+                or image_path.suffix.lower() not in supported_formats
+            ):
+                continue
+            relative = image_path.relative_to(site_folder)
+            if len(relative.parts) != 3:
+                invalid_paths.append(relative)
+        if invalid_paths:
+            details = "; ".join(path.as_posix() for path in invalid_paths[:20])
+            raise ScanInvalidStructureError(
+                "site must use Code/Product/image layout", details=details
             )
+
+    def _validate_unique_stems_per_product(
+        self, candidates: list[_ImageCandidate]
+    ) -> None:
+        """Reject same-stem images inside one Code/Product group."""
+        by_group_and_stem: dict[tuple[str, str, str], list[Path]] = {}
+        for candidate in candidates:
+            key = (candidate.code, candidate.product, candidate.path.stem.lower())
+            by_group_and_stem.setdefault(key, []).append(candidate.path)
+
+        conflicts = [
+            paths
+            for paths in by_group_and_stem.values()
+            if len({path.suffix.lower() for path in paths}) > 1
+        ]
+        if not conflicts:
+            return
+
+        details = "; ".join(
+            ", ".join(path.as_posix() for path in sorted(paths))
+            for paths in conflicts[:20]
+        )
+        raise ScanInvalidStructureError(
+            "same Code/Product cannot contain same-stem images with different suffixes",
+            details=details,
+        )
 
     def _encode_candidate(self, candidate: _ImageCandidate) -> str:
         """Encode a candidate path or convert separator errors to scanner errors."""

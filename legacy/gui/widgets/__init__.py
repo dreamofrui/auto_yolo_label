@@ -1,1 +1,0 @@
-# AutoLabeler Custom Widgets

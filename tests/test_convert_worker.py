@@ -6,7 +6,12 @@ from pathlib import Path
 
 from PIL import Image
 
-from core.converter import TxtToXmlConfig, XmlToTxtConfig
+from core.converter import (
+    TxtToXmlConfig,
+    XmlDatasetAnalyzeConfig,
+    XmlDatasetConvertConfig,
+    XmlToTxtConfig,
+)
 from gui.workers.convert_worker import ConvertWorker
 from utils.task_registry import TaskRegistry
 
@@ -41,6 +46,38 @@ def write_voc_xml(path: Path) -> None:
 """.strip(),
         encoding="utf-8",
     )
+
+
+def test_convert_worker_analyzes_and_converts_xml_dataset(tmp_path: Path) -> None:
+    """Desktop worker exposes the two-step XML dataset conversion flow."""
+    source = tmp_path / "source"
+    output = tmp_path / "dataset"
+    make_image(source / "a.jpg")
+    write_voc_xml(source / "a.xml")
+    registry = TaskRegistry(task_dir=tmp_path / "tasks")
+    worker = ConvertWorker(registry=registry)
+
+    analysis_outcome = worker.analyze_xml_dataset(
+        XmlDatasetAnalyzeConfig(source_dir=source, output_dir=output)
+    )
+    convert_outcome = worker.convert_xml_dataset(
+        XmlDatasetConvertConfig(
+            source_dir=source,
+            output_dir=output,
+            confirmed_classes=["Product1"],
+        )
+    )
+
+    assert analysis_outcome.success is True
+    assert analysis_outcome.analysis is not None
+    assert analysis_outcome.analysis.collected_classes == ["Product1"]
+    assert analysis_outcome.error is None
+    assert convert_outcome.success is True
+    assert convert_outcome.result is not None
+    assert convert_outcome.result.total_pairs == 1
+    assert convert_outcome.error is None
+    assert (output / "images" / "train" / "a.jpg").exists()
+    assert registry.get(convert_outcome.task.task_id).status == "succeeded"
 
 
 def test_convert_worker_runs_txt_to_xml_and_updates_task(tmp_path: Path) -> None:

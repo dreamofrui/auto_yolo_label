@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 
-from core.scanner import ScanConfig, ScanResult
-from runtime.services.scan_service import run_scan
-from utils.exceptions import ErrorInfo
+from core.scanner import ScanConfig, ScanResult, Scanner
+from gui.workers._task_lifecycle import (
+    default_task_registry,
+    finish_worker_error,
+    finish_worker_success,
+    start_worker_task,
+)
+from utils.exceptions import AutoLabelerError, ErrorInfo
 from utils.task_registry import TaskHandle, TaskRegistry
 
 
@@ -30,16 +34,15 @@ class ScanWorker:
         Args:
             registry: Optional task registry supplied by the desktop app.
         """
-        self._registry = registry or TaskRegistry(
-            Path.home() / ".autolabeler" / "tasks"
-        )
+        self._registry = registry or default_task_registry()
 
     def run(self, config: ScanConfig) -> ScanWorkerOutcome:
         """Run scan and return a desktop-friendly outcome."""
-        outcome = run_scan(config, self._registry)
-        return ScanWorkerOutcome(
-            success=outcome.success,
-            task=outcome.task,
-            result=outcome.result,
-            error=None if outcome.error is None else outcome.error.to_error_info(),
-        )
+        task = start_worker_task(self._registry, "scan", "准备扫描")
+        try:
+            result = Scanner(task_handle=task).scan(config)
+        except AutoLabelerError as exc:
+            error = finish_worker_error(self._registry, task, exc)
+            return ScanWorkerOutcome(False, task, None, error)
+        finish_worker_success(self._registry, task, result)
+        return ScanWorkerOutcome(True, task, result, None)

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from core.restorer import RestoreConfig
+from core.restorer import IndependentRestoreConfig, RestoreConfig
 from core.scanner import ScanConfig, Scanner
 from gui.workers.restore_worker import RestoreWorker
 from utils.path_encoder import PathEncoder
@@ -36,6 +36,7 @@ def test_restore_worker_runs_core_restore_and_updates_task(tmp_path: Path) -> No
     label_path = database_dir / "labels" / "train" / f"{encoded_stem}.txt"
     label_path.parent.mkdir(parents=True, exist_ok=True)
     label_path.write_text("0 0.500000 0.500000 0.250000 0.250000\n", encoding="utf-8")
+    (database_dir / "classes.txt").write_text("CodeA\n", encoding="utf-8")
     registry = TaskRegistry(task_dir=tmp_path / "tasks")
 
     outcome = RestoreWorker(registry=registry).run(
@@ -50,8 +51,84 @@ def test_restore_worker_runs_core_restore_and_updates_task(tmp_path: Path) -> No
     assert outcome.success is True
     assert outcome.result is not None
     assert outcome.result.success == 1
-    assert (site / "CodeA" / "Product1" / "a.txt").exists()
+    assert (site / "CodeA" / "Product1" / "a.xml").exists()
+    assert not (site / "CodeA" / "Product1" / "a.txt").exists()
     assert registry.get(outcome.task.task_id).status == "succeeded"
+
+
+def test_restore_worker_preflights_flow_restore_without_writing(
+    tmp_path: Path,
+) -> None:
+    """Desktop restore worker exposes non-writing Flow restore preflight."""
+    site = tmp_path / "site"
+    run = site / ".autolabeler" / "inference_results" / "run_20260520_120000"
+    encoded_stem = make_scanned_site(site)
+    label_path = run / "labels" / "CodeA" / "Product1" / "a.txt"
+    label_path.parent.mkdir(parents=True, exist_ok=True)
+    label_path.write_text("0 0.500000 0.500000 0.250000 0.250000\n", encoding="utf-8")
+    (run / "classes.txt").write_text("CodeA\n", encoding="utf-8")
+
+    outcome = RestoreWorker(registry=TaskRegistry(task_dir=tmp_path / "tasks")).preflight(
+        RestoreConfig(
+            site_folder=site,
+            source_type="inference",
+            run_id="run_20260520_120000",
+        )
+    )
+
+    assert outcome.success is True
+    assert outcome.result is not None
+    assert outcome.result.total_labels == 1
+    assert outcome.result.xml_to_write == 1
+    assert not (site / "CodeA" / "Product1" / "a.xml").exists()
+    assert encoded_stem == "CodeA__Product1__a"
+
+
+def test_restore_worker_runs_independent_restore(tmp_path: Path) -> None:
+    """Desktop restore worker exposes independent restore without mapping."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    make_image(image_root / "Product1" / "a.jpg")
+    label_path = label_root / "Product1" / "a.txt"
+    label_path.parent.mkdir(parents=True, exist_ok=True)
+    label_path.write_text("0 0.500000 0.500000 0.250000 0.250000\n", encoding="utf-8")
+    (label_root / "classes.txt").write_text("CodeA\n", encoding="utf-8")
+    registry = TaskRegistry(task_dir=tmp_path / "tasks")
+
+    outcome = RestoreWorker(registry=registry).run_independent(
+        IndependentRestoreConfig(image_root=image_root, label_root=label_root)
+    )
+
+    assert outcome.success is True
+    assert outcome.result is not None
+    assert outcome.result.success == 1
+    assert (image_root / "Product1" / "a.xml").exists()
+    assert registry.get(outcome.task.task_id).status == "succeeded"
+
+
+def test_restore_worker_preflights_independent_restore_without_writing(
+    tmp_path: Path,
+) -> None:
+    """Desktop restore worker exposes independent restore preflight."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    make_image(image_root / "Product1" / "a.jpg")
+    label_path = label_root / "Product1" / "a.txt"
+    label_path.parent.mkdir(parents=True, exist_ok=True)
+    label_path.write_text("0 0.500000 0.500000 0.250000 0.250000\n", encoding="utf-8")
+    (label_root / "classes.txt").write_text("CodeA\n", encoding="utf-8")
+
+    outcome = RestoreWorker(
+        registry=TaskRegistry(task_dir=tmp_path / "tasks")
+    ).preflight_independent(
+        IndependentRestoreConfig(image_root=image_root, label_root=label_root)
+    )
+
+    assert outcome.success is True
+    assert outcome.result is not None
+    assert outcome.result.mode == "independent"
+    assert outcome.result.xml_to_write == 1
+    assert not (image_root / "Product1" / "a.xml").exists()
 
 
 def test_restore_worker_converts_errors_to_failed_task(tmp_path: Path) -> None:

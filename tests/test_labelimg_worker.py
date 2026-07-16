@@ -33,6 +33,10 @@ class FakeLauncher:
         """Return a configured validation result."""
         return self.validate_result
 
+    def preflight(self, config: LabelImgConfig) -> LabelImgValidateResult:
+        """Return a configured preflight result."""
+        return self.validate_result
+
     def launch(self, config: LabelImgConfig) -> LabelImgLaunchResult:
         """Return a configured launch result."""
         return self.launch_result
@@ -60,15 +64,46 @@ def test_labelimg_worker_validates_environment_and_updates_task(tmp_path: Path) 
     assert registry.get(outcome.task.task_id).status == "succeeded"
 
 
-def test_labelimg_worker_launches_and_updates_task(tmp_path: Path) -> None:
-    """Desktop LabelImg worker launches through the shared service."""
+def test_labelimg_worker_preflights_launch_inputs_and_updates_task(
+    tmp_path: Path,
+) -> None:
+    """Desktop LabelImg worker preflights through the shared launcher."""
     registry = TaskRegistry(tmp_path / "tasks")
     python_path = make_python(tmp_path / "python.exe")
     image_dir = tmp_path / "images"
     image_dir.mkdir()
 
+    outcome = LabelImgWorker(registry=registry, launcher=FakeLauncher()).preflight(
+        LabelImgConfig(
+            python_path=python_path,
+            image_dir=image_dir,
+            annotation_format="voc",
+        )
+    )
+
+    assert outcome.success is True
+    assert outcome.result is not None
+    assert outcome.result.is_valid is True
+    assert registry.get(outcome.task.task_id).status == "succeeded"
+
+
+def test_labelimg_worker_launches_and_updates_task(tmp_path: Path) -> None:
+    """Desktop LabelImg worker launches through the shared service."""
+    registry = TaskRegistry(tmp_path / "tasks")
+    python_path = make_python(tmp_path / "python.exe")
+    image_dir = tmp_path / "images"
+    label_dir = tmp_path / "labels"
+    classes_file = tmp_path / "classes.txt"
+    image_dir.mkdir()
+    classes_file.write_text("CodeA\n", encoding="utf-8")
+
     outcome = LabelImgWorker(registry=registry, launcher=FakeLauncher()).launch(
-        LabelImgConfig(python_path=python_path, image_dir=image_dir)
+        LabelImgConfig(
+            python_path=python_path,
+            image_dir=image_dir,
+            label_dir=label_dir,
+            classes_file=classes_file,
+        )
     )
 
     assert outcome.success is True

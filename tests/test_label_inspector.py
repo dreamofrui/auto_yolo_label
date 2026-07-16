@@ -10,11 +10,16 @@ import pytest
 from core.label_inspector import (
     GetProductLabelsConfig,
     GetRunTreeConfig,
+    InspectorClassesNotFoundError,
+    InspectorMappingNotFoundError,
+    InspectorOriginalImageMissingError,
     InspectorProductNotFoundError,
     InspectorRunNotFoundError,
     LabelInspector,
     ListRunsConfig,
 )
+from utils.mapping_manager import ImageInfo, MappingManager
+from utils.path_encoder import PathEncoder
 from utils.exceptions import ErrorCode
 
 
@@ -30,6 +35,29 @@ def make_image(path: Path) -> None:
     path.write_bytes(b"image")
 
 
+def make_mapping(site: Path, images: list[tuple[str, str, str]]) -> MappingManager:
+    """Create mapping.json records for inspector tests."""
+    (site / ".autolabeler").mkdir(parents=True, exist_ok=True)
+    (site / ".autolabeler" / "classes.txt").write_text("CodeA\n", encoding="utf-8")
+    manager = MappingManager(site / ".autolabeler" / "mapping.json").create_new(site)
+    for class_id, code in enumerate(sorted({code for code, _, _ in images})):
+        manager.add_class(class_id, code)
+    encoder = PathEncoder()
+    for code, product, filename in images:
+        manager.add_image(
+            encoder.encode(code, product, filename),
+            ImageInfo(
+                original_relative=Path(code, product, filename).as_posix(),
+                code=code,
+                product=product,
+                original_name=filename,
+                format=Path(filename).suffix.lower(),
+            ),
+        )
+    manager.save()
+    return manager
+
+
 def test_label_inspector_constructs_successfully() -> None:
     """LabelInspector can be constructed with default dependencies."""
     inspector = LabelInspector()
@@ -37,7 +65,7 @@ def test_label_inspector_constructs_successfully() -> None:
     assert isinstance(inspector, LabelInspector)
 
 
-def test_list_runs_parses_valid_configs_without_mapping_json(tmp_path: Path) -> None:
+def test_list_runs_parses_valid_configs_without_loading_mapping(tmp_path: Path) -> None:
     """Run listing scans only inference result folders and parses valid config snapshots."""
     site = tmp_path / "site"
     run_a = site / ".autolabeler" / "inference_results" / "run_20260513_103000"
@@ -96,8 +124,8 @@ def test_get_run_tree_counts_labels_and_filters_control_files(tmp_path: Path) ->
     """Run tree includes Code/Product nodes with label and empty-label counts."""
     site = tmp_path / "site"
     run = site / ".autolabeler" / "inference_results" / "run_20260513_103000"
-    product_a = run / "CodeA" / "Product1"
-    product_b = run / "CodeA" / "Product2"
+    product_a = run / "labels" / "CodeA" / "Product1"
+    product_b = run / "labels" / "CodeA" / "Product2"
     make_label(product_a / "one.txt", "0 0.5 0.5 0.2 0.2\n")
     make_label(product_a / "two.txt", "  \n")
     make_label(product_a / "classes.txt", "CodeA\n")
@@ -140,19 +168,27 @@ def test_get_run_tree_missing_run_raises_run_not_found(tmp_path: Path) -> None:
 def test_get_product_labels_counts_objects_and_resolves_original_images(
     tmp_path: Path,
 ) -> None:
-    """Product label listing returns object counts and best-effort original image paths."""
+    """Product label listing returns mapped images and missing-label warnings."""
     site = tmp_path / "site"
+    make_mapping(
+        site,
+        [
+            ("CodeA", "Product1", "one.jpg"),
+            ("CodeA", "Product1", "two.PNG"),
+            ("CodeA", "Product1", "needs_label.bmp"),
+        ],
+    )
     product = (
         site
         / ".autolabeler"
         / "inference_results"
         / "run_20260513_103000"
+        / "labels"
         / "CodeA"
         / "Product1"
     )
     make_label(product / "one.txt", "0 0.5 0.5 0.2 0.2\n1 0.4 0.4 0.2 0.2\n\n")
     make_label(product / "two.txt", " \n")
-    make_label(product / "missing.txt", "2 0.1 0.1 0.2 0.2\n")
     make_label(product / "classes.txt", "CodeA\n")
     make_label(product / "data.yaml", "path: .\n")
     make_label(product / "README.txt", "manual note\n")
@@ -160,6 +196,7 @@ def test_get_product_labels_counts_objects_and_resolves_original_images(
     image_two = site / "CodeA" / "Product1" / "two.PNG"
     make_image(image_one)
     make_image(image_two)
+    make_image(site / "CodeA" / "Product1" / "needs_label.bmp")
 
     labels = LabelInspector().get_product_labels(
         GetProductLabelsConfig(
@@ -171,32 +208,182 @@ def test_get_product_labels_counts_objects_and_resolves_original_images(
     )
 
     assert [
-        (label.image_name, label.image_path, label.object_count) for label in labels
+        (
+            label.image_name,
+            label.image_path,
+            label.label_path,
+            label.object_count,
+            label.missing_label,
+        )
+        for label in labels
     ] == [
-        ("missing", None, 1),
-        ("one.jpg", image_one, 2),
-        ("two.PNG", image_two, 0),
+        (
+            "needs_label.bmp",
+            site / "CodeA" / "Product1" / "needs_label.bmp",
+            product / "needs_label.txt",
+            0,
+            True,
+        ),
+        ("one.jpg", image_one, product / "one.txt", 2, False),
+        ("two.PNG", image_two, product / "two.txt", 0, False),
     ]
-    assert [label.label_path for label in labels] == [
-        product / "missing.txt",
-        product / "one.txt",
-        product / "two.txt",
-    ]
+
+
+def test_get_product_labels_uses_mapping_not_directory_guess(tmp_path: Path) -> None:
+    """Flow review resolves original images from mapping paths."""
+    site = tmp_path / "site"
+    manager = MappingManager(site / ".autolabeler" / "mapping.json").create_new(site)
+    manager.add_class(0, "CodeA")
+    (site / ".autolabeler").mkdir(parents=True, exist_ok=True)
+    (site / ".autolabeler" / "classes.txt").write_text("CodeA\n", encoding="utf-8")
+    image_path = site / "raw" / "actual.jpg"
+    make_image(image_path)
+    manager.add_image(
+        "CodeA__Product1__one.jpg",
+        ImageInfo(
+            original_relative="raw/actual.jpg",
+            code="CodeA",
+            product="Product1",
+            original_name="one.jpg",
+            format=".jpg",
+        ),
+    )
+    manager.save()
+    product = (
+        site
+        / ".autolabeler"
+        / "inference_results"
+        / "run_20260513_103000"
+        / "labels"
+        / "CodeA"
+        / "Product1"
+    )
+    make_label(product / "one.txt", "0 0.5 0.5 0.2 0.2\n")
+
+    labels = LabelInspector().get_product_labels(
+        GetProductLabelsConfig(
+            site_folder=site,
+            run_id="run_20260513_103000",
+            code="CodeA",
+            product="Product1",
+        )
+    )
+
+    assert labels[0].image_path == image_path
+
+
+def test_get_product_labels_missing_original_image_blocks_open(
+    tmp_path: Path,
+) -> None:
+    """Missing mapped original images block opening a review node."""
+    site = tmp_path / "site"
+    make_mapping(site, [("CodeA", "Product1", "one.jpg")])
+    product = (
+        site
+        / ".autolabeler"
+        / "inference_results"
+        / "run_20260513_103000"
+        / "labels"
+        / "CodeA"
+        / "Product1"
+    )
+    make_label(product / "one.txt", "0 0.5 0.5 0.2 0.2\n")
+
+    with pytest.raises(InspectorOriginalImageMissingError) as exc_info:
+        LabelInspector().get_product_labels(
+            GetProductLabelsConfig(
+                site_folder=site,
+                run_id="run_20260513_103000",
+                code="CodeA",
+                product="Product1",
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.INSPECTOR_ORIGINAL_IMAGE_MISSING
+    assert "one.jpg" in str(exc_info.value.details)
+
+
+def test_get_product_labels_missing_mapping_blocks_flow_review(
+    tmp_path: Path,
+) -> None:
+    """Flow review requires mapping.json before opening a product node."""
+    site = tmp_path / "site"
+    product = (
+        site
+        / ".autolabeler"
+        / "inference_results"
+        / "run_20260513_103000"
+        / "labels"
+        / "CodeA"
+        / "Product1"
+    )
+    make_label(product / "one.txt", "0 0.5 0.5 0.2 0.2\n")
+    (site / ".autolabeler" / "classes.txt").write_text("CodeA\n", encoding="utf-8")
+
+    with pytest.raises(InspectorMappingNotFoundError) as exc_info:
+        LabelInspector().get_product_labels(
+            GetProductLabelsConfig(
+                site_folder=site,
+                run_id="run_20260513_103000",
+                code="CodeA",
+                product="Product1",
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.INSPECTOR_MAPPING_NOT_FOUND
+
+
+def test_get_product_labels_empty_classes_blocks_flow_review(
+    tmp_path: Path,
+) -> None:
+    """Flow review requires a non-empty classes.txt before opening a product node."""
+    site = tmp_path / "site"
+    make_mapping(site, [("CodeA", "Product1", "one.jpg")])
+    (site / ".autolabeler" / "classes.txt").write_text(" \n", encoding="utf-8")
+    make_image(site / "CodeA" / "Product1" / "one.jpg")
+    product = (
+        site
+        / ".autolabeler"
+        / "inference_results"
+        / "run_20260513_103000"
+        / "labels"
+        / "CodeA"
+        / "Product1"
+    )
+    make_label(product / "one.txt", "0 0.5 0.5 0.2 0.2\n")
+
+    with pytest.raises(InspectorClassesNotFoundError) as exc_info:
+        LabelInspector().get_product_labels(
+            GetProductLabelsConfig(
+                site_folder=site,
+                run_id="run_20260513_103000",
+                code="CodeA",
+                product="Product1",
+            )
+        )
+
+    assert exc_info.value.code == ErrorCode.INSPECTOR_CLASSES_NOT_FOUND
 
 
 def test_get_product_labels_missing_product_raises_product_not_found(
     tmp_path: Path,
 ) -> None:
-    """Missing product directories raise an inspector-specific business exception."""
+    """Missing product label directories raise an inspector-specific exception."""
+    site = tmp_path / "site"
+    make_mapping(site, [("CodeA", "Product1", "one.jpg")])
     run = (
-        tmp_path / "site" / ".autolabeler" / "inference_results" / "run_20260513_103000"
+        site
+        / ".autolabeler"
+        / "inference_results"
+        / "run_20260513_103000"
+        / "labels"
     )
     run.mkdir(parents=True)
 
     with pytest.raises(InspectorProductNotFoundError) as exc_info:
         LabelInspector().get_product_labels(
             GetProductLabelsConfig(
-                site_folder=tmp_path / "site",
+                site_folder=site,
                 run_id="run_20260513_103000",
                 code="CodeA",
                 product="Product1",
