@@ -6,6 +6,10 @@ All notable changes to this repo are recorded here.
 
 ### Product / GUI
 
+- Redesigned utility navigation buttons (首页、任务中心、使用手册、设置) with
+  compact single-line layout, emoji badges (🏠 📋 📖 ⚙️), reduced height from
+  50-56px to 40px, and improved text contrast (#b8d4db) for clearer visual
+  hierarchy against flow buttons.
 - Fixed tool page header stretch and enhanced utility nav buttons with structured
   two-line layout (badge + title + subtitle) matching flow button visual density.
 - Expanded Restore validation logs with the exact label row, matched image,

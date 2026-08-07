@@ -685,12 +685,12 @@ class WorkbenchView(QWidget):
         layout.addLayout(brand_row)
         layout.addSpacing(14)
 
-        home_button = _nav_utility_button("首页", "首", "工作台概览")
+        home_button = _nav_utility_button("首页", "🏠")
         home_button.clicked.connect(self.show_home)
         self.nav_buttons["home"] = home_button
         layout.addWidget(home_button)
 
-        task_button = _nav_utility_button("任务中心", "任", "运行状态和历史")
+        task_button = _nav_utility_button("任务中心", "📋")
         task_button.clicked.connect(self.show_task_center)
         self.nav_buttons["tasks"] = task_button
         layout.addWidget(task_button)
@@ -707,10 +707,10 @@ class WorkbenchView(QWidget):
             layout.addWidget(button)
 
         layout.addStretch(1)
-        manual = _nav_utility_button("使用手册", "册", "参数流程参考")
+        manual = _nav_utility_button("使用手册", "📖")
         manual.clicked.connect(self.show_manual)
         self.nav_buttons["manual"] = manual
-        settings = _nav_utility_button("设置", "设", "工具默认参数")
+        settings = _nav_utility_button("设置", "⚙️")
         settings.clicked.connect(self.show_settings)
         self.nav_buttons["settings"] = settings
         layout.addWidget(manual)
@@ -1960,37 +1960,29 @@ def _nav_flow_button(index: int, module: ModuleEntry) -> QPushButton:
     return button
 
 
-def _nav_utility_button(title: str, badge_char: str, subtitle: str) -> QPushButton:
-    """Build a structured side-nav entry for utility navigation."""
+def _nav_utility_button(title: str, emoji: str) -> QPushButton:
+    """Build a compact single-line side-nav entry for utility navigation."""
     button = QPushButton()
     button.setObjectName("navUtilityButton")
     button.setCursor(Qt.CursorShape.PointingHandCursor)
-    button.setMinimumHeight(50)
+    button.setMinimumHeight(40)
     button.setText("")
 
     layout = QHBoxLayout(button)
-    layout.setContentsMargins(10, 7, 10, 7)
+    layout.setContentsMargins(10, 8, 10, 8)
     layout.setSpacing(9)
 
-    badge = QLabel(badge_char)
+    badge = QLabel(emoji)
     badge.setObjectName("navUtilityBadge")
     badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
     badge.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
-    text_layout = QVBoxLayout()
-    text_layout.setContentsMargins(0, 0, 0, 0)
-    text_layout.setSpacing(1)
     title_label = QLabel(title)
     title_label.setObjectName("navStepTitle")
-    subtitle_label = QLabel(subtitle)
-    subtitle_label.setObjectName("navStepSubtitle")
-    for label in (title_label, subtitle_label):
-        label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-    text_layout.addWidget(title_label)
-    text_layout.addWidget(subtitle_label)
+    title_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
     layout.addWidget(badge, 0)
-    layout.addLayout(text_layout, 1)
+    layout.addWidget(title_label, 1)
     return button
 
 
@@ -2388,9 +2380,12 @@ def _stylesheet() -> str:
         padding: 0px;
     }
     QPushButton#navUtilityButton {
-        min-height: 50px;
-        max-height: 56px;
+        min-height: 40px;
+        max-height: 40px;
         padding: 0px;
+    }
+    QPushButton#navUtilityButton:hover {
+        background: #2d414f;
     }
     QLabel#navStepNumber {
         min-width: 32px;
@@ -2405,24 +2400,22 @@ def _stylesheet() -> str:
         font-weight: 800;
     }
     QLabel#navUtilityBadge {
-        min-width: 32px;
-        max-width: 32px;
+        min-width: 28px;
+        max-width: 28px;
         min-height: 28px;
         max-height: 28px;
-        border-radius: 7px;
+        border-radius: 6px;
         background: #263844;
-        border: 1px solid #3a4f5a;
-        color: #a9c4ca;
-        font-size: 12px;
-        font-weight: 800;
+        border: none;
+        font-size: 14px;
     }
     QLabel#navStepTitle {
-        color: #edf6f7;
+        color: #b8d4db;
         font-size: 13px;
         font-weight: 800;
     }
     QLabel#navStepSubtitle {
-        color: #9fb4bb;
+        color: #8ca8af;
         font-size: 12px;
         font-weight: 500;
     }
