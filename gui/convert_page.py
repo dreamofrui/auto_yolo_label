@@ -204,7 +204,6 @@ class ConvertPage(QWidget):
         left.addWidget(QLabel("类别顺序"))
         left.addWidget(self.classes_box)
         left.addWidget(self.confirm_classes_checkbox)
-        left.addLayout(actions)
         left.addWidget(self.result_summary)
         left.addWidget(self.analysis_panel)
         left.addWidget(self.progress_label)
@@ -213,6 +212,8 @@ class ConvertPage(QWidget):
         self.log_box.setMinimumHeight(84)
         self.log_box.setMaximumHeight(112)
         left.addWidget(self.log_box, 0)
+        left.addStretch(1)
+        left.addLayout(actions)
 
         self.ai_assistant_panel = build_ai_assistant_panel(
             context="转换页用于把图片与 XML 目录生成标准 YOLO 数据集"

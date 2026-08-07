@@ -685,14 +685,12 @@ class WorkbenchView(QWidget):
         layout.addLayout(brand_row)
         layout.addSpacing(14)
 
-        home_button = QPushButton("首页")
-        home_button.setObjectName("navButton")
+        home_button = _nav_utility_button("首页", "首", "工作台概览")
         home_button.clicked.connect(self.show_home)
         self.nav_buttons["home"] = home_button
         layout.addWidget(home_button)
 
-        task_button = QPushButton("任务中心")
-        task_button.setObjectName("navUtilityButton")
+        task_button = _nav_utility_button("任务中心", "任", "运行状态和历史")
         task_button.clicked.connect(self.show_task_center)
         self.nav_buttons["tasks"] = task_button
         layout.addWidget(task_button)
@@ -709,12 +707,10 @@ class WorkbenchView(QWidget):
             layout.addWidget(button)
 
         layout.addStretch(1)
-        manual = QPushButton("使用手册")
-        manual.setObjectName("navUtilityButton")
+        manual = _nav_utility_button("使用手册", "册", "参数流程参考")
         manual.clicked.connect(self.show_manual)
         self.nav_buttons["manual"] = manual
-        settings = QPushButton("设置")
-        settings.setObjectName("navUtilityButton")
+        settings = _nav_utility_button("设置", "设", "工具默认参数")
         settings.clicked.connect(self.show_settings)
         self.nav_buttons["settings"] = settings
         layout.addWidget(manual)
@@ -1964,6 +1960,40 @@ def _nav_flow_button(index: int, module: ModuleEntry) -> QPushButton:
     return button
 
 
+def _nav_utility_button(title: str, badge_char: str, subtitle: str) -> QPushButton:
+    """Build a structured side-nav entry for utility navigation."""
+    button = QPushButton()
+    button.setObjectName("navUtilityButton")
+    button.setCursor(Qt.CursorShape.PointingHandCursor)
+    button.setMinimumHeight(50)
+    button.setText("")
+
+    layout = QHBoxLayout(button)
+    layout.setContentsMargins(10, 7, 10, 7)
+    layout.setSpacing(9)
+
+    badge = QLabel(badge_char)
+    badge.setObjectName("navUtilityBadge")
+    badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    badge.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+    text_layout = QVBoxLayout()
+    text_layout.setContentsMargins(0, 0, 0, 0)
+    text_layout.setSpacing(1)
+    title_label = QLabel(title)
+    title_label.setObjectName("navStepTitle")
+    subtitle_label = QLabel(subtitle)
+    subtitle_label.setObjectName("navStepSubtitle")
+    for label in (title_label, subtitle_label):
+        label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+    text_layout.addWidget(title_label)
+    text_layout.addWidget(subtitle_label)
+
+    layout.addWidget(badge, 0)
+    layout.addLayout(text_layout, 1)
+    return button
+
+
 def _module_by_key(key: str) -> ModuleEntry:
     for module in MODULES:
         if module.key == key:
@@ -2357,6 +2387,11 @@ def _stylesheet() -> str:
         max-height: 56px;
         padding: 0px;
     }
+    QPushButton#navUtilityButton {
+        min-height: 50px;
+        max-height: 56px;
+        padding: 0px;
+    }
     QLabel#navStepNumber {
         min-width: 32px;
         max-width: 32px;
@@ -2365,6 +2400,18 @@ def _stylesheet() -> str:
         border-radius: 7px;
         background: #20323c;
         border: 1px solid #39535d;
+        color: #a9c4ca;
+        font-size: 12px;
+        font-weight: 800;
+    }
+    QLabel#navUtilityBadge {
+        min-width: 32px;
+        max-width: 32px;
+        min-height: 28px;
+        max-height: 28px;
+        border-radius: 7px;
+        background: #263844;
+        border: 1px solid #3a4f5a;
         color: #a9c4ca;
         font-size: 12px;
         font-weight: 800;

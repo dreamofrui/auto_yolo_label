@@ -136,6 +136,7 @@ class ScanPage(QWidget):
         self.log_box.setMinimumHeight(88)
         self.log_box.setMaximumHeight(120)
         left.addWidget(self.log_box)
+        left.addStretch(1)
         left.addLayout(actions)
 
         self.ai_assistant_panel = build_ai_assistant_panel(

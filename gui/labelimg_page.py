@@ -157,6 +157,7 @@ class LabelImgPage(QWidget):
         if default_mode == "label":
             self.log_box = build_log_box("[ready] 等待 LabelImg 操作")
             left.addWidget(self.log_box, 1)
+        left.addStretch(1)
 
         self.ai_assistant_panel = build_ai_assistant_panel(
             context=(

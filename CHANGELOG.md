@@ -6,6 +6,13 @@ All notable changes to this repo are recorded here.
 
 ### Product / GUI
 
+- Fixed tool page header stretch and enhanced utility nav buttons with structured
+  two-line layout (badge + title + subtitle) matching flow button visual density.
+- Expanded Restore validation logs with the exact label row, matched image,
+  class, converted pixel bounds, and violated boundary while keeping the
+  visible failure summary compact.
+- Moved persisted tool defaults from the user home directory to the project's
+  ignored `.autolabeler/tool_defaults.json` runtime file.
 - Updated Task Center rows so action buttons remain visible with long summaries,
   and added clickable 运行中/需要处理 summary filters with a return action to
   the full task list.
@@ -36,6 +43,8 @@ All notable changes to this repo are recorded here.
 
 ### Architecture
 
+- Documented staged annotation migration through Restore, Convert, and Sample,
+  with private format implementations removed after each adoption step.
 - Reframed the active architecture around the PySide6 desktop GUI, stable
   framework-free `core/`, and thin `gui/workers/` adapters that call `core/`
   directly.
@@ -54,6 +63,13 @@ All notable changes to this repo are recorded here.
 
 ### Documentation
 
+- Documented one canonical LabelImg-compatible VOC XML serialization for
+  annotation workflows instead of preserving conflicting historical layouts.
+- Added `CONTEXT.md` to define Annotation and Annotation Format as shared
+  domain terms across YOLO TXT and Pascal VOC XML workflows, including strict
+  rejection of out-of-bounds annotations and shared Annotation Diagnostics.
+- Added per-repo engineering-skill configuration for GitHub issue tracking,
+  canonical triage labels, and single-context domain docs.
 - Added contributor rules requiring bug fixes to be traced to specific
   functions and call paths, with a lightweight flow for small single-function
   fixes.
@@ -73,6 +89,9 @@ All notable changes to this repo are recorded here.
 
 ### Tests
 
+- Documented the annotation test seam: format behavior belongs to the shared
+  module interface, while feature and worker tests retain policy and lifecycle
+  coverage without duplicating private parser tests.
 - Added scanner coverage for ignoring XML label files and rejecting unsupported
   Product-folder files.
 
