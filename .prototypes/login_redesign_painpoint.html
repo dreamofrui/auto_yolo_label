@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoLabeler 登录页设计 - 痛点驱动版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .prototype-header {
+            background: #ff6b6b;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .preview-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            overflow: hidden;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .login-view {
+            display: flex;
+            min-height: 650px;
+        }
+
+        /* 左侧故事面板 */
+        .login-story {
+            flex: 1;
+            background: #1a3743;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 24px 24px;
+            padding: 56px 48px 48px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .brand-zone {
+            margin-bottom: 48px;
+        }
+
+        .login-brand {
+            color: #f2f7f8;
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            color: #8ca8af;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        /* 痛点区域 */
+        .pain-zone {
+            margin-bottom: 32px;
+        }
+
+        .pain-question {
+            color: #b8d4db;
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .pain-context {
+            color: #a9c4ca;
+            font-size: 14px;
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+
+        /* 解决方案区域 */
+        .solution-zone {
+            background: rgba(0, 123, 120, 0.08);
+            border-left: 3px solid #007b78;
+            padding: 20px 24px;
+            margin-bottom: 32px;
+            border-radius: 6px;
+        }
+
+        .solution-label {
+            color: #007b78;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .solution-statement {
+            color: #f2f7f8;
+            font-size: 17px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .solution-proof {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .proof-metric {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 32px;
+            font-weight: 700;
+            color: #007b78;
+            line-height: 1;
+        }
+
+        .proof-arrow {
+            color: #8ca8af;
+            font-size: 24px;
+            margin: 0 4px;
+        }
+
+        .proof-label {
+            color: #b8d4db;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .solution-flow {
+            color: #8ca8af;
+            font-size: 12px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            letter-spacing: 0.5px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* 信任锚点区域 */
+        .trust-zone {
+            margin-bottom: auto;
+            padding-bottom: 24px;
+        }
+
+        .trust-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: #a9c4ca;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .trust-icon {
+            color: #31aaa0;
+            font-size: 14px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .trust-text {
+            flex: 1;
+        }
+
+        .trust-text code {
+            color: #007b78;
+            background: rgba(0, 123, 120, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        /* 底部标签 */
+        .tags-zone {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .tag-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 10px 8px;
+            text-align: center;
+            color: #a9c4ca;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        /* 右侧登录卡片 */
+        .login-card {
+            width: 440px;
+            background: white;
+            padding: 56px 48px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+
+        .panel-note {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .form-button {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .sso-button {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #1a8f7a;
+        }
+
+        .form-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .demo-login-button {
+            background: #1a8f7a;
+            border: none;
+            color: white;
+        }
+
+        .demo-login-button:hover {
+            background: #158770;
+        }
+
+        .footnote {
+            margin-top: auto;
+            padding-top: 24px;
+            color: #9ca3af;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        /* 设计说明面板 */
+        .design-notes {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .design-notes h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: #1a3743;
+        }
+
+        .design-notes h3 {
+            font-size: 15px;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            color: #1a8f7a;
+            font-weight: 600;
+        }
+
+        .design-notes ul {
+            margin-left: 20px;
+        }
+
+        .design-notes li {
+            margin: 8px 0;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .design-notes code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            color: #1a8f7a;
+        }
+
+        .design-notes strong {
+            color: #1a3743;
+        }
+    </style>
+</head>
+<body>
+    <div class="prototype-header">
+        ⚠️ PROTOTYPE ONLY - 设计预览，非生产代码
+    </div>
+
+    <div class="design-notes">
+        <h2>设计策略说明（痛点驱动版）</h2>
+
+        <h3>信息架构调整</h3>
+        <ul>
+            <li><strong>第一层：痛点</strong> - "万张图像，逐张标注？" 立即引发共鸣</li>
+            <li><strong>第二层：解决方案</strong> - "半自动化：少量标注 + 模型推理" 直接回答"这软件是干什么的"</li>
+            <li><strong>第三层：量化证明</strong> - 100 → 10,000 用数字证明效果</li>
+            <li><strong>第四层：可信度</strong> - 3 个关键特性建立信任（可追溯、LabelImg、安全还原）</li>
+        </ul>
+
+        <h3>与上一版的区别</h3>
+        <ul>
+            <li>❌ <strong>上一版</strong>：直接展示 100 → 10,000，但用户不知道这是什么</li>
+            <li>✅ <strong>本版</strong>：先说痛点（万张图逐张标），再说解决方案（半自动化），然后证明（100 → 10,000）</li>
+            <li>✅ <strong>明确定义</strong>："YOLO 半自动图像标注工作台" + "少量标注 + 模型推理" = 清楚告诉用户这是什么</li>
+        </ul>
+
+        <h3>3 秒认知路径</h3>
+        <ul>
+            <li><strong>第 1 秒</strong>：看到痛点问题 "万张图像，逐张标注？" 立即产生共鸣</li>
+            <li><strong>第 2 秒</strong>：看到绿色解决方案区 "半自动化：少量标注 + 模型推理" 理解这是什么</li>
+            <li><strong>第 3 秒</strong>：看到 100 → 10,000 的量化证明，理解价值大小</li>
+        </ul>
+
+        <h3>视觉层次</h3>
+        <ul>
+            <li>痛点区用柔和的青灰色（#b8d4db）与主程序统一，引起注意但不刺眼</li>
+            <li>解决方案区用品牌色背景板（#007b78）+ 左侧强调线突出，这是视觉焦点</li>
+            <li>数字用等宽字体但尺寸适中（32px），不喧宾夺主</li>
+            <li>底部信任点用勾选图标（#31aaa0）+ 简洁文字，建立可靠性</li>
+        </ul>
+    </div>
+
+    <div class="preview-container">
+        <div class="login-view">
+            <div class="login-story">
+                <div class="brand-zone">
+                    <div class="login-brand">AutoLabeler</div>
+                    <div class="login-subtitle">YOLO 半自动图像标注工作台</div>
+                </div>
+
+                <div class="pain-zone">
+                    <div class="pain-question">
+                        万张图像，逐张标注？
+                    </div>
+                    <div class="pain-context">
+                        传统标注流程耗时巨大，重复劳动成本高，标注质量难以追溯。
+                    </div>
+                </div>
+
+                <div class="solution-zone">
+                    <div class="solution-label">解决方案</div>
+                    <div class="solution-statement">
+                        半自动化：少量标注 + 模型推理
+                    </div>
+
+                    <div class="solution-proof">
+                        <div>
+                            <div class="proof-metric">100</div>
+                            <div class="proof-label">手工标注</div>
+                        </div>
+                        <div class="proof-arrow">→</div>
+                        <div>
+                            <div class="proof-metric">10,000</div>
+                            <div class="proof-label">模型推理</div>
+                        </div>
+                    </div>
+
+                    <div class="solution-flow">
+                        Scan → Sample → Label → Train → Infer → Review → Restore
+                    </div>
+                </div>
+
+                <div class="trust-zone">
+                    <div class="trust-item">
+                        <div class="trust-icon">✓</div>
+                        <div class="trust-text">
+                            全程可追溯 — <code>mapping.json</code> 记录完整链路
+                        </div>
+                    </div>
+                    <div class="trust-item">
+                        <div class="trust-icon">✓</div>
+                        <div class="trust-text">
+                            LabelImg 集成 — 标注和复核使用同一工具
+                        </div>
+                    </div>
+                    <div class="trust-item">
+                        <div class="trust-icon">✓</div>
+                        <div class="trust-text">
+                            安全还原 — 预检确认后批量写回 VOC XML
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tags-zone">
+                    <div class="tag-item">可追溯</div>
+                    <div class="tag-item">可复核</div>
+                    <div class="tag-item">安全还原</div>
+                    <div class="tag-item">桌面端</div>
+                </div>
+            </div>
+
+            <div class="login-card">
+                <div class="panel-title">进入工作台</div>
+                <div class="panel-note">第一版保留企业 SSO 入口，实际使用本地演示登录。</div>
+
+                <button class="form-button sso-button" disabled>企业 SSO（预留）</button>
+
+                <input type="text" class="form-input" placeholder="账号">
+                <input type="password" class="form-input" placeholder="密码（第一版不校验）">
+
+                <button class="form-button demo-login-button">本地演示登录</button>
+
+                <div class="footnote">
+                    这里不实现真实权限或云端身份管理，避免界面承诺不存在的安全能力。
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

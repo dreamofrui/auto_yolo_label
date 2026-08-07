@@ -347,56 +347,96 @@ class LoginView(QWidget):
 
         brand = QLabel("AutoLabeler")
         brand.setObjectName("loginBrand")
-        headline = QLabel("半自动图像标注工作台")
+        headline = QLabel("YOLO 半自动图像标注工作台")
         headline.setObjectName("loginHeadline")
         headline.setWordWrap(True)
-        copy = QLabel(
-            "把扫描、抽样、标注、训练、推理、复核和 XML 写回放在一个桌面工作台里，"
-            "减少重复人工标注，同时保留可追溯流程。"
-        )
-        copy.setObjectName("mutedText")
-        copy.setWordWrap(True)
 
-        self.login_workflow_panel = QFrame()
-        self.login_workflow_panel.setObjectName("loginWorkflowPanel")
-        self.login_workflow_panel.setProperty("surfaceRole", "workflow")
-        workflow_layout = QGridLayout(self.login_workflow_panel)
-        workflow_layout.setContentsMargins(12, 12, 12, 12)
-        workflow_layout.setHorizontalSpacing(10)
-        workflow_layout.setVerticalSpacing(10)
-        for index, text in enumerate(
-            (
-                "01 扫描建映射",
-                "02 抽样少标注",
-                "03 LabelImg 标注",
-                "04 训练模型",
-                "05 推理复核",
-                "06 还原 XML",
-            )
-        ):
-            step = QLabel(text)
-            step.setObjectName("loginWorkflowStep")
-            workflow_layout.addWidget(step, index // 3, index % 3)
+        # Pain point area
+        pain_question = QLabel("万张图像，逐张标注？")
+        pain_question.setObjectName("painQuestion")
+        pain_question.setWordWrap(True)
 
-        self.login_boundary_panel = QFrame()
-        self.login_boundary_panel.setObjectName("loginBoundaryPanel")
-        self.login_boundary_panel.setProperty("surfaceRole", "boundary")
-        boundary_layout = QGridLayout(self.login_boundary_panel)
-        boundary_layout.setContentsMargins(12, 12, 12, 12)
-        boundary_layout.setHorizontalSpacing(10)
-        boundary_layout.setVerticalSpacing(10)
-        for index, text in enumerate(
-            (
-                "输入：站点目录、YOLO 数据集、推理 run",
-                "输出：mapping.json、classes.txt、标签和 XML",
-                "安全：移动、覆盖、写回前先预检和确认",
-                "AI 预览：只准备参数，不直接执行任务",
-            )
-        ):
-            item = QLabel(text)
-            item.setObjectName("loginBoundaryItem")
-            item.setWordWrap(True)
-            boundary_layout.addWidget(item, index // 2, index % 2)
+        pain_context = QLabel("传统标注流程耗时巨大，重复劳动成本高，标注质量难以追溯。")
+        pain_context.setObjectName("painContext")
+        pain_context.setWordWrap(True)
+
+        # Solution frame
+        solution_frame = QFrame()
+        solution_frame.setObjectName("solutionFrame")
+        solution_layout = QVBoxLayout(solution_frame)
+        solution_layout.setContentsMargins(20, 20, 20, 20)
+        solution_layout.setSpacing(16)
+
+        solution_label = QLabel("解决方案")
+        solution_label.setObjectName("solutionLabel")
+
+        solution_statement = QLabel("半自动化：少量标注 + 模型推理")
+        solution_statement.setObjectName("solutionStatement")
+        solution_statement.setWordWrap(True)
+
+        # Proof metrics (horizontal layout)
+        proof_layout = QHBoxLayout()
+        proof_layout.setSpacing(16)
+        proof_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        metric_100 = QLabel("100")
+        metric_100.setObjectName("proofMetric")
+        metric_100_label = QLabel("手工标注")
+        metric_100_label.setObjectName("proofLabel")
+
+        arrow = QLabel("→")
+        arrow.setObjectName("proofArrow")
+
+        metric_10000 = QLabel("10,000")
+        metric_10000.setObjectName("proofMetric")
+        metric_10000_label = QLabel("模型推理")
+        metric_10000_label.setObjectName("proofLabel")
+
+        proof_left = QVBoxLayout()
+        proof_left.setSpacing(4)
+        proof_left.addWidget(metric_100)
+        proof_left.addWidget(metric_100_label)
+
+        proof_right = QVBoxLayout()
+        proof_right.setSpacing(4)
+        proof_right.addWidget(metric_10000)
+        proof_right.addWidget(metric_10000_label)
+
+        proof_layout.addLayout(proof_left)
+        proof_layout.addWidget(arrow)
+        proof_layout.addLayout(proof_right)
+        proof_layout.addStretch(1)
+
+        # Flow overview
+        flow_line = QLabel("Scan → Sample → Label → Train → Infer → Review → Restore")
+        flow_line.setObjectName("solutionFlow")
+
+        solution_layout.addWidget(solution_label)
+        solution_layout.addWidget(solution_statement)
+        solution_layout.addLayout(proof_layout)
+        solution_layout.addWidget(flow_line)
+
+        # Trust items
+        trust_container = QWidget()
+        trust_layout = QVBoxLayout(trust_container)
+        trust_layout.setContentsMargins(0, 0, 0, 0)
+        trust_layout.setSpacing(8)
+
+        trust_item_1 = QLabel("✓ 全程可追溯 — mapping.json 记录完整链路")
+        trust_item_1.setObjectName("trustItem")
+        trust_item_1.setWordWrap(True)
+
+        trust_item_2 = QLabel("✓ LabelImg 集成 — 同一工具链")
+        trust_item_2.setObjectName("trustItem")
+        trust_item_2.setWordWrap(True)
+
+        trust_item_3 = QLabel("✓ 安全还原 — 批量写回 VOC XML")
+        trust_item_3.setObjectName("trustItem")
+        trust_item_3.setWordWrap(True)
+
+        trust_layout.addWidget(trust_item_1)
+        trust_layout.addWidget(trust_item_2)
+        trust_layout.addWidget(trust_item_3)
 
         strip = QGridLayout()
         strip.setHorizontalSpacing(10)
@@ -409,9 +449,10 @@ class LoginView(QWidget):
 
         story_layout.addWidget(brand)
         story_layout.addWidget(headline)
-        story_layout.addWidget(copy)
-        story_layout.addWidget(self.login_workflow_panel, 0)
-        story_layout.addWidget(self.login_boundary_panel, 0)
+        story_layout.addWidget(pain_question)
+        story_layout.addWidget(pain_context)
+        story_layout.addWidget(solution_frame)
+        story_layout.addWidget(trust_container)
         story_layout.addStretch(1)
         story_layout.addLayout(strip)
 
@@ -2453,6 +2494,10 @@ def _stylesheet() -> str:
         border: 1px solid #cfdade;
         border-radius: 8px;
     }
+    QFrame#loginStory {
+        background: #1a3743;
+        border: 1px solid #14292f;
+    }
     QFrame#homeRulePanel {
         min-width: 258px;
         max-width: 258px;
@@ -2473,6 +2518,61 @@ def _stylesheet() -> str:
         font-size: 38px;
         font-weight: 800;
         line-height: 1.2;
+    }
+    QLabel#painQuestion {
+        color: #b8d4db;
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+    QLabel#painContext {
+        color: #a9c4ca;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    QFrame#solutionFrame {
+        background: rgba(0, 123, 120, 0.08);
+        border-left: 3px solid #007b78;
+        border-radius: 6px;
+    }
+    QLabel#solutionLabel {
+        color: #007b78;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    QLabel#solutionStatement {
+        color: #f2f7f8;
+        font-size: 17px;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+    QLabel#proofMetric {
+        color: #007b78;
+        font-family: "Consolas", "Monaco", "Courier New", monospace;
+        font-size: 32px;
+        font-weight: 700;
+    }
+    QLabel#proofArrow {
+        color: #8ca8af;
+        font-size: 24px;
+    }
+    QLabel#proofLabel {
+        color: #b8d4db;
+        font-size: 13px;
+    }
+    QLabel#solutionFlow {
+        color: #8ca8af;
+        font-size: 12px;
+        font-family: "Consolas", "Monaco", monospace;
+        letter-spacing: 0.5px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    QLabel#trustItem {
+        color: #a9c4ca;
+        font-size: 13px;
+        line-height: 1.5;
     }
     QLabel#homeTitle {
         font-size: 23px;

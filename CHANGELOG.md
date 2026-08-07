@@ -6,6 +6,11 @@ All notable changes to this repo are recorded here.
 
 ### Product / GUI
 
+- Redesigned login page with painpoint-driven narrative: shows the annotation
+  problem first ("万张图像，逐张标注？"), then the solution (半自动化), quantified
+  proof (100 → 10,000), process flow, and trust markers. Removed function module
+  cards and boundary panels for cleaner focus. Updated left panel to dark theme
+  (#1a3743) with unified brand colors (#007b78) matching the main workbench.
 - Redesigned utility navigation buttons (首页、任务中心、使用手册、设置) with
   compact single-line layout, emoji badges (🏠 📋 📖 ⚙️), reduced height from
   50-56px to 40px, and improved text contrast (#b8d4db) for clearer visual
