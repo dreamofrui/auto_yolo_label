@@ -72,6 +72,9 @@ All notable changes to this repo are recorded here.
 
 ### Documentation
 
+- Rebuilt the interrupted Trellis bootstrap into codebase-backed specs for the
+  core, GUI, worker, utility, and standalone server-script layers, with
+  project-specific cross-layer and reuse guides.
 - Documented one canonical LabelImg-compatible VOC XML serialization for
   annotation workflows instead of preserving conflicting historical layouts.
 - Added `CONTEXT.md` to define Annotation and Annotation Format as shared
