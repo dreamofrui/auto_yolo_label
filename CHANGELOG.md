@@ -72,6 +72,17 @@ All notable changes to this repo are recorded here.
 
 ### Documentation
 
+- Added `docs/dev/ARCHITECTURE.md` as the current architecture description:
+  system context, dependency direction, module responsibilities, key data
+  flows, persistence locations, long-running task ownership, and external
+  integrations. Excludes completed-work lists, per-file maps, risk logs,
+  reading orders, and future plans.
+- Separated architecture direction out of `docs/dev/PRODUCT_SPEC.md` so the
+  product contract now covers only externally observable Flow and Independent
+  mode behavior, inputs, outputs, validation, failure conditions, and
+  destructive-operation safety guarantees.
+- Kept old retained documents (`ONBOARDING_SUMMARY.md`, `UI_SPEC.md`) in place
+  as temporary migration input while the new structure is reviewed.
 - Rebuilt the interrupted Trellis bootstrap into codebase-backed specs for the
   core, GUI, worker, utility, and standalone server-script layers, with
   project-specific cross-layer and reuse guides.

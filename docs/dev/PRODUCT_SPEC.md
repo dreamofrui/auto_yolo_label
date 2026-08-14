@@ -1,7 +1,8 @@
 # AutoLabeler Product Spec
 
 > Status: owner-confirmed mainline spec.
-> Last updated: 2026-05-28
+> Last updated: 2026-08-14
+> See also: `docs/dev/ARCHITECTURE.md` (system architecture).
 
 This is the requirements baseline for new work. If code, removed docs, or
 `legacy/` disagree with this file, follow this file and stop to clarify before
@@ -34,24 +35,9 @@ restore.
 only when it can do its job from explicit user-selected paths. It must not
 secretly create or require mapping.
 
-## 3. Architecture Direction
-
-- GUI is the formal product surface for the first version.
-- `core/` contains framework-free business logic.
-- `gui/workers/` adapts GUI actions directly to `core/` and owns desktop task
-  lifecycle glue.
-- `cli/` is deleted and must not be reintroduced as an active architecture or
-  integration surface.
-- Web, FastAPI, and Node subprocess integration are not current goals.
-- `legacy/` is read-only reference. Do not edit it or copy implementation
-  bodies from it.
-
-## 4. Mapping
+## 3. Mapping
 
 `mapping.json` exists only for Flow mode traceability.
-
-It should preserve the original working behavior and field meaning from the old
-usable mapping design, while the new implementation is rewritten cleanly.
 
 Mapping records at least:
 
@@ -75,7 +61,7 @@ Mapping is not used to:
 - normalize arbitrary folder structures
 - hide global state inside standalone modules
 
-## 5. Scanner
+## 4. Scanner
 
 Purpose: create Flow mode metadata from a strict site tree.
 
@@ -122,7 +108,7 @@ Output:
 - `classes.txt`
 - scan statistics and product counts
 
-## 6. Sampler
+## 5. Sampler
 
 Purpose: build a YOLO training dataset that reduces manual labeling work.
 
@@ -206,7 +192,7 @@ Rules:
 - Before move/delete/overwrite, run full preflight checks. If preflight fails,
   do not modify source files and do not create a partial dataset.
 
-## 7. LabelImg And Review
+## 6. LabelImg And Review
 
 Purpose: use external LabelImg for both manual labeling and prediction review.
 
@@ -255,7 +241,7 @@ Rules:
 - Independent inference review uses Free Labeling; it has no automatic mapping
   tree.
 
-## 8. Trainer
+## 7. Trainer
 
 Purpose: train a YOLO model from a prepared YOLO dataset.
 
@@ -304,7 +290,7 @@ Output directory rules:
 - Clear/overwrite only after user confirmation.
 - Resume training is not a first-version mainline feature.
 
-## 9. Inferencer
+## 8. Inferencer
 
 Purpose: generate YOLO TXT prediction labels.
 
@@ -315,6 +301,8 @@ Input:
 - scanned site folder
 - mapping
 - model path
+- optional confidence threshold
+- optional label Y-offset (shift predicted boxes down by a fixed pixel count)
 - confidence, IoU, device, batch
 - output/run settings
 
@@ -332,6 +320,8 @@ Input:
 
 - image folder
 - model path
+- optional confidence threshold
+- optional label Y-offset
 - confidence, IoU, device, batch
 - output/run settings
 
@@ -365,7 +355,7 @@ Rules:
 - When run structure changes, update LabelImg review, restore, tests, and docs
   together.
 
-## 10. Restorer
+## 9. Restorer
 
 Purpose: write reviewed YOLO labels back as VOC XML beside original images.
 
@@ -403,7 +393,7 @@ Shared restore rules:
 - Run full preflight before writing. If preflight fails, write nothing.
 - No automatic backup in the first version.
 
-## 11. Converter
+## 10. Converter
 
 Purpose: build YOLO training data from XML annotations and provide label format
 conversion helpers.
@@ -448,7 +438,7 @@ Helper conversion:
 - These helpers do not replace Restorer and do not infer original business
   structure.
 
-## 12. Non-Goals
+## 11. Non-Goals
 
 - Web, FastAPI, browser UI, or Node subprocess integration.
 - Multi-user login, permissions, server job queues, or cloud storage.
@@ -457,9 +447,8 @@ Helper conversion:
 - Guessing classes when the user has not provided enough information.
 - Incremental merge into existing generated datasets.
 - Silent file moves, deletes, or overwrites.
-- Editing `legacy/` or copying legacy implementation bodies.
 
-## 13. Success Criteria
+## 12. Success Criteria
 
 The first version is successful when the user can:
 
@@ -471,13 +460,3 @@ The first version is successful when the user can:
 - infer with or without mapping
 - restore Flow or Independent YOLO labels as XML beside matching images
 - convert XML-labeled folders into YOLO training datasets
-
-Engineering success means:
-
-- core modules remain framework-free
-- GUI adapters remain thin
-- modules do not hide mapping dependencies
-- destructive actions have preflight checks and explicit confirmation
-- tests are scoped to changed behavior
-- docs do not preserve obsolete Web, CLI, runtime-service, or Node-first
-  direction
