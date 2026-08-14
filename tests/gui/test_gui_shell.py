@@ -3,20 +3,14 @@
 from __future__ import annotations
 
 import json
-import os
-import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QFontDatabase
 from PySide6.QtTest import QTest
-from PIL import Image
 from PySide6.QtWidgets import (
-    QApplication,
     QCheckBox,
     QFrame,
     QHeaderView,
@@ -32,72 +26,28 @@ from core.converter import (
     XmlDatasetConvertResult,
     XmlDatasetPaths,
 )
-from core.scanner import ScanConfig, Scanner
 from core.scanner import ScanResult, ScanStatistics
 from core.inferencer import InferResult, InferStatistics
 from core.label_inspector import InferenceRun, ProductLabel, RunTreeNode
 from core.labelimg_launcher import LabelImgLaunchResult, LabelImgValidateResult
 from core.trainer import TrainResult
-from gui.task_runner import ImmediateTaskRunner
 from gui.task_runner import AsyncTaskRunner
-from gui.tool_defaults import ToolDefaults, save_tool_defaults
+from gui.tool_defaults import (
+    DEFAULT_TOOL_DEFAULTS_PATH,
+    ToolDefaults,
+    save_tool_defaults,
+)
 from gui.workbench import MODULES, AutoLabelerWindow
 from utils.exceptions import ErrorCode, ErrorInfo
 from utils.task_registry import TaskRegistry
 
-_IMMEDIATE_RUNNER = ImmediateTaskRunner()
-def app() -> QApplication:
-    """Return a QApplication for widget tests."""
-    instance = QApplication.instance()
-    if instance is None:
-        instance = QApplication(sys.argv[:1])
-    return instance
-
-
-def make_window(**kwargs) -> AutoLabelerWindow:
-    """Create a test window with synchronous GUI worker execution."""
-    kwargs.setdefault("task_runner", _IMMEDIATE_RUNNER)
-    return AutoLabelerWindow(**kwargs)
-
-
-@pytest.fixture(autouse=True)
-def close_qt_windows():
-    """Close top-level Qt widgets after each test to avoid native handle buildup."""
-    yield
-    instance = QApplication.instance()
-    if instance is None:
-        return
-    for widget in instance.topLevelWidgets():
-        widget.close()
-        widget.deleteLater()
-    instance.processEvents()
-
-
-def make_image(path: Path) -> None:
-    """Create a tiny image fixture."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    Image.new("RGB", (16, 16), color=(128, 128, 128)).save(path)
-
-
-def set_task_timestamp(
-    registry: TaskRegistry,
-    task_id: str,
-    created_at: str,
-    finished_at: str | None = None,
-) -> None:
-    """Force deterministic task timestamps in GUI tests."""
-    task = registry.get(task_id)
-    task.created_at = created_at
-    if finished_at is not None:
-        task.finished_at = finished_at
-    registry._persist(task)
-
-
-def make_scanned_site(site: Path) -> None:
-    """Create a site folder and mapping for GUI sampling tests."""
-    make_image(site / "CodeA" / "Product1" / "a1.jpg")
-    Scanner().scan(ScanConfig(site_folder=site))
-
+from conftest import (
+    app,
+    make_image,
+    make_scanned_site,
+    make_window,
+    set_task_timestamp,
+)
 
 def test_module_catalog_matches_ui_spec() -> None:
     """The shell exposes the eight owner-confirmed module entries in order."""
@@ -881,6 +831,15 @@ def test_settings_entry_opens_settings_page() -> None:
     QTest.mouseClick(nav_buttons[-1], Qt.MouseButton.LeftButton)
     qt_app.processEvents()
     assert settings.settings_content_scroll.verticalScrollBar().value() > 0
+
+
+def test_default_tool_defaults_path_lives_in_project() -> None:
+    """The settings file defaults to the project's local runtime directory."""
+    project_root = Path(__file__).resolve().parents[1]
+
+    assert DEFAULT_TOOL_DEFAULTS_PATH == (
+        project_root / ".autolabeler" / "tool_defaults.json"
+    )
 
 
 def test_settings_page_saves_tool_parameter_defaults(tmp_path: Path) -> None:
@@ -2324,6 +2283,124 @@ def test_restore_page_rejects_empty_paths_before_building_config() -> None:
 
     assert restore_worker.preflight_config is None
     assert "请选择站点路径" in restore_page.result_summary.text()
+
+
+def test_restore_page_shows_actionable_preflight_error_details(tmp_path: Path) -> None:
+    """Restore keeps the summary compact and exposes diagnostics in its log."""
+
+    class FailingRestoreWorker(FakeRestoreWorker):
+        def preflight_independent(self, config):
+            self.preflight_independent_config = config
+
+            class Outcome:
+                success = False
+                result = None
+                error = ErrorInfo(
+                    code="VALIDATION_ERROR",
+                    message="Invalid YOLO box",
+                    details=(
+                        f"label_file: {config.label_root / 'Product1' / 'a.txt'}\n"
+                        "line: 2\n"
+                        "pixel_bounds: xmin=40 ymin=97 xmax=60 ymax=101\n"
+                        "violation: ymax=101 exceeds image_height=100"
+                    ),
+                    retryable=False,
+                )
+
+            return Outcome()
+
+    qt_app = app()
+    restore_worker = FailingRestoreWorker()
+    window = make_window(restore_worker=restore_worker)
+    window.resize(1024, 680)
+    window.show()
+    qt_app.processEvents()
+    QTest.mouseClick(window.login_view.demo_login_button, Qt.MouseButton.LeftButton)
+    QTest.mouseClick(
+        window.workbench_view.nav_buttons["restore"], Qt.MouseButton.LeftButton
+    )
+
+    restore_page = window.workbench_view.restore_page
+    QTest.mouseClick(
+        restore_page.independent_mode_button, Qt.MouseButton.LeftButton
+    )
+    restore_page.image_root_input.setText(str(tmp_path / "images"))
+    restore_page.label_root_input.setText(str(tmp_path / "labels"))
+    restore_page.classes_file_input.setText(str(tmp_path / "classes.txt"))
+    QTest.mouseClick(restore_page.preflight_button, Qt.MouseButton.LeftButton)
+
+    assert restore_page.result_summary.text() == (
+        "预检失败：VALIDATION_ERROR: Invalid YOLO box"
+    )
+    log_text = restore_page.log_box.toPlainText()
+    assert "[failed] 预检失败" in log_text
+    assert "code: VALIDATION_ERROR" in log_text
+    assert "message: Invalid YOLO box" in log_text
+    assert f"label_file: {tmp_path / 'labels' / 'Product1' / 'a.txt'}" in log_text
+    assert "line: 2" in log_text
+    assert "pixel_bounds: xmin=40 ymin=97 xmax=60 ymax=101" in log_text
+    assert "violation: ymax=101 exceeds image_height=100" in log_text
+    assert not restore_page.confirm_write_checkbox.isEnabled()
+    assert not restore_page.run_button.isEnabled()
+
+
+def test_restore_page_shows_actionable_restore_error_details(tmp_path: Path) -> None:
+    """A failed restore uses the same compact summary and detailed log."""
+
+    class FailingRestoreWorker(FakeRestoreWorker):
+        def run_independent(self, config):
+            self.independent_config = config
+
+            class Outcome:
+                success = False
+                result = None
+                error = ErrorInfo(
+                    code="VALIDATION_ERROR",
+                    message="Invalid YOLO box",
+                    details=(
+                        f"label_file: {config.label_root / 'Product1' / 'a.txt'}\n"
+                        "line: 1\n"
+                        "violation: ymax=101 exceeds image_height=100"
+                    ),
+                    retryable=False,
+                )
+
+            return Outcome()
+
+    qt_app = app()
+    restore_worker = FailingRestoreWorker()
+    window = make_window(restore_worker=restore_worker)
+    window.show()
+    qt_app.processEvents()
+    QTest.mouseClick(window.login_view.demo_login_button, Qt.MouseButton.LeftButton)
+    QTest.mouseClick(
+        window.workbench_view.nav_buttons["restore"], Qt.MouseButton.LeftButton
+    )
+
+    restore_page = window.workbench_view.restore_page
+    QTest.mouseClick(
+        restore_page.independent_mode_button, Qt.MouseButton.LeftButton
+    )
+    restore_page.image_root_input.setText(str(tmp_path / "images"))
+    restore_page.label_root_input.setText(str(tmp_path / "labels"))
+    restore_page.classes_file_input.setText(str(tmp_path / "classes.txt"))
+    QTest.mouseClick(restore_page.preflight_button, Qt.MouseButton.LeftButton)
+    QTest.mouseClick(
+        restore_page.confirm_write_checkbox,
+        Qt.MouseButton.LeftButton,
+        pos=QPoint(8, restore_page.confirm_write_checkbox.height() // 2),
+    )
+    QTest.mouseClick(restore_page.run_button, Qt.MouseButton.LeftButton)
+
+    assert restore_page.result_summary.text() == (
+        "还原失败：VALIDATION_ERROR: Invalid YOLO box"
+    )
+    log_text = restore_page.log_box.toPlainText()
+    assert "[failed] 还原失败" in log_text
+    assert "code: VALIDATION_ERROR" in log_text
+    assert f"label_file: {tmp_path / 'labels' / 'Product1' / 'a.txt'}" in log_text
+    assert "line: 1" in log_text
+    assert "violation: ymax=101 exceeds image_height=100" in log_text
 
 
 class FakeConvertWorker:

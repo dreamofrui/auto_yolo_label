@@ -6,6 +6,7 @@ All notable changes to this repo are recorded here.
 ### Tests
 
 - Relocated tests into ownership-based hierarchy: `tests/core/` (core logic), `tests/workers/` (desktop worker lifecycle), `tests/gui/` (GUI shell and widgets), `tests/utils/` (shared infrastructure), `tests/server_scripts/` (standalone server scripts), and `tests/integration/` (scenario chains). Root-level contract and import-boundary tests remain in `tests/`. Existing test collection (353 pytest cases) preserved.
+- Added `tests/gui/conftest.py` as the GUI test support seam, centralizing shared QApplication, window, mapping, task, and deterministic-state setup. Extracted `app()`, `make_window()`, `close_qt_windows()`, `make_image()`, `set_task_timestamp()`, and `make_scanned_site()` from `test_gui_shell.py` and `test_path_picker.py` into the shared seam. All 85 GUI tests preserve their external assertions and cleanup behavior; the collected case count is unchanged. The seam does not become a production dependency.
 
 ### Development Checks
 

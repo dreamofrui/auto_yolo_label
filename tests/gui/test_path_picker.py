@@ -1,24 +1,13 @@
 from __future__ import annotations
 
-import os
-import sys
 from pathlib import Path
-
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication
 
 from gui.path_picker import PathPicker
 
-
-def app() -> QApplication:
-    """Return a QApplication for widget tests."""
-    instance = QApplication.instance()
-    if instance is None:
-        instance = QApplication(sys.argv[:1])
-    return instance
+from conftest import app
 
 
 def test_path_picker_normalizes_pasted_quotes() -> None:
