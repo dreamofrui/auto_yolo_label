@@ -2,18 +2,18 @@
 """AutoLabeler 强制纪律机器检查器。
 
 实现 AGENTS.md 中可机器化的架构纪律：
-    Rule 1: core/ 禁止 import PySide6/PyQt/fastapi/flask/uvicorn
-    Rule 3: 禁止 os.environ / os.getcwd / os.chdir
-    Rule 4: 路径必须用 pathlib.Path（不能用 os.path.*）
-    Rule 5: mapping.json 必须经 MappingManager，禁止裸 json.load
-    Rule 6: 异常必须继承 AutoLabelerError 且带 code 字段
-    Rule 7: public 函数/类必须有 docstring（简化版，完整检查走 mypy + ruff）
+    NO_GUI_HTTP_IN_CORE: core/ 禁止 import PySide6/PyQt/fastapi/flask/uvicorn
+    NO_IMPLICIT_ENV: 禁止 os.environ / os.getcwd / os.chdir
+    USE_PATHLIB: 路径必须用 pathlib.Path（不能用 os.path.*）
+    NO_DIRECT_MAPPING_JSON: mapping.json 必须经 MappingManager，禁止裸 json.load
+    EXCEPTION_INHERITS_BASE: 异常必须继承 AutoLabelerError 且带 code 字段
+    PUBLIC_DOCSTRING: public 函数/类必须有 docstring（简化版，完整检查走 mypy + ruff）
 
 未机器化的纪律（PR review 把关）：
-    Rule 2: 入口只接受 dataclass（需上下文判断）
-    Rule 8: 不恢复 CLI/JSON 或 runtime service 边界
-    Rule 9: 耗时 > 1 秒任务必须 TaskHandle
-    Rule 10: 不允许假设前置模块跑过
+    SINGLE_DATACLASS_ENTRY: 入口只接受 dataclass（需上下文判断）
+    NO_RESTORE_DEAD_ARCH: 不恢复 CLI/JSON 或 runtime service 边界
+    LONG_TASK_HANDLE: 耗时 > 1 秒任务必须 TaskHandle
+    NO_MODULE_ORDER_ASSUMPTION: 不允许假设前置模块跑过
 
 用法:
     python scripts/check_disciplines.py
@@ -72,7 +72,7 @@ def _line_of(text: str, offset: int) -> int:
     return text[:offset].count("\n") + 1
 
 
-# ---------- Rule 1 ----------
+# ---------- NO_GUI_HTTP_IN_CORE ----------
 
 _RULE1_PATTERN = re.compile(
     r"^\s*(?:from|import)\s+(PySide6|PyQt5|PyQt6|fastapi|flask|uvicorn|starlette)\b",
@@ -80,7 +80,7 @@ _RULE1_PATTERN = re.compile(
 )
 
 
-def check_rule1_no_gui_http_in_core(files: list[Path]) -> list[str]:
+def check_no_gui_http_in_core(files: list[Path]) -> list[str]:
     """core/ 禁止 import PySide6/PyQt/fastapi/flask/uvicorn/starlette。"""
     failures: list[str] = []
     for f in files:
@@ -95,12 +95,12 @@ def check_rule1_no_gui_http_in_core(files: list[Path]) -> list[str]:
     return failures
 
 
-# ---------- Rule 3 ----------
+# ---------- NO_IMPLICIT_ENV ----------
 
 _RULE3_PATTERN = re.compile(r"\b(os\.environ|os\.getcwd|os\.chdir|os\.putenv)\b")
 
 
-def check_rule3_no_implicit_env(files: list[Path]) -> list[str]:
+def check_no_implicit_env(files: list[Path]) -> list[str]:
     """禁止 os.environ / os.getcwd / os.chdir / os.putenv。"""
     failures: list[str] = []
     for f in files:
@@ -115,14 +115,14 @@ def check_rule3_no_implicit_env(files: list[Path]) -> list[str]:
     return failures
 
 
-# ---------- Rule 4 ----------
+# ---------- USE_PATHLIB ----------
 
 _RULE4_PATTERN = re.compile(
     r"\bos\.path\.(join|exists|isfile|isdir|dirname|basename|abspath|splitext|getsize|getmtime)\b"
 )
 
 
-def check_rule4_use_pathlib(files: list[Path]) -> list[str]:
+def check_use_pathlib(files: list[Path]) -> list[str]:
     """路径一律 pathlib.Path，禁止 os.path.*。"""
     failures: list[str] = []
     for f in files:
@@ -137,7 +137,7 @@ def check_rule4_use_pathlib(files: list[Path]) -> list[str]:
     return failures
 
 
-# ---------- Rule 5 ----------
+# ---------- NO_DIRECT_MAPPING_JSON ----------
 
 _RULE5_PATTERN = re.compile(
     r"json\.(load|loads)\s*\([^)]{0,200}mapping",
@@ -145,7 +145,7 @@ _RULE5_PATTERN = re.compile(
 )
 
 
-def check_rule5_no_direct_mapping_json(files: list[Path]) -> list[str]:
+def check_no_direct_mapping_json(files: list[Path]) -> list[str]:
     """mapping.json 必须经 MappingManager，禁止裸 json.load。"""
     failures: list[str] = []
     for f in files:
@@ -163,7 +163,7 @@ def check_rule5_no_direct_mapping_json(files: list[Path]) -> list[str]:
     return failures
 
 
-# ---------- Rule 6 ----------
+# ---------- EXCEPTION_INHERITS_BASE ----------
 
 
 def _is_exception_class(node: ast.ClassDef) -> bool:
@@ -199,7 +199,7 @@ def _has_code_field(node: ast.ClassDef) -> bool:
     return False
 
 
-def check_rule6_exception_inherits_base(files: list[Path]) -> list[str]:
+def check_exception_inherits_base(files: list[Path]) -> list[str]:
     """异常必须继承 AutoLabelerError 且具体类带 code 字段。"""
     failures: list[str] = []
     for f in files:
@@ -259,7 +259,7 @@ def check_rule6_exception_inherits_base(files: list[Path]) -> list[str]:
 # ---------- Rule 7（简化版） ----------
 
 
-def check_rule7_public_docstring(files: list[Path]) -> list[str]:
+def check_public_docstring(files: list[Path]) -> list[str]:
     """public 函数/类必须有 docstring。"""
     failures: list[str] = []
     for f in files:
@@ -294,21 +294,21 @@ def check_rule7_public_docstring(files: list[Path]) -> list[str]:
 
 
 CHECKS: list[tuple[str, object]] = [
-    ("Rule 1: no GUI/HTTP import in core/", check_rule1_no_gui_http_in_core),
+    ("NO_GUI_HTTP_IN_CORE: no GUI/HTTP import in core/", check_no_gui_http_in_core),
     (
-        "Rule 3: no os.environ / os.getcwd / os.chdir / os.putenv",
-        check_rule3_no_implicit_env,
+        "NO_IMPLICIT_ENV: no os.environ / os.getcwd / os.chdir / os.putenv",
+        check_no_implicit_env,
     ),
-    ("Rule 4: paths must use pathlib.Path (no os.path.*)", check_rule4_use_pathlib),
+    ("USE_PATHLIB: paths must use pathlib.Path (no os.path.*)", check_use_pathlib),
     (
-        "Rule 5: mapping.json must go through MappingManager",
-        check_rule5_no_direct_mapping_json,
+        "NO_DIRECT_MAPPING_JSON: mapping.json must go through MappingManager",
+        check_no_direct_mapping_json,
     ),
     (
-        "Rule 6: exceptions must inherit AutoLabelerError with code",
-        check_rule6_exception_inherits_base,
+        "EXCEPTION_INHERITS_BASE: exceptions must inherit AutoLabelerError with code",
+        check_exception_inherits_base,
     ),
-    ("Rule 7: public funcs/classes must have docstrings", check_rule7_public_docstring),
+    ("PUBLIC_DOCSTRING: public funcs/classes must have docstrings", check_public_docstring),
 ]
 
 
@@ -357,7 +357,7 @@ def main() -> int:
 
     if total_failures:
         print(f"[STOP] {total_failures} discipline violation(s) found.")
-        print("       Full rule list: AGENTS.md.")
+        print("       Rules: see AGENTS.md Architecture Constraints section.")
         return 1
 
     print("[PASS] All mechanical discipline checks passed.")

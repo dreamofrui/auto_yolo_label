@@ -1,8 +1,16 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to this repo are recorded here.
 
 ## [Unreleased]
+### Tests
+
+- Relocated tests into ownership-based hierarchy: `tests/core/` (core logic), `tests/workers/` (desktop worker lifecycle), `tests/gui/` (GUI shell and widgets), `tests/utils/` (shared infrastructure), `tests/server_scripts/` (standalone server scripts), and `tests/integration/` (scenario chains). Root-level contract and import-boundary tests remain in `tests/`. Existing test collection (353 pytest cases) preserved.
+
+### Development Checks
+
+- Updated `.pre-commit-config.yaml` path filters: removed stale `api` reference from deleted architecture, added `server_scripts` for standalone server scripts.
+- Renamed discipline checker rules from numeric labels (`Rule 1`, `Rule 3`, etc.) to descriptive names (`NO_GUI_HTTP_IN_CORE`, `NO_IMPLICIT_ENV`, `USE_PATHLIB`, `NO_DIRECT_MAPPING_JSON`, `EXCEPTION_INHERITS_BASE`, `PUBLIC_DOCSTRING`). Enforcement behavior unchanged.
 
 ### Product / GUI
 
