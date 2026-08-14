@@ -8,6 +8,9 @@ All notable changes to this repo are recorded here.
 - Relocated tests into ownership-based hierarchy: `tests/core/` (core logic), `tests/workers/` (desktop worker lifecycle), `tests/gui/` (GUI shell and widgets), `tests/utils/` (shared infrastructure), `tests/server_scripts/` (standalone server scripts), and `tests/integration/` (scenario chains). Root-level contract and import-boundary tests remain in `tests/`. Existing test collection (353 pytest cases) preserved.
 - Added `tests/gui/conftest.py` as the GUI test support seam, centralizing shared QApplication, window, mapping, task, and deterministic-state setup. Extracted `app()`, `make_window()`, `close_qt_windows()`, `make_image()`, `set_task_timestamp()`, and `make_scanned_site()` from `test_gui_shell.py` and `test_path_picker.py` into the shared seam. All 85 GUI tests preserve their external assertions and cleanup behavior; the collected case count is unchanged. The seam does not become a production dependency.
 
+### Tests
+- Split the monolithic `test_gui_shell.py` (3238 lines, 82 tests) into independently navigable per-tool-page test modules: `test_gui_scan.py` (scan), `test_gui_sample.py` (sample), `test_gui_train.py` (train), `test_gui_infer.py` (infer), `test_gui_restore.py` (restore), `test_gui_convert.py` (convert), `test_gui_label.py` (label), and `test_gui_review.py` (review). The shell file retains login, homepage, side nav, task center, manual, settings, and global visual-contract tests (30 tests). Shared `FakeLabelImgWorker` moved to `conftest.py`. Total collected GUI case count (87) is unchanged. A maintainer can now run global-shell coverage without opening tool-page test files.
+
 ### Development Checks
 
 - Updated `.pre-commit-config.yaml` path filters: removed stale `api` reference from deleted architecture, added `server_scripts` for standalone server scripts.
