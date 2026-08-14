@@ -256,7 +256,7 @@ def check_exception_inherits_base(files: list[Path]) -> list[str]:
     return failures
 
 
-# ---------- Rule 7（简化版） ----------
+# ---------- PUBLIC_DOCSTRING ----------
 
 
 def check_public_docstring(files: list[Path]) -> list[str]:
