@@ -1,0 +1,59 @@
+# AutoLabeler project metadata.
+#
+# This is the single project entry point for tooling: it declares the
+# supported interpreter, runtime/test dependencies, package layout, and
+# pytest discovery rules. Developers can prepare a working environment with
+# `pip install -e ".[test]"` instead of relying on a specific workstation
+# interpreter.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autolabeler"
+version = "0.1.0"
+description = "Desktop-first YOLO semi-automatic image labeling workbench"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    # Qt 6 desktop shell. 6.6 is the oldest Qt 6 series with stable
+    # Python 3.11 wheels and the Qt6 API generation the GUI is built on;
+    # <7 keeps the verified shell away from an untested Qt 7 major.
+    "PySide6>=6.6,<7",
+    # Image loading shared by VOC XML and YOLO label workflows. >=10 is the
+    # first Python 3.11-era series; <13 bounds to the tested Pillow line.
+    "Pillow>=10,<13",
+    # Structured tool logging used across core/ and utils/. 0.7 is the
+    # current stable series; <1 avoids an untested future major.
+    "loguru>=0.7,<1",
+    # YOLO training/inference runtime. core/trainer.py and core/inferencer.py
+    # target the Ultralytics 8.3+ YOLO class API generation; <9 avoids the
+    # untested next major.
+    "ultralytics>=8.3,<9",
+]
+
+[project.optional-dependencies]
+# Test-only dependencies; never part of the product runtime set.
+# LabelImg is an external runtime launched at the boundary in
+# core/labelimg_launcher.py and is deliberately NOT declared as an extra or
+# as a product dependency here.
+test = [
+    "pytest>=8,<10",  # Stable pytest series supporting Python 3.11.
+]
+
+[tool.setuptools]
+# The desktop product is three top-level packages rooted at the repository
+# root. server_scripts/ is a standalone operational tool and intentionally
+# stays out of the installable product set.
+packages = ["core", "gui", "gui.workers", "utils"]
+
+[tool.pytest.ini_options]
+# Discover the current test tree (flat tests/ plus tests/integration/) and
+# remain compatible with the planned layered unit/worker/gui layout by
+# recursing from the tests/ root with default test_*.py file patterns.
+testpaths = ["tests"]
