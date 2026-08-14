@@ -76,3 +76,71 @@ def make_scanned_site(site: Path) -> None:
     """Create a site folder and mapping for GUI sampling tests."""
     make_image(site / "CodeA" / "Product1" / "a1.jpg")
     Scanner().scan(ScanConfig(site_folder=site))
+
+
+from core.labelimg_launcher import LabelImgLaunchResult, LabelImgValidateResult
+
+class FakeLabelImgWorker:
+    """Small fake worker that records LabelImg configs from the GUI."""
+
+    def __init__(self) -> None:
+        self.validate_config = None
+        self.preflight_config = None
+        self.launch_config = None
+
+    def validate(self, config):
+        self.validate_config = config
+        result = LabelImgValidateResult(
+            is_valid=True,
+            labelimg_version="labelImg 1.8.6",
+            python_version="Python 3.11.14",
+            error_message=None,
+        )
+
+        class Outcome:
+            success = True
+            error = None
+            task = None
+
+            def __init__(self, result):
+                self.result = result
+
+        return Outcome(result)
+
+    def preflight(self, config):
+        self.preflight_config = config
+        result = LabelImgValidateResult(
+            is_valid=True,
+            labelimg_version="labelImg 1.8.6",
+            python_version="Python 3.11.14",
+            error_message=None,
+        )
+
+        class Outcome:
+            success = True
+            error = None
+            task = None
+
+            def __init__(self, result):
+                self.result = result
+
+        return Outcome(result)
+
+    def launch(self, config):
+        self.launch_config = config
+        result = LabelImgLaunchResult(
+            process_id=4321,
+            command="python.exe -c \"import sys; print('internal wrapper')\" voc images",
+        )
+
+        class Outcome:
+            success = True
+            error = None
+            task = None
+
+            def __init__(self, result):
+                self.result = result
+
+        return Outcome(result)
+
+
