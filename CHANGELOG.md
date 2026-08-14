@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this repo are recorded here.
 
@@ -110,6 +110,24 @@ All notable changes to this repo are recorded here.
 - Added the onboarding guide to first-read documentation entry points and
   extended it with a code-level module maintenance map.
 
+
+### Documentation
+
+- Added `docs/dev/UI_STANDARD.md` as the forward-looking UI standard: desktop
+  product goals, information hierarchy, keyboard and focus behavior, WCAG 2.2 AA
+  contrast and semantic state roles, fixed typography, responsive structure and
+  small-window priority, error/loading/empty states, and Qt desktop interaction
+  conventions. Gaps are recorded as future work rather than standard exceptions.
+  Page-specific business behavior remains in PRODUCT_SPEC.md and UI_SPEC.md.
+
+### Server Scripts
+
+- Upgraded `scripts/ui_snapshot.py` to capture all GUI surfaces (login,
+  workbench, modules, task-center, manual, settings) at more than one desktop
+  size (defaults: 1440x900 and 1280x720). Output defaults to the git-ignored
+  `.ui-snapshots/` directory; PNGs are not preserved as source assets.
+  Added `.ui-snapshots/` to `.gitignore`.
+
 ### Tests
 
 - Documented the annotation test seam: format behavior belongs to the shared
@@ -127,3 +145,18 @@ All notable changes to this repo are recorded here.
   journals, static GUI mockups, old user guides, project-specific scratch
   notes, and repo-local agent skill docs from the active documentation set.
 - Removed `CLAUDE.md`; `AGENTS.md` is now the single contributor-rule entry.
+
+### Documentation
+
+- Consolidated `AGENTS.md` as the canonical agent rules: active workflow,
+  architecture boundaries, filesystem safety, verification requirements,
+  protected assets, disabled Trellis workflow, and mandatory GitNexus checks.
+  Removed the trailing Trellis block. Added explicit Filesystem Safety section.
+- Simplified `CLAUDE.md` to point to `AGENTS.md` for canonical rules, keeping
+  only Claude-specific Direction guidance and the explicit Trellis reminder.
+- Pruned `CONTEXT.md` glossary to only the implemented Annotation and Annotation
+  Format terms; removed Annotation Diagnostic term.
+- Retained only the strict Annotation bounds ADR (`0001`); removed the eight
+  draft, strategy-only, or incomplete ADRs (`0002`–`0009`).
+
+
