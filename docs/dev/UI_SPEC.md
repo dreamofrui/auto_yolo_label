@@ -2,6 +2,7 @@
 
 > Status: owner-confirmed GUI spec.
 > Last updated: 2026-05-28
+> Regression gate: `docs/dev/UI_REGRESSION_BOUNDARY.md`.
 
 This document defines the first-version desktop GUI direction. It complements
 `docs/dev/PRODUCT_SPEC.md`; when product behavior and UI differ, clarify before

@@ -3,7 +3,8 @@
 > Status: forward-looking standard for desktop UI work.
 > Last updated: 2026-08-14
 > See also: `docs/dev/UI_SPEC.md` (current GUI behavior and layout baseline),
-> `docs/dev/PRODUCT_SPEC.md` (product behavior contract).
+> `docs/dev/PRODUCT_SPEC.md` (product behavior contract), and
+> `docs/dev/UI_REGRESSION_BOUNDARY.md` (redesign verification gate).
 
 This document defines a forward-looking, standards-driven desktop UI baseline
 for AutoLabeler. It is based on **WCAG 2.2 AA** principles where applicable and
@@ -323,8 +324,9 @@ continuity.
 ### Robust
 
 - **4.1.2 Name, Role, Value**: Qt widget accessibility names and roles are
-  set through `setObjectName` and `setAccessibleName` for all interactive
-  controls.
+  exposed through `setAccessibleName` for all interactive controls. A
+  `setObjectName` may remain for stylesheet targeting, but it is not a stable
+  behavioral or automation locator.
 
 ---
 
@@ -338,7 +340,7 @@ fully meet. They are **future work**, not exceptions to the standard.
 | Full keyboard navigation for all pages | Section 3 | Login, home, and basic pages work; some module pages have incomplete tab order. |
 | Visible focus rings on all controls | Sections 3, 4 | Focus ring styles are applied in the global stylesheet but not verified per-page. |
 | WCAG AA contrast audit | Section 4 | Contrast ratios are targeted by design colors but not verified by automated tools. |
-| Accessible names on all interactive controls | Section 9 | Core controls have `setObjectName`; `setAccessibleName` is not consistently applied. |
+| Accessible names on all interactive controls | Section 9 | Core controls have styling `objectName` values; `setAccessibleName` is not consistently applied. |
 | Target size >= 24x24 px on all interactive targets | Section 9 | Main buttons meet this; some inline links and compact controls may not. |
 | Collapsed icon-only navigation mode | Section 6 | Navigation is always expanded; no icon-only mode exists. |
 | Collapsible support panels | Sections 6, 8 | Right rail panels have minimum width but no collapse toggle. |
@@ -356,6 +358,7 @@ fully meet. They are **future work**, not exceptions to the standard.
 |----------|-------|
 | `PRODUCT_SPEC.md` | Product behavior: inputs, outputs, workflows, mode logic, preflight rules, result summaries. |
 | `UI_SPEC.md` | Current GUI behavior and layout: page structure, visual design, current behavior per surface. |
+| `UI_REGRESSION_BOUNDARY.md` | Per-batch behavior, safety, semantic, and visual verification gates for UI migration. |
 | **UI_STANDARD.md** (this file) | Forward-looking standard: accessibility, typography, contrast, focus, responsive, state patterns. |
 
 The standard does not duplicate page-specific business behavior. When a

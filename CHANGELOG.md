@@ -3,6 +3,12 @@
 All notable changes to this repo are recorded here.
 
 ## [Unreleased]
+### Documentation
+
+- Added an owner-confirmed UI regression boundary for staged redesign work,
+  separating blocking behavior and safety checks from semantic and visual
+  review, and classifying existing GUI assertions for migration.
+
 ### Tests
 
 - Relocated tests into ownership-based hierarchy: `tests/core/` (core logic), `tests/workers/` (desktop worker lifecycle), `tests/gui/` (GUI shell and widgets), `tests/utils/` (shared infrastructure), `tests/server_scripts/` (standalone server scripts), and `tests/integration/` (scenario chains). Root-level contract and import-boundary tests remain in `tests/`. Existing test collection (353 pytest cases) preserved.
