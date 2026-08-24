@@ -40,8 +40,9 @@ from gui.tool_defaults import (
     load_tool_defaults,
     save_tool_defaults,
 )
+from gui.components import SmallProgressBar, EmptyState
+from gui.theme_manager import get_theme_manager
 from utils.task_registry import TaskHandle, TaskRegistry
-from gui.login_studio import LoginStudio
 
 
 @dataclass(frozen=True)
@@ -344,7 +345,7 @@ class LoginView(QWidget):
         story.setObjectName("loginStory")
         story.setProperty("surfaceRole", "product")
         story_layout = QVBoxLayout(story)
-        story_layout.setContentsMargins(56, 64, 56, 64)
+        story_layout.setContentsMargins(56, 56, 56, 64)
         story_layout.setSpacing(0)
 
         brand = QLabel("Auto Labeler")
@@ -357,10 +358,10 @@ class LoginView(QWidget):
         brand_content_layout.setContentsMargins(0, 0, 0, 0)
         brand_content_layout.setSpacing(0)
 
-        headline = QLabel("AI 驱动的\n智能标注平台")
+        headline = QLabel("AI 驱动的智能标注平台")
         headline.setObjectName("loginHeadline")
         subheadline = QLabel(
-            "使用先进的机器学习技术，自动完成数据标注任务，\n将标注效率提升 10 倍"
+            "使用先进的机器学习技术，自动完成数据标注任务，将标注效率提升 10 倍"
         )
         subheadline.setObjectName("loginSubheadline")
         subheadline.setWordWrap(True)
@@ -378,19 +379,21 @@ class LoginView(QWidget):
         ]:
             stat_widget = QWidget()
             stat_widget.setObjectName("loginStatWidget")
-            stat_layout = QVBoxLayout(stat_widget)
-            stat_layout.setContentsMargins(0, 0, 0, 0)
-            stat_layout.setSpacing(6)
+            stat_layout_inner = QVBoxLayout(stat_widget)
+            stat_layout_inner.setContentsMargins(0, 0, 0, 0)
+            stat_layout_inner.setSpacing(6)
+            stat_layout_inner.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
             value_label = QLabel(value)
             value_label.setObjectName("loginStatValue")
+            value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label = QLabel(label_text)
             label.setObjectName("loginStatLabel")
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-            stat_layout.addWidget(value_label)
-            stat_layout.addWidget(label)
+            stat_layout_inner.addWidget(value_label)
+            stat_layout_inner.addWidget(label)
             stats_layout.addWidget(stat_widget)
-        stats_layout.addStretch(1)
 
         brand_content_layout.addWidget(headline)
         brand_content_layout.addSpacing(24)
@@ -443,15 +446,22 @@ class LoginView(QWidget):
         form_area = QWidget()
         form_area.setObjectName("loginFormArea")
         form_area_layout = QVBoxLayout(form_area)
-        form_area_layout.setContentsMargins(80, 64, 80, 64)
+        form_area_layout.setContentsMargins(80, 80, 80, 80)
         form_area_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.login_card = QFrame()
         card = self.login_card
         card.setObjectName("loginCard")
         card.setProperty("surfaceRole", "access")
+        card.setMaximumWidth(440)
+
+        # Apply real drop shadow effect to login card (single static card, acceptable per spec)
+        from gui.design_system import REAL_SHADOW
+        shadow_effect = REAL_SHADOW.create_medium_shadow_dark()
+        card.setGraphicsEffect(shadow_effect)
+
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(0, 0, 0, 0)
+        card_layout.setContentsMargins(48, 48, 48, 48)
         card_layout.setSpacing(0)
         form_area_layout.addWidget(card)
 
@@ -474,7 +484,7 @@ class LoginView(QWidget):
         password.setEchoMode(QLineEdit.EchoMode.Password)
         password.setObjectName("formInput")
 
-        forgot_password = QLabel('<a href="#" style="color: #236d69; text-decoration: none;">忘记密码？</a>')
+        forgot_password = QLabel('<a href="#" style="color: #0EA5E9; text-decoration: none;">忘记密码？</a>')
         forgot_password.setObjectName("loginForgotLink")
         forgot_password.setOpenExternalLinks(False)
 
@@ -619,9 +629,6 @@ class WorkbenchView(QWidget):
             task_runner=self._task_runner,
         )
 
-        # Wayfinder Login Studio (replaces old LoginView)
-        self.login_studio = LoginStudio()
-        self.login_studio.login_requested.connect(self.enter_workbench)
         self._content_stack.addWidget(self._home_page)
         self._content_stack.addWidget(self._manual_page)
         self._content_stack.addWidget(self._settings_page)
@@ -732,6 +739,12 @@ class WorkbenchView(QWidget):
         show_preview = self.width() >= _HOME_AI_PREVIEW_MIN_WIDTH
         self.home_ai_preview.setVisible(show_preview)
 
+    def _toggle_theme(self) -> None:
+        """Toggle between dark and light themes."""
+        theme_manager = get_theme_manager()
+        new_theme = theme_manager.toggle_theme()
+        # Theme is already applied by toggle_theme(), no additional action needed
+
     def _build_nav(self) -> QWidget:
         nav = QFrame()
         nav.setObjectName("sideNav")
@@ -779,8 +792,12 @@ class WorkbenchView(QWidget):
         settings = _nav_utility_button("设置", "⚙️")
         settings.clicked.connect(self.show_settings)
         self.nav_buttons["settings"] = settings
+        theme_toggle = _nav_utility_button("主题切换", "🌓")
+        theme_toggle.clicked.connect(self._toggle_theme)
+        self.nav_buttons["theme"] = theme_toggle
         layout.addWidget(manual)
         layout.addWidget(settings)
+        layout.addWidget(theme_toggle)
         self._sync_nav()
         return nav
 
@@ -802,7 +819,7 @@ class WorkbenchView(QWidget):
         hero.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.home_hero = hero
         hero_layout = QVBoxLayout(hero)
-        hero_layout.setContentsMargins(26, 22, 26, 20)
+        hero_layout.setContentsMargins(26, 26, 26, 20)
         hero_layout.setSpacing(10)
 
         eyebrow = QLabel("AutoLabeler Workbench")
@@ -888,10 +905,10 @@ class WorkbenchView(QWidget):
         ai_preview = QFrame()
         ai_preview.setObjectName("aiPreview")
         ai_preview.setMinimumWidth(260)
-        ai_preview.setMaximumWidth(318)
+        ai_preview.setMaximumWidth(260)
         self.home_ai_preview = ai_preview
         ai_layout = QVBoxLayout(ai_preview)
-        ai_layout.setContentsMargins(15, 14, 15, 14)
+        ai_layout.setContentsMargins(15, 15, 15, 14)
         ai_layout.setSpacing(10)
         ai_head = QHBoxLayout()
         ai_title = QLabel("AI 操作助手")
@@ -957,7 +974,7 @@ class WorkbenchView(QWidget):
         support.setObjectName("homeSupportPanel")
         self.home_support_panel = support
         support_layout = QVBoxLayout(support)
-        support_layout.setContentsMargins(16, 10, 16, 8)
+        support_layout.setContentsMargins(16, 16, 16, 8)
         support_layout.setSpacing(8)
         support_header = QHBoxLayout()
         support_title = QLabel("系统优势")
@@ -971,7 +988,7 @@ class WorkbenchView(QWidget):
         self.home_strength_band = QFrame()
         self.home_strength_band.setObjectName("homeStrengthBand")
         strength_band_layout = QHBoxLayout(self.home_strength_band)
-        strength_band_layout.setContentsMargins(10, 8, 10, 8)
+        strength_band_layout.setContentsMargins(0, 0, 0, 0)
         strength_band_layout.setSpacing(0)
         self.home_strength_titles: list[QLabel] = []
         self.home_strength_items: list[QFrame] = []
@@ -1001,7 +1018,7 @@ class WorkbenchView(QWidget):
             item = QFrame()
             item.setObjectName("strengthItem")
             item_layout = QVBoxLayout(item)
-            item_layout.setContentsMargins(12, 8, 12, 8)
+            item_layout.setContentsMargins(12, 12, 12, 8)
             item_layout.setSpacing(5)
             item_header = QHBoxLayout()
             item_header.setContentsMargins(0, 0, 0, 0)
@@ -1038,17 +1055,19 @@ class WorkbenchView(QWidget):
         return page
 
     def _build_manual_page(self) -> QWidget:
+        from gui.design_system import SPACING, PADDING
+
         page = QWidget()
         page.setObjectName("manualPage")
         root = QHBoxLayout(page)
-        root.setContentsMargins(26, 22, 26, 22)
-        root.setSpacing(16)
+        root.setContentsMargins(PADDING.PAGE_PADDING, SPACING.SPACE_5, PADDING.PAGE_PADDING, SPACING.SPACE_5)
+        root.setSpacing(SPACING.SPACE_4)
 
         self.manual_main_panel = QFrame()
         self.manual_main_panel.setObjectName("leftMainPanel")
         left = QVBoxLayout(self.manual_main_panel)
-        left.setContentsMargins(24, 22, 24, 22)
-        left.setSpacing(14)
+        left.setContentsMargins(SPACING.SPACE_5, SPACING.SPACE_5, SPACING.SPACE_5, SPACING.SPACE_5)
+        left.setSpacing(SPACING.SPACE_3)
 
         eyebrow = QLabel("Help")
         eyebrow.setObjectName("eyebrow")
@@ -1084,9 +1103,9 @@ class WorkbenchView(QWidget):
         self.manual_steps_panel = QFrame()
         self.manual_steps_panel.setObjectName("manualStepsPanel")
         steps_layout = QGridLayout(self.manual_steps_panel)
-        steps_layout.setContentsMargins(12, 12, 12, 12)
-        steps_layout.setHorizontalSpacing(10)
-        steps_layout.setVerticalSpacing(10)
+        steps_layout.setContentsMargins(SPACING.SPACE_3, SPACING.SPACE_3, SPACING.SPACE_3, SPACING.SPACE_3)
+        steps_layout.setHorizontalSpacing(SPACING.SPACE_2 + 2)
+        steps_layout.setVerticalSpacing(SPACING.SPACE_2 + 2)
         for index, (spec, workflow_item) in enumerate(
             zip(_MANUAL_FUNCTION_SPECS, _MANUAL_WORKFLOW_ITEMS, strict=True)
         ):
@@ -1133,8 +1152,8 @@ class WorkbenchView(QWidget):
         self.manual_support_panel.setMinimumWidth(176)
         self.manual_support_panel.setMaximumWidth(210)
         right = QVBoxLayout(self.manual_support_panel)
-        right.setContentsMargins(14, 16, 14, 16)
-        right.setSpacing(8)
+        right.setContentsMargins(SPACING.SPACE_3, SPACING.SPACE_4, SPACING.SPACE_3, SPACING.SPACE_4)
+        right.setSpacing(SPACING.SPACE_2)
 
         panel_title = QLabel("本页目录")
         panel_title.setObjectName("panelTitle")
@@ -1188,11 +1207,13 @@ class WorkbenchView(QWidget):
         return section
 
     def _build_manual_section(self, title: str, copy: str) -> QFrame:
+        from gui.design_system import SPACING
+
         section = QFrame()
         section.setObjectName("manualSection")
         layout = QVBoxLayout(section)
-        layout.setContentsMargins(14, 12, 14, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(SPACING.SPACE_3, SPACING.SPACE_3, SPACING.SPACE_3, SPACING.SPACE_3)
+        layout.setSpacing(SPACING.SPACE_2)
         title_label = QLabel(title)
         title_label.setObjectName("manualSectionTitle")
         copy_label = QLabel(copy)
@@ -1203,12 +1224,14 @@ class WorkbenchView(QWidget):
         return section
 
     def _manual_param_table(self, rows: tuple[tuple[str, str, str, str], ...]) -> QFrame:
+        from gui.design_system import SPACING
+
         table = QFrame()
         table.setObjectName("manualParamTable")
         layout = QGridLayout(table)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setHorizontalSpacing(8)
-        layout.setVerticalSpacing(6)
+        layout.setHorizontalSpacing(SPACING.SPACE_2)
+        layout.setVerticalSpacing(SPACING.SPACE_1 + 2)
         for column, text in enumerate(("参数", "建议", "含义", "何时调整")):
             header = QLabel(text)
             header.setObjectName("manualTableHeader")
@@ -1231,11 +1254,13 @@ class WorkbenchView(QWidget):
         return table
 
     def _manual_note(self, title: str, body: str) -> QFrame:
+        from gui.design_system import SPACING
+
         note = QFrame()
         note.setObjectName("manualNote")
         layout = QVBoxLayout(note)
-        layout.setContentsMargins(12, 9, 12, 9)
-        layout.setSpacing(4)
+        layout.setContentsMargins(SPACING.SPACE_3, SPACING.SPACE_2, SPACING.SPACE_3, SPACING.SPACE_2)
+        layout.setSpacing(SPACING.SPACE_1)
         title_label = QLabel(title)
         title_label.setObjectName("smallTitle")
         body_label = QLabel(body)
@@ -1246,17 +1271,19 @@ class WorkbenchView(QWidget):
         return note
 
     def _build_settings_page(self) -> QWidget:
+        from gui.design_system import SPACING, PADDING
+
         page = QWidget()
         page.setObjectName("settingsPage")
         root = QHBoxLayout(page)
-        root.setContentsMargins(26, 22, 26, 22)
-        root.setSpacing(16)
+        root.setContentsMargins(PADDING.PAGE_PADDING, SPACING.SPACE_5, PADDING.PAGE_PADDING, SPACING.SPACE_5)
+        root.setSpacing(SPACING.SPACE_4)
 
         self.settings_main_panel = QFrame()
         self.settings_main_panel.setObjectName("leftMainPanel")
         left = QVBoxLayout(self.settings_main_panel)
-        left.setContentsMargins(24, 22, 24, 22)
-        left.setSpacing(14)
+        left.setContentsMargins(SPACING.SPACE_5, SPACING.SPACE_5, SPACING.SPACE_5, SPACING.SPACE_5)
+        left.setSpacing(SPACING.SPACE_3)
 
         eyebrow = QLabel("System")
         eyebrow.setObjectName("eyebrow")
@@ -1418,8 +1445,8 @@ class WorkbenchView(QWidget):
         self.settings_status_panel = QFrame()
         self.settings_status_panel.setObjectName("settingsStatusPanel")
         status_layout = QVBoxLayout(self.settings_status_panel)
-        status_layout.setContentsMargins(12, 10, 12, 10)
-        status_layout.setSpacing(7)
+        status_layout.setContentsMargins(SPACING.SPACE_3, SPACING.SPACE_2 + 2, SPACING.SPACE_3, SPACING.SPACE_2 + 2)
+        status_layout.setSpacing(SPACING.SPACE_2 - 1)
         status_title = QLabel("05 保存边界")
         status_title.setObjectName("smallTitle")
         status_layout.addWidget(status_title)
@@ -1434,8 +1461,8 @@ class WorkbenchView(QWidget):
             item = QFrame()
             item.setObjectName("settingsStatusItem")
             item_layout = QVBoxLayout(item)
-            item_layout.setContentsMargins(8, 6, 8, 6)
-            item_layout.setSpacing(2)
+            item_layout.setContentsMargins(SPACING.SPACE_2, SPACING.SPACE_1 + 2, SPACING.SPACE_2, SPACING.SPACE_1 + 2)
+            item_layout.setSpacing(SPACING.SPACE_1 // 2)
             item_title = QLabel(title_text)
             item_title.setObjectName("smallTitle")
             item_body = QLabel(body_text)
@@ -1486,8 +1513,8 @@ class WorkbenchView(QWidget):
         self.settings_support_panel.setMinimumWidth(176)
         self.settings_support_panel.setMaximumWidth(210)
         right = QVBoxLayout(self.settings_support_panel)
-        right.setContentsMargins(14, 16, 14, 16)
-        right.setSpacing(8)
+        right.setContentsMargins(SPACING.SPACE_3, SPACING.SPACE_4, SPACING.SPACE_3, SPACING.SPACE_4)
+        right.setSpacing(SPACING.SPACE_2)
 
         panel_title = QLabel("本页目录")
         panel_title.setObjectName("panelTitle")
@@ -1644,6 +1671,7 @@ class WorkbenchView(QWidget):
         layout.setContentsMargins(24, 22, 24, 22)
         layout.setSpacing(14)
 
+        # Page header
         eyebrow = QLabel("Global tasks")
         eyebrow.setObjectName("eyebrow")
         title = QLabel("任务中心")
@@ -1653,12 +1681,51 @@ class WorkbenchView(QWidget):
         copy = QLabel("显示自动化标注流程状态、最近产出和需要处理的问题。")
         copy.setObjectName("mutedText")
         copy.setWordWrap(True)
-        self.task_center_summary_panel = QFrame()
-        self.task_center_summary_panel.setObjectName("taskCenterSummaryPanel")
-        self.task_center_summary_layout = QGridLayout(self.task_center_summary_panel)
-        self.task_center_summary_layout.setContentsMargins(12, 12, 12, 12)
-        self.task_center_summary_layout.setHorizontalSpacing(10)
-        self.task_center_summary_layout.setVerticalSpacing(10)
+
+        # Filter tabs panel (segmented control style)
+        self.task_center_filter_panel = QFrame()
+        self.task_center_filter_panel.setObjectName("taskCenterFilterPanel")
+        filter_layout = QHBoxLayout(self.task_center_filter_panel)
+        filter_layout.setContentsMargins(16, 12, 16, 12)
+        filter_layout.setSpacing(12)
+
+        # Filter buttons
+        self.filter_running_button = QPushButton("运行中")
+        self.filter_running_button.setObjectName("taskFilterButton")
+        self.filter_running_button.setProperty("filter_key", "running")
+        self.filter_running_button.clicked.connect(
+            lambda: self._show_task_center_filter("running")
+        )
+
+        self.filter_failed_button = QPushButton("失败")
+        self.filter_failed_button.setObjectName("taskFilterButton")
+        self.filter_failed_button.setProperty("filter_key", "failed")
+        self.filter_failed_button.clicked.connect(
+            lambda: self._show_task_center_filter("failed")
+        )
+
+        self.filter_completed_button = QPushButton("已完成")
+        self.filter_completed_button.setObjectName("taskFilterButton")
+        self.filter_completed_button.setProperty("filter_key", "completed")
+        self.filter_completed_button.clicked.connect(
+            lambda: self._show_task_center_filter("completed")
+        )
+
+        self.filter_all_button = QPushButton("全部")
+        self.filter_all_button.setObjectName("taskFilterButton")
+        self.filter_all_button.setProperty("filter_key", "all")
+        self.filter_all_button.setProperty("active", True)
+        self.filter_all_button.clicked.connect(
+            lambda: self._clear_task_center_filter()
+        )
+
+        filter_layout.addWidget(self.filter_running_button)
+        filter_layout.addWidget(self.filter_failed_button)
+        filter_layout.addWidget(self.filter_completed_button)
+        filter_layout.addWidget(self.filter_all_button)
+        filter_layout.addStretch(1)
+
+        # Action buttons
         task_actions = QHBoxLayout()
         task_actions.setContentsMargins(0, 0, 0, 0)
         task_actions.setSpacing(10)
@@ -1666,19 +1733,15 @@ class WorkbenchView(QWidget):
         self.refresh_tasks_button.setObjectName("secondaryButton")
         self.refresh_tasks_button.setMaximumWidth(88)
         self.refresh_tasks_button.clicked.connect(self.refresh_task_center)
-        self.task_center_filter_back_button = QPushButton("返回任务中心主页")
-        self.task_center_filter_back_button.setObjectName("secondaryButton")
-        self.task_center_filter_back_button.clicked.connect(
-            self._clear_task_center_filter
-        )
         task_actions.addWidget(self.refresh_tasks_button, 0)
-        task_actions.addWidget(self.task_center_filter_back_button, 0)
         task_actions.addStretch(1)
+
+        # Task list panel
         self.task_center_list_panel = QFrame()
         self.task_center_list_panel.setObjectName("taskCenterList")
         self.task_center_list_layout = QVBoxLayout(self.task_center_list_panel)
         self.task_center_list_layout.setContentsMargins(0, 0, 0, 0)
-        self.task_center_list_layout.setSpacing(8)
+        self.task_center_list_layout.setSpacing(12)
         self.task_center_scroll = QScrollArea()
         self.task_center_scroll.setObjectName("toolScrollArea")
         self.task_center_scroll.setWidgetResizable(True)
@@ -1692,7 +1755,7 @@ class WorkbenchView(QWidget):
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(copy)
-        layout.addWidget(self.task_center_summary_panel, 0)
+        layout.addWidget(self.task_center_filter_panel, 0)
         layout.addLayout(task_actions)
         layout.addWidget(self.task_center_scroll, 1)
         root.addWidget(panel, 1)
@@ -1701,115 +1764,326 @@ class WorkbenchView(QWidget):
     def refresh_task_center(self) -> None:
         """Refresh task center text from the shared task registry."""
         _clear_layout(self.task_center_list_layout)
-        _clear_layout(self.task_center_summary_layout)
+
         if self._task_registry is None:
-            self._populate_task_center_summary([])
-            self.task_center_list_layout.addWidget(
-                _task_empty_state("当前未配置共享任务记录。")
+            empty_state = EmptyState(
+                icon="📋",
+                title="当前未配置共享任务记录",
+                description="任务注册表未初始化。"
             )
+            self.task_center_list_layout.addWidget(empty_state)
             self._task_center_timer.stop()
+            self._update_filter_counts([], [])
             return
+
         self._task_registry.cleanup_finished_older_than(_TASK_CENTER_RETENTION_DAYS)
         tasks = self._task_registry.list_tasks()
         visible_tasks = _visible_task_center_tasks(tasks)
-        self._populate_task_center_summary(visible_tasks)
+
         if not visible_tasks:
-            self.task_center_filter_back_button.setVisible(False)
-            self.task_center_list_layout.addWidget(_task_empty_state("保留期内暂无任务。"))
-            self._task_center_timer.stop()
-            return
-        filtered_tasks = self._filtered_task_center_tasks(visible_tasks)
-        self.task_center_filter_back_button.setVisible(
-            self._task_center_filter is not None
-        )
-        if not filtered_tasks:
-            self.task_center_list_layout.addWidget(
-                _task_empty_state(self._task_center_empty_text())
+            empty_state = EmptyState(
+                icon="📋",
+                title="暂无任务记录",
+                description="当您运行扫描、抽样、训练、推理等任务时，\n任务状态会显示在这里。"
             )
+            self.task_center_list_layout.addWidget(empty_state)
+            self._task_center_timer.stop()
+            self._update_filter_counts(visible_tasks, [])
+            return
+
+        filtered_tasks = self._filtered_task_center_tasks(visible_tasks)
+        self._update_filter_counts(visible_tasks, filtered_tasks)
+
+        if not filtered_tasks:
+            empty_state = EmptyState(
+                icon="🔍",
+                title=self._task_center_empty_title(),
+                description=self._task_center_empty_text()
+            )
+            self.task_center_list_layout.addWidget(empty_state)
             self._sync_task_center_timer()
             return
-        for group_title, group_tasks in _group_task_center_tasks(filtered_tasks):
-            header = QLabel(group_title)
-            header.setObjectName("taskDateHeader")
-            self.task_center_list_layout.addWidget(header)
-            for task in group_tasks:
-                self.task_center_list_layout.addWidget(self._build_task_center_row(task))
+
+        # Build task cards
+        for task in filtered_tasks:
+            self.task_center_list_layout.addWidget(self._build_task_card(task))
+
         self.task_center_list_layout.addStretch(1)
         self._sync_task_center_timer()
 
-    def _build_task_center_row(self, task: TaskHandle) -> QFrame:
-        """Build one task-center row."""
-        progress = f"{task.progress_current}/{task.progress_total}"
-        row = QFrame()
-        row.setObjectName("taskRow")
-        row_layout = QGridLayout(row)
-        row_layout.setContentsMargins(12, 10, 12, 10)
-        row_layout.setHorizontalSpacing(10)
-        row_layout.setVerticalSpacing(4)
+    def _build_task_card(self, task: TaskHandle) -> QFrame:
+        """Build one task card with modern UI specification styling."""
+        card = QFrame()
+        card.setObjectName("taskCard")
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(20, 20, 24, 20)
+        card_layout.setSpacing(12)
+
+        # Header: module icon + name, status badge
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(10)
+
+        # Left side: icon + module name
+        left_header = QHBoxLayout()
+        left_header.setSpacing(10)
+
+        module_icon = QLabel(self._get_module_icon(task.task_type))
+        module_icon.setObjectName("taskModuleIcon")
+        module_icon.setFixedSize(32, 32)
+        module_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        module_name = QLabel(_task_module_title(task))
+        module_name.setObjectName("taskModuleName")
+
+        left_header.addWidget(module_icon)
+        left_header.addWidget(module_name)
+
+        # Right side: status badge
+        status_badge = QLabel(_TASK_STATUS_LABELS.get(task.status, task.status))
+        status_badge.setObjectName("taskStatusBadge")
+        status_badge.setProperty("status", task.status)
+        status_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        header_layout.addLayout(left_header)
+        header_layout.addStretch(1)
+        header_layout.addWidget(status_badge)
+
+        # Description (max 2 lines)
+        description = QLabel(_format_task_summary(task))
+        description.setObjectName("taskDescription")
+        description.setWordWrap(True)
+        description.setMaximumHeight(48)  # Approx 2 lines
+
+        # Time information
+        time_info = QLabel(self._format_task_time_info(task))
+        time_info.setObjectName("taskTimeInfo")
+
+        card_layout.addLayout(header_layout)
+        card_layout.addWidget(description)
+        card_layout.addWidget(time_info)
+
+        # Progress bar (only for running tasks)
+        if task.status == "running" and task.progress_total > 0:
+            progress_container = QWidget()
+            progress_layout = QHBoxLayout(progress_container)
+            progress_layout.setContentsMargins(0, 0, 0, 0)
+            progress_layout.setSpacing(12)
+
+            progress_bar = SmallProgressBar()
+            progress_percent = int((task.progress_current / task.progress_total) * 100)
+            progress_bar.setValue(progress_percent)
+
+            progress_text = QLabel(
+                f"{progress_percent}% ({task.progress_current}/{task.progress_total})"
+            )
+            progress_text.setObjectName("taskProgressText")
+
+            progress_layout.addWidget(progress_bar, 1)
+            progress_layout.addWidget(progress_text, 0)
+
+            card_layout.addWidget(progress_container)
+
+        # Error panel (only for failed tasks)
+        if task.error:
+            error_panel = QFrame()
+            error_panel.setObjectName("taskErrorPanel")
+            error_layout = QVBoxLayout(error_panel)
+            error_layout.setContentsMargins(10, 10, 12, 10)
+            error_layout.setSpacing(4)
+
+            error_text = QLabel(f"错误：{task.error.message}")
+            error_text.setObjectName("taskErrorText")
+            error_text.setWordWrap(True)
+
+            error_layout.addWidget(error_text)
+            card_layout.addWidget(error_panel)
+
+        # Output path (for completed/failed tasks with output)
+        if task.status in _TERMINAL_TASK_STATUSES and hasattr(task, 'output_path') and task.output_path:
+            output_label = QLabel(f"输出：{self._truncate_path(str(task.output_path))}")
+            output_label.setObjectName("taskOutputPath")
+            output_label.setToolTip(str(task.output_path))
+            card_layout.addWidget(output_label)
+
+        # Action buttons
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(8)
+        button_layout.addStretch(1)
+
+        # Navigate back button
         module_key = _module_key_for_task_type(task.task_type)
         module_title = _task_module_title(task)
-        title_label = QLabel(
-            f"{module_title} · {_TASK_STATUS_LABELS.get(task.status, task.status)}"
-        )
-        title_label.setObjectName("taskRowTitle")
-        title_label.setMinimumWidth(0)
-        title_label.setSizePolicy(
-            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred
-        )
-        meta = QLabel(
-            f"{_task_time_label(task)} · 进度 {progress} · {task.progress_message or '等待'}"
-        )
-        meta.setObjectName("mutedText")
-        meta.setWordWrap(True)
-        meta.setMinimumWidth(0)
-        meta.setSizePolicy(
-            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred
-        )
-        if task.error:
-            detail_text = f"失败原因：{task.error.message}"
-        else:
-            detail_text = _format_task_summary(task)
-        detail_label = QLabel(detail_text)
-        detail_label.setObjectName("mutedText")
-        detail_label.setWordWrap(True)
-        detail_label.setMinimumWidth(0)
-        detail_label.setSizePolicy(
-            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred
-        )
-        back_button = QPushButton(f"回到{module_title}")
-        if module_key == "home":
-            back_button.setText("回到首页")
-        back_button.setObjectName("taskBackButton")
-        back_button.setProperty("module_key", module_key)
+        back_button = QPushButton(f"跳转到{module_title}页")
+        back_button.setObjectName("secondaryButton")
         back_button.clicked.connect(
             lambda checked=False, key=module_key: self.show_module(key)
         )
-        action_panel = QFrame()
-        action_panel.setObjectName("taskRowActions")
-        action_panel.setMinimumWidth(112)
-        action_panel.setMaximumWidth(128)
-        action_layout = QVBoxLayout(action_panel)
-        action_layout.setContentsMargins(0, 0, 0, 0)
-        action_layout.setSpacing(6)
-        action_layout.addWidget(back_button)
+        button_layout.addWidget(back_button)
+
+        # Delete button (for terminal tasks)
         if task.status in _TERMINAL_TASK_STATUSES:
-            delete_button = QPushButton("删除记录")
-            delete_button.setObjectName("taskDeleteButton")
-            delete_button.setProperty("task_id", task.task_id)
+            delete_button = QPushButton("删除")
+            delete_button.setObjectName("dangerButton")
             delete_button.clicked.connect(
-                lambda checked=False, task_id=task.task_id: self._delete_task_record(
-                    task_id
-                )
+                lambda checked=False, task_id=task.task_id: self._show_delete_confirmation(task)
             )
-            action_layout.addWidget(delete_button)
-        action_layout.addStretch(1)
-        row_layout.addWidget(title_label, 0, 0)
-        row_layout.addWidget(meta, 1, 0)
-        row_layout.addWidget(detail_label, 2, 0)
-        row_layout.addWidget(action_panel, 0, 1, 3, 1, Qt.AlignmentFlag.AlignTop)
-        row_layout.setColumnStretch(0, 1)
-        row_layout.setColumnStretch(1, 0)
-        return row
+            button_layout.addWidget(delete_button)
+
+        # Stop button (for running tasks)
+        if task.status == "running":
+            stop_button = QPushButton("停止任务")
+            stop_button.setObjectName("dangerButton")
+            stop_button.clicked.connect(
+                lambda checked=False, task_id=task.task_id: self._stop_task(task.task_id)
+            )
+            button_layout.addWidget(stop_button)
+
+        card_layout.addLayout(button_layout)
+
+        return card
+
+    def _show_delete_confirmation(self, task: TaskHandle) -> None:
+        """Show modal confirmation dialog before deleting a task."""
+        from PySide6.QtWidgets import QDialog, QDialogButtonBox
+
+        dialog = QDialog(self)
+        dialog.setObjectName("deleteConfirmationDialog")
+        dialog.setWindowTitle("删除任务记录")
+        dialog.setModal(True)
+        dialog.setFixedWidth(480)
+
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(12)
+
+        # Title
+        title = QLabel("删除任务记录？")
+        title.setObjectName("dialogTitle")
+        layout.addWidget(title)
+
+        # Description
+        description = QLabel(
+            "此操作将永久删除该任务的记录，包括：\n"
+            "• 任务状态和时间信息\n"
+            "• 错误日志（如果有）\n"
+            "• 任务元数据\n\n"
+            "注意：不会删除任务的输出文件（如推理结果、训练模型）。"
+        )
+        description.setObjectName("dialogDescription")
+        description.setWordWrap(True)
+        layout.addWidget(description)
+
+        # Task details (highlighted)
+        details_panel = QFrame()
+        details_panel.setObjectName("taskDetailsPanel")
+        details_layout = QVBoxLayout(details_panel)
+        details_layout.setContentsMargins(12, 12, 14, 12)
+        details_layout.setSpacing(4)
+
+        module_title = _task_module_title(task)
+        task_summary = _format_task_summary(task)
+        start_time = task.start_time.strftime("%Y-%m-%d %H:%M:%S") if task.start_time else "未知"
+
+        details_text = QLabel(
+            f"模块：{module_title}\n"
+            f"描述：{task_summary}\n"
+            f"开始时间：{start_time}"
+        )
+        details_text.setObjectName("taskDetailsText")
+        details_text.setWordWrap(True)
+        details_layout.addWidget(details_text)
+        layout.addWidget(details_panel)
+
+        # Button box
+        button_box = QDialogButtonBox()
+        cancel_button = button_box.addButton("取消", QDialogButtonBox.ButtonRole.RejectRole)
+        cancel_button.setObjectName("secondaryButton")
+        delete_button = button_box.addButton("确认删除", QDialogButtonBox.ButtonRole.AcceptRole)
+        delete_button.setObjectName("dangerButton")
+
+        button_box.rejected.connect(dialog.reject)
+        button_box.accepted.connect(dialog.accept)
+
+        layout.addWidget(button_box)
+
+        # Show dialog and handle result
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self._delete_task_record(task.task_id)
+
+    def _stop_task(self, task_id: str) -> None:
+        """Stop a running task."""
+        if self._task_registry is None:
+            return
+        # Note: Actual task stopping logic would need to be implemented
+        # in the task registry or task runner
+        self.refresh_task_center()
+
+    def _get_module_icon(self, task_type: str) -> str:
+        """Get emoji icon for task type."""
+        icons = {
+            "scan": "🔍",
+            "sample": "📊",
+            "train": "🧠",
+            "infer": "🔮",
+            "restore": "↩️",
+            "convert": "🔄",
+            "label": "✏️",
+            "review": "👁️",
+        }
+        return icons.get(task_type, "📋")
+
+    def _format_task_time_info(self, task: TaskHandle) -> str:
+        """Format time information for a task."""
+        start_str = task.start_time.strftime("%Y-%m-%d %H:%M:%S") if task.start_time else "未知"
+
+        if task.status == "running":
+            return f"开始时间：{start_str}"
+        elif task.status in _TERMINAL_TASK_STATUSES and task.end_time:
+            end_str = task.end_time.strftime("%Y-%m-%d %H:%M:%S")
+            duration = task.end_time - task.start_time if task.start_time else None
+            if duration:
+                minutes = int(duration.total_seconds() // 60)
+                seconds = int(duration.total_seconds() % 60)
+                duration_str = f"{minutes} 分 {seconds} 秒" if minutes > 0 else f"{seconds} 秒"
+                return f"开始时间：{start_str}\n完成时间：{end_str}\n用时：{duration_str}"
+            return f"开始时间：{start_str}\n完成时间：{end_str}"
+
+        return f"开始时间：{start_str}"
+
+    def _truncate_path(self, path: str, max_length: int = 60) -> str:
+        """Truncate path in the middle if it exceeds max_length."""
+        if len(path) <= max_length:
+            return path
+
+        # Keep first and last parts
+        keep_length = (max_length - 3) // 2
+        return f"{path[:keep_length]}...{path[-keep_length:]}"
+
+    def _update_filter_counts(self, all_tasks: list[TaskHandle], filtered_tasks: list[TaskHandle]) -> None:
+        """Update filter button counts and active states."""
+        running_count = sum(1 for t in all_tasks if t.status == "running")
+        failed_count = sum(1 for t in all_tasks if t.status == "failed")
+        completed_count = sum(1 for t in all_tasks if t.status == "succeeded")
+        all_count = len(all_tasks)
+
+        # Update button texts with counts
+        self.filter_running_button.setText(f"运行中 {running_count}")
+        self.filter_failed_button.setText(f"失败 {failed_count}")
+        self.filter_completed_button.setText(f"已完成 {completed_count}")
+        self.filter_all_button.setText(f"全部 {all_count}")
+
+        # Update active states
+        active_filter = self._task_center_filter or "all"
+        self.filter_running_button.setProperty("active", active_filter == "running")
+        self.filter_failed_button.setProperty("active", active_filter == "failed")
+        self.filter_completed_button.setProperty("active", active_filter == "completed")
+        self.filter_all_button.setProperty("active", active_filter == "all")
+
+        # Refresh styles
+        for button in [self.filter_running_button, self.filter_failed_button,
+                       self.filter_completed_button, self.filter_all_button]:
+            button.style().unpolish(button)
+            button.style().polish(button)
 
     def _delete_task_record(self, task_id: str) -> None:
         """Delete one terminal task record and refresh the task center."""
@@ -1818,66 +2092,8 @@ class WorkbenchView(QWidget):
         if self._task_registry.delete_task(task_id):
             self.refresh_task_center()
 
-    def _populate_task_center_summary(self, tasks: list[TaskHandle]) -> None:
-        """Populate business-level task center summary metrics."""
-        active_count = sum(task.status in _ACTIVE_TASK_STATUSES for task in tasks)
-        recent_completed_count = sum(task.status == "succeeded" for task in tasks)
-        attention_count = sum(task.status in _ATTENTION_TASK_STATUSES for task in tasks)
-        items = (
-            ("运行中", f"{active_count}", "当前正在推进的任务", "active"),
-            ("保留期完成", f"{recent_completed_count}", "保留期内完成的自动化步骤", None),
-            ("需要处理", f"{attention_count}", "失败、停止或中断任务", "attention"),
-            ("保留策略", f"{_TASK_CENTER_RETENTION_DAYS}天", "更早的已结束记录自动清理", None),
-        )
-        for index, (label_text, value_text, helper_text, filter_key) in enumerate(items):
-            item = QFrame()
-            item.setObjectName("taskSummaryItem")
-            item.setProperty(
-                "selected",
-                filter_key is not None and self._task_center_filter == filter_key,
-            )
-            item_layout = QGridLayout(item)
-            item_layout.setContentsMargins(10, 8, 10, 8)
-            item_layout.setSpacing(0)
-
-            content = QWidget()
-            content_layout = QVBoxLayout(content)
-            content_layout.setContentsMargins(0, 0, 0, 0)
-            content_layout.setSpacing(3)
-            label = QLabel(label_text)
-            label.setObjectName("taskSummaryLabel")
-            value = QLabel(value_text)
-            value.setObjectName("taskSummaryValue")
-            value.setWordWrap(True)
-            helper = QLabel(helper_text)
-            helper.setObjectName("mutedText")
-            helper.setWordWrap(True)
-            content_layout.addWidget(label)
-            content_layout.addWidget(value)
-            content_layout.addWidget(helper)
-            item_layout.addWidget(content, 0, 0)
-
-            if filter_key is not None:
-                button = QPushButton("")
-                button.setObjectName("taskSummaryButton")
-                button.setCursor(Qt.CursorShape.PointingHandCursor)
-                button.setProperty("filter_key", filter_key)
-                button.setAccessibleName(f"查看{label_text}任务")
-                button.setSizePolicy(
-                    QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-                )
-                button.clicked.connect(
-                    lambda checked=False, key=filter_key: self._show_task_center_filter(
-                        key
-                    )
-                )
-                item_layout.addWidget(button, 0, 0)
-
-            self.task_center_summary_layout.addWidget(item, 0, index)
-            self.task_center_summary_layout.setColumnStretch(index, 1)
-
     def _show_task_center_filter(self, filter_key: str) -> None:
-        """Show only the task-center rows matching one summary category."""
+        """Show only the task-center rows matching one filter category."""
         self._task_center_filter = filter_key
         self.refresh_task_center()
 
@@ -1890,19 +2106,33 @@ class WorkbenchView(QWidget):
         self, tasks: list[TaskHandle]
     ) -> list[TaskHandle]:
         """Apply the active task-center filter to visible task records."""
-        if self._task_center_filter == "active":
-            return [task for task in tasks if task.status in _ACTIVE_TASK_STATUSES]
-        if self._task_center_filter == "attention":
-            return [task for task in tasks if task.status in _ATTENTION_TASK_STATUSES]
+        if self._task_center_filter == "running":
+            return [task for task in tasks if task.status == "running"]
+        if self._task_center_filter == "failed":
+            return [task for task in tasks if task.status == "failed"]
+        if self._task_center_filter == "completed":
+            return [task for task in tasks if task.status == "succeeded"]
         return tasks
+
+    def _task_center_empty_title(self) -> str:
+        """Return the empty-state title for the active task-center filter."""
+        if self._task_center_filter == "running":
+            return "当前没有运行中的任务"
+        if self._task_center_filter == "failed":
+            return "当前没有失败的任务"
+        if self._task_center_filter == "completed":
+            return "当前没有已完成的任务"
+        return "暂无任务记录"
 
     def _task_center_empty_text(self) -> str:
         """Return the empty-state text for the active task-center filter."""
-        if self._task_center_filter == "active":
-            return "当前没有运行中的任务。"
-        if self._task_center_filter == "attention":
-            return "当前没有需要处理的任务。"
-        return "保留期内暂无任务。"
+        if self._task_center_filter == "running":
+            return "当前没有正在运行的任务。\n运行新任务后会显示在这里。"
+        if self._task_center_filter == "failed":
+            return "当前没有失败的任务。\n这是一个好消息！"
+        if self._task_center_filter == "completed":
+            return "保留期内没有已完成的任务。"
+        return "保留期内暂无任务记录。"
 
     def _sync_task_center_timer(self) -> None:
         """Refresh task center automatically only while active tasks are visible."""
@@ -1973,8 +2203,8 @@ class AutoLabelerWindow(QMainWindow):
 
     def enter_workbench(self) -> None:
         """Enter the main workbench after local/demo login."""
-        self.show_home()
-        self._content_stack.setCurrentWidget(self._home_page)
+        self.workbench_view.show_home()
+        self._stack.setCurrentWidget(self.workbench_view)
 
 
 def _ensure_ui_font() -> None:
@@ -2001,7 +2231,7 @@ def _nav_flow_button(index: int, module: ModuleEntry) -> QPushButton:
     button.setText("")
 
     layout = QHBoxLayout(button)
-    layout.setContentsMargins(10, 7, 10, 7)
+    layout.setContentsMargins(7, 7, 10, 7)  # Left margin reduced by 3px for border
     layout.setSpacing(9)
 
     number = QLabel(f"{index:02d}")
@@ -2035,7 +2265,7 @@ def _nav_utility_button(title: str, emoji: str) -> QPushButton:
     button.setText("")
 
     layout = QHBoxLayout(button)
-    layout.setContentsMargins(10, 8, 10, 8)
+    layout.setContentsMargins(7, 8, 10, 8)  # Left margin reduced by 3px for border
     layout.setSpacing(9)
 
     badge = QLabel(emoji)
@@ -2105,12 +2335,14 @@ def _settings_section(
     title: str, rows: tuple[tuple[str, QWidget, str], ...]
 ) -> QFrame:
     """Build one settings section with dense parameter rows."""
+    from gui.design_system import SPACING
+
     section = QFrame()
     section.setObjectName("settingsSectionPanel")
     layout = QGridLayout(section)
-    layout.setContentsMargins(12, 10, 12, 10)
-    layout.setHorizontalSpacing(10)
-    layout.setVerticalSpacing(7)
+    layout.setContentsMargins(SPACING.SPACE_3, SPACING.SPACE_2 + 2, SPACING.SPACE_3, SPACING.SPACE_2 + 2)
+    layout.setHorizontalSpacing(SPACING.SPACE_2 + 2)
+    layout.setVerticalSpacing(SPACING.SPACE_2 - 1)
     title_label = QLabel(title)
     title_label.setObjectName("smallTitle")
     layout.addWidget(title_label, 0, 0, 1, 3)
@@ -2387,8 +2619,8 @@ def _stylesheet() -> str:
         background: transparent;
     }
     QFrame#sideNav {
-        min-width: 238px;
-        max-width: 238px;
+        min-width: 240px;
+        max-width: 240px;
         background: #17242d;
         border-right: 1px solid #101a21;
     }
@@ -2417,8 +2649,9 @@ def _stylesheet() -> str:
     QPushButton#navUtilityButton,
     QPushButton#navFlowButton {
         min-height: 42px;
-        padding: 8px 12px;
+        padding: 8px 12px 8px 9px;
         border: 1px solid transparent;
+        border-left: 3px solid transparent;
         border-radius: 8px;
         background: transparent;
         color: #d9e6ea;
@@ -2428,17 +2661,22 @@ def _stylesheet() -> str:
     QPushButton#navUtilityButton:hover,
     QPushButton#navFlowButton:hover {
         background: #243641;
+        border-left: 3px solid transparent;
     }
     QPushButton#navButton[selected="true"] {
-        background: #23333d;
-        border-color: #567981;
-        color: #f8fbfb;
+        background: #082F49;
+        border-color: transparent;
+        border-left: 3px solid #0EA5E9;
+        color: #0EA5E9;
+        font-weight: 600;
     }
     QPushButton#navUtilityButton[selected="true"],
     QPushButton#navFlowButton[selected="true"] {
-        background: #23333d;
-        border-color: #567981;
-        color: #f8fbfb;
+        background: #082F49;
+        border-color: transparent;
+        border-left: 3px solid #0EA5E9;
+        color: #0EA5E9;
+        font-weight: 600;
     }
     QPushButton#navFlowButton {
         min-height: 50px;
@@ -2496,8 +2734,20 @@ def _stylesheet() -> str:
     QPushButton#navFlowButton[selected="true"] QLabel#navStepSubtitle {
         color: #cce2e4;
     }
-    QFrame#loginStory,
-    QFrame#loginCard,
+    QFrame#loginStory {
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #0A0E14, stop:1 #141922);
+        border: none;
+        border-radius: 0px;
+    }
+    QFrame#loginCard {
+        background: #1C2128;
+        border: 1px solid #30363D;
+        border-radius: 12px;
+        padding: 48px;
+    }
+    QWidget#loginFormArea {
+        background: #141922;
+    }
     QFrame#homeHero,
     QFrame#homeModulePanel,
     QFrame#homeSupportPanel,
@@ -2534,8 +2784,8 @@ def _stylesheet() -> str:
         background: transparent;
     }
     QLabel#loginBrand {
-        color: #ffffff;
-        font-size: 22px;
+        color: #E6EDF3;
+        font-size: 32px;
         font-weight: 700;
     }
     QLabel#homeEyebrow {
@@ -2545,23 +2795,52 @@ def _stylesheet() -> str:
         letter-spacing: 0px;
     }
     QLabel#loginHeadline {
-        color: #ffffff;
-        font-size: 44px;
-        font-weight: 800;
+        color: #E6EDF3;
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1.3;
     }
     QLabel#loginSubheadline {
-        color: #b8d4db;
-        font-size: 17px;
+        color: #9DA9BB;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 1.7;
     }
     QLabel#loginStatValue {
-        color: #5fb0aa;
-        font-size: 38px;
-        font-weight: 800;
+        color: #0EA5E9;
+        font-size: 40px;
+        font-weight: 700;
     }
     QLabel#loginStatLabel {
-        color: #8ca8af;
+        color: #6B7785;
+        font-size: 14px;
+        font-weight: 400;
+    }
+    QLabel#loginFormTitle {
+        color: #E6EDF3;
+        font-size: 28px;
+        font-weight: 700;
+    }
+    QLabel#loginFormSubtitle {
+        color: #9DA9BB;
+        font-size: 14px;
+        font-weight: 400;
+    }
+    QLabel#loginFieldLabel {
+        color: #E6EDF3;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    QLabel#loginForgotLink {
+        color: #0EA5E9;
         font-size: 13px;
+    }
+    QLabel#loginOptionLabel {
+        color: #6B7785;
+        font-size: 12px;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     QLabel#loginPanelCaption {
         color: #8ca8af;
@@ -2570,10 +2849,48 @@ def _stylesheet() -> str:
         letter-spacing: 1px;
     }
     QLabel#loginStoryFooter {
-        color: #6b8891;
-        font-size: 12px;
+        color: #6B7785;
+        font-size: 13px;
         padding-top: 16px;
         border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    QLineEdit#formInput {
+        background: #1A1F29;
+        border: 1px solid #30363D;
+        border-radius: 6px;
+        padding: 12px 14px;
+        font-size: 14px;
+        color: #E6EDF3;
+    }
+    QLineEdit#formInput:focus {
+        border-color: #0EA5E9;
+        outline: 2px solid rgba(14, 165, 233, 0.2);
+    }
+    QPushButton#primaryButton[buttonRole="primaryAccess"] {
+        background: #0EA5E9;
+        color: #FFFFFF;
+        border: none;
+        border-radius: 6px;
+        padding: 14px 28px;
+        font-size: 15px;
+        font-weight: 600;
+        min-height: 48px;
+    }
+    QPushButton#primaryButton[buttonRole="primaryAccess"]:hover {
+        background: #0284C7;
+        border-bottom: 2px solid #0369A1;
+    }
+    QPushButton#secondaryButton[buttonRole="reservedAccess"] {
+        background: transparent;
+        border: 1px solid #30363D;
+        color: #6B7785;
+        border-radius: 6px;
+        padding: 12px 24px;
+        font-size: 14px;
+        min-height: 44px;
+    }
+    QPushButton#secondaryButton[buttonRole="reservedAccess"]:disabled {
+        opacity: 0.5;
     }
     QLabel#homeTitle {
         font-size: 23px;
@@ -3447,5 +3764,727 @@ def _stylesheet() -> str:
     }
     QLabel#moduleDescription {
         color: #526872;
+    }
+
+    /* AutoLabeler enterprise theme: graphite navigation, parchment workspace,
+       and restrained teal/rust semantic accents. */
+    QWidget {
+        color: #1c2b2e;
+        background: #f5f2eb;
+        font-family: "Microsoft YaHei UI";
+        font-size: 13px;
+    }
+    QWidget#workbenchView,
+    QWidget#homePage,
+    QWidget#loginView,
+    QWidget#loginFormArea {
+        background: #f5f2eb;
+    }
+    QLabel {
+        background: transparent;
+    }
+    QFrame#sideNav {
+        min-width: 240px;
+        max-width: 240px;
+        background: #202d30;
+        border-right: 1px solid #3b4a4c;
+    }
+    QLabel#navMark {
+        min-width: 36px;
+        max-width: 36px;
+        min-height: 36px;
+        max-height: 36px;
+        border-radius: 6px;
+        background: #347d76;
+        color: #f5faf7;
+        font-size: 13px;
+        font-weight: 800;
+    }
+    QLabel#navBrand {
+        color: #f2f5f1;
+        font-size: 14px;
+        font-weight: 700;
+    }
+    QLabel#navSection {
+        color: #9aacab;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        padding: 12px 8px 5px;
+    }
+    QPushButton#navButton,
+    QPushButton#navUtilityButton,
+    QPushButton#navFlowButton {
+        min-height: 42px;
+        padding: 8px 11px 8px 8px;
+        border: 1px solid transparent;
+        border-left: 3px solid transparent;
+        border-radius: 6px;
+        background: transparent;
+        color: #d6e1de;
+        text-align: left;
+    }
+    QPushButton#navButton:hover,
+    QPushButton#navUtilityButton:hover,
+    QPushButton#navFlowButton:hover {
+        background: #2b3d40;
+        border-color: transparent;
+        border-left: 3px solid transparent;
+    }
+    QPushButton#navButton[selected="true"],
+    QPushButton#navUtilityButton[selected="true"],
+    QPushButton#navFlowButton[selected="true"] {
+        background: #082F49;
+        border-color: transparent;
+        border-left: 3px solid #0EA5E9;
+        color: #0EA5E9;
+        font-weight: 600;
+    }
+    QPushButton#navFlowButton {
+        min-height: 50px;
+        max-height: 56px;
+        padding: 0px;
+    }
+    QPushButton#navUtilityButton {
+        min-height: 40px;
+        max-height: 40px;
+        padding: 0px;
+    }
+    QLabel#navStepNumber {
+        min-width: 32px;
+        max-width: 32px;
+        min-height: 28px;
+        max-height: 28px;
+        border-radius: 5px;
+        background: #293b3e;
+        border: 1px solid #4b6365;
+        color: #b9cdca;
+        font-size: 11px;
+        font-weight: 800;
+    }
+    QLabel#navUtilityBadge {
+        min-width: 28px;
+        max-width: 28px;
+        min-height: 28px;
+        max-height: 28px;
+        border-radius: 5px;
+        background: #344548;
+        border: 1px solid #526769;
+        color: #d6e3df;
+        font-size: 13px;
+    }
+    QLabel#navStepTitle {
+        color: #d5e2df;
+        font-size: 13px;
+        font-weight: 700;
+    }
+    QLabel#navStepSubtitle {
+        color: #9eb4b0;
+        font-size: 11px;
+        font-weight: 500;
+    }
+    QPushButton#navFlowButton[selected="true"] QLabel#navStepNumber {
+        background: #3a8980;
+        border-color: #70aaa1;
+        color: #f6fbf8;
+    }
+    QPushButton#navFlowButton[selected="true"] QLabel#navStepTitle,
+    QPushButton#navUtilityButton[selected="true"] QLabel#navStepTitle {
+        color: #f6fbf8;
+    }
+    QPushButton#navFlowButton[selected="true"] QLabel#navStepSubtitle,
+    QPushButton#navUtilityButton[selected="true"] QLabel#navStepSubtitle {
+        color: #c5ded8;
+    }
+    QFrame#loginStory[surfaceRole="product"] {
+        background: #202d30;
+        border: none;
+    }
+    QLabel#loginBrand {
+        color: #f2f5f1;
+        font-size: 22px;
+        font-weight: 700;
+    }
+    QLabel#loginHeadline {
+        color: #f6f8f3;
+        font-size: 42px;
+        font-weight: 800;
+    }
+    QLabel#loginSubheadline {
+        color: #b9c9c5;
+        font-size: 16px;
+    }
+    QLabel#loginStatValue {
+        color: #80b9ad;
+        font-size: 34px;
+        font-weight: 800;
+    }
+    QLabel#loginStatLabel,
+    QLabel#loginPanelCaption {
+        color: #9eb2ae;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    QLabel#loginStoryFooter {
+        color: #819894;
+        border-top: 1px solid #3a4b4d;
+    }
+    QFrame#loginCard[surfaceRole="access"] {
+        max-width: 420px;
+        background: #fffdf8;
+        border: 1px solid #d8d8cf;
+        border-radius: 8px;
+        padding: 26px;
+    }
+    QLabel#loginFormTitle {
+        color: #18272b;
+        font-size: 28px;
+        font-weight: 800;
+    }
+    QLabel#loginFormSubtitle,
+    QLabel#loginOptionLabel {
+        color: #667370;
+    }
+    QLabel#loginFieldLabel {
+        color: #2b3b3e;
+        font-size: 13px;
+        font-weight: 700;
+    }
+    QLabel#loginForgotLink {
+        color: #2e756f;
+    }
+    QFrame#loginCard QLineEdit#formInput {
+        min-height: 24px;
+        padding: 11px 13px;
+        border: 1px solid #cfd3cc;
+        border-radius: 6px;
+        background: #fffefa;
+        color: #18272b;
+    }
+    QFrame#loginCard QLineEdit#formInput:focus {
+        border-color: #4d9087;
+        background: #ffffff;
+    }
+    QFrame#homeHero,
+    QFrame#homeModulePanel,
+    QFrame#homeSupportPanel,
+    QFrame#homeRulePanel,
+    QFrame#flowStrip,
+    QFrame#leftMainPanel,
+    QFrame#rightSupportPanel,
+    QFrame#aiPreview,
+    QFrame#manualStepsPanel,
+    QFrame#settingsStatusPanel,
+    QFrame#taskCenterSummaryPanel,
+    QFrame#taskRow,
+    QFrame#scanStructureExample,
+    QFrame#reviewEmptyState,
+    QFrame#reviewStatusPanel {
+        background: #fffdf8;
+        border: 1px solid #d8d8cf;
+        border-radius: 7px;
+    }
+    QFrame#homeHero {
+        border-color: #c9d4cc;
+        background: #fbfaf4;
+    }
+    QLabel#homeEyebrow,
+    QLabel#eyebrow {
+        color: #2f7771;
+        font-size: 12px;
+        font-weight: 800;
+    }
+    QLabel#homeTitle {
+        color: #17272b;
+        font-size: 30px;
+        font-weight: 800;
+    }
+    QLabel#toolTitle {
+        color: #17272b;
+        font-size: 28px;
+        font-weight: 800;
+    }
+    QLabel#panelTitle {
+        color: #223336;
+        font-size: 18px;
+        font-weight: 800;
+    }
+    QLabel#smallTitle,
+    QLabel#homeSectionTitle,
+    QLabel#flowTitle {
+        color: #2a3b3e;
+        font-size: 15px;
+        font-weight: 750;
+    }
+    QLabel#mutedText,
+    QLabel#footnote,
+    QLabel#developerLabel {
+        color: #667370;
+    }
+    QLabel#strengthPill,
+    QLabel#formPlaceholder,
+    QLabel#flowStep {
+        padding: 9px 11px;
+        background: #f2f3ed;
+        border: 1px solid #d9ddd4;
+        border-radius: 6px;
+        color: #455753;
+    }
+    QLabel#strengthPill {
+        min-height: 36px;
+        max-height: 42px;
+        font-size: 12px;
+    }
+    QLabel#flowStep {
+        min-height: 36px;
+        max-height: 44px;
+        padding: 6px;
+        background: #f8f8f3;
+        color: #425754;
+        font-size: 12px;
+    }
+    QPushButton#moduleCardButton,
+    QPushButton#moduleTile {
+        min-height: 84px;
+        padding: 11px 14px;
+        border: 1px solid #d5d8d0;
+        border-radius: 6px;
+        background: #fffdf8;
+        color: #223336;
+    }
+    QPushButton#moduleCardButton:hover,
+    QPushButton#moduleTile:hover {
+        border-color: #6ca49b;
+        background: #f2f7f2;
+    }
+    QPushButton#moduleCardButton:pressed,
+    QPushButton#moduleTile:pressed {
+        border-color: #4d8f86;
+        background: #e5f0eb;
+    }
+    QLabel#moduleTitleText {
+        color: #1d3033;
+        font-size: 15px;
+        font-weight: 800;
+    }
+    QLabel#moduleDescription {
+        color: #667672;
+        font-size: 13px;
+    }
+    QPushButton#primaryButton {
+        min-height: 36px;
+        padding: 8px 16px;
+        border: 1px solid #286b65;
+        border-radius: 6px;
+        background: #2f7771;
+        color: #f7fbf8;
+        font-weight: 750;
+    }
+    QPushButton#primaryButton:hover {
+        background: #3c8b82;
+        border-color: #34776f;
+    }
+    QPushButton#primaryButton:pressed {
+        background: #245f5a;
+    }
+    QPushButton#secondaryButton,
+    QPushButton#supportActionButton,
+    QPushButton#manualNavButton,
+    QPushButton#manualStepButton,
+    QPushButton#tabButton,
+    QPushButton#tabButtonActive,
+    QPushButton#advancedToggleButton,
+    QPushButton#taskBackButton,
+    QPushButton#taskDeleteButton {
+        min-height: 34px;
+        padding: 7px 13px;
+        border: 1px solid #cfd5ce;
+        border-radius: 6px;
+        background: #fffdf8;
+        color: #40514e;
+    }
+    QPushButton#secondaryButton:hover,
+    QPushButton#supportActionButton:hover,
+    QPushButton#manualStepButton:hover,
+    QPushButton#tabButton:hover,
+    QPushButton#advancedToggleButton:hover,
+    QPushButton#taskBackButton:hover,
+    QPushButton#taskDeleteButton:hover {
+        border-color: #77a59d;
+        background: #f1f6f2;
+    }
+    QPushButton#secondaryButton:checked,
+    QPushButton#tabButton:checked,
+    QPushButton#tabButtonActive,
+    QPushButton#advancedToggleButton:checked {
+        background: #e0eee8;
+        border-color: #5a958b;
+        color: #205f59;
+        font-weight: 750;
+    }
+    QPushButton#manualNavButton {
+        min-height: 28px;
+        padding: 5px 8px;
+        border: none;
+        background: transparent;
+        color: #2b706a;
+        text-align: left;
+        font-weight: 700;
+    }
+    QPushButton#manualNavButton:hover {
+        background: #edf4ef;
+        color: #1f5954;
+    }
+    QPushButton#manualStepButton {
+        min-height: 58px;
+        text-align: left;
+        font-weight: 700;
+        background: #f8f8f3;
+    }
+    QLineEdit#formInput,
+    QComboBox#formInput,
+    QTextEdit,
+    QFrame#pathPicker,
+    QTreeWidget#reviewNodeTree {
+        border: 1px solid #c8d1cc;
+        border-radius: 6px;
+        background: #fffefa;
+        color: #1d3033;
+        padding: 8px;
+    }
+    QLineEdit#formInput,
+    QComboBox#formInput {
+        min-height: 24px;
+    }
+    QLineEdit#formInput:focus,
+    QComboBox#formInput:focus,
+    QTextEdit:focus {
+        border-color: #4b8f86;
+    }
+    QComboBox#formInput QAbstractItemView {
+        border: 1px solid #c8d1cc;
+        background: #fffefa;
+        selection-background-color: #e0eee8;
+        selection-color: #205f59;
+    }
+    QFrame#pathPicker {
+        min-height: 36px;
+        padding: 0px;
+    }
+    QFrame#pathPicker QLineEdit#formInput {
+        border: none;
+        background: transparent;
+        padding: 8px 10px;
+    }
+    QToolButton#pathBrowseButton {
+        min-width: 62px;
+        border: none;
+        border-left: 1px solid #d5dcd5;
+        background: #f0f4ef;
+        color: #286b65;
+        font-weight: 750;
+    }
+    QToolButton#pathBrowseButton:hover {
+        background: #e2eee8;
+    }
+    QToolButton#pathBrowseButton:pressed {
+        background: #d2e6df;
+    }
+    QLabel#fieldLabel {
+        color: #2d4242;
+        font-weight: 750;
+    }
+    QFrame#leftMainPanel {
+        background: #fffdf8;
+        border-color: #d3d5cd;
+    }
+    QFrame#rightSupportPanel[surfaceRole="support"] {
+        background: #f0f3ee;
+        border-color: #d0d6cf;
+    }
+    QFrame#preflightPanel,
+    QFrame#runtimePanel,
+    QFrame#sourceChoicePanel,
+    QFrame#commonOptionsPanel,
+    QFrame#advancedOptionsPanel,
+    QFrame#reviewStatusPanel,
+    QFrame#reviewEmptyState,
+    QFrame#scanStructureExample {
+        background: #f3f5ef;
+        border: 1px solid #d4dad1;
+        border-radius: 6px;
+    }
+    QLabel[feedbackRole="explanation"] {
+        padding: 9px 11px;
+        border: 1px solid #d9d8ce;
+        border-radius: 6px;
+        background: #f3f1e9;
+        color: #596762;
+    }
+    QLabel[feedbackRole="status"] {
+        padding: 8px 11px;
+        border: 1px solid #b9d2dd;
+        border-radius: 6px;
+        background: #edf5f7;
+        color: #28566a;
+    }
+    QLabel[feedbackRole="result"] {
+        padding: 10px 12px;
+        border: 1px solid #a9ccb9;
+        border-radius: 6px;
+        background: #edf6ef;
+        color: #2a6049;
+        font-weight: 750;
+    }
+    QLabel[feedbackRole="output"] {
+        padding: 10px 12px;
+        border: 1px solid #b6d0d7;
+        border-radius: 6px;
+        background: #eef5f5;
+        color: #2b5d67;
+    }
+    QLabel[feedbackRole="risk"] {
+        padding: 10px 12px;
+        border: 1px solid #dfbd91;
+        border-radius: 6px;
+        background: #fff4e8;
+        color: #754c26;
+        font-weight: 750;
+    }
+    QCheckBox#riskCheckbox,
+    QCheckBox[feedbackRole="riskConfirm"] {
+        min-height: 34px;
+        padding: 7px 0px;
+        border: 1px solid #dcb785;
+        border-radius: 6px;
+        background: #fff5e9;
+        color: #714b27;
+        font-weight: 750;
+    }
+    QPushButton#confirmCheckbox[buttonRole="riskConfirm"] {
+        min-height: 34px;
+        padding: 7px 10px;
+        border: 1px solid #dcb785;
+        border-radius: 6px;
+        background: #fff5e9;
+        color: #714b27;
+        font-weight: 750;
+    }
+    QCheckBox::indicator {
+        width: 16px;
+        height: 16px;
+        border: 1px solid #aab8b1;
+        border-radius: 4px;
+        background: #fffefa;
+    }
+    QCheckBox::indicator:checked {
+        border-color: #2f7771;
+        background: #2f7771;
+    }
+    QPushButton#confirmCheckbox[buttonRole="riskConfirm"]:checked {
+        background: #e3c287;
+        border-color: #b77d35;
+        color: #402e16;
+    }
+    QProgressBar#taskProgressBar {
+        min-height: 16px;
+        max-height: 16px;
+        border: 1px solid #c7d2cb;
+        border-radius: 6px;
+        background: #eef1eb;
+        color: #304544;
+        text-align: center;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    QProgressBar#taskProgressBar::chunk {
+        border-radius: 5px;
+        background: #4d9087;
+    }
+    QTextEdit#logBox[surfaceRole="log"] {
+        border: 1px solid #c5cec8;
+        background: #f1f2ed;
+        color: #30413f;
+        font-family: "Cascadia Mono", "Consolas", monospace;
+        font-size: 12px;
+    }
+    QTreeWidget#reviewNodeTree {
+        alternate-background-color: #f7f8f3;
+        padding: 4px;
+    }
+    QTreeWidget#reviewNodeTree::item {
+        padding: 6px 8px;
+    }
+    QTreeWidget#reviewNodeTree::item:selected {
+        background: #deeee8;
+        color: #205f59;
+    }
+    QHeaderView::section {
+        border: none;
+        border-bottom: 1px solid #d5dcd5;
+        background: #f0f3ee;
+        padding: 6px 8px;
+        color: #536460;
+        font-weight: 700;
+    }
+    QScrollArea#toolScrollArea,
+    QScrollArea#manualContentScroll,
+    QScrollArea#settingsContentScroll {
+        border: none;
+        background: transparent;
+    }
+    QScrollArea#toolScrollArea QWidget,
+    QScrollArea#manualContentScroll QWidget,
+    QScrollArea#settingsContentScroll QWidget {
+        background: transparent;
+    }
+    QFrame#manualSection,
+    QFrame#manualParamTable,
+    QFrame#manualNote,
+    QFrame#taskSummaryItem,
+    QFrame#settingsStatusItem {
+        background: #fffdf8;
+        border: 1px solid #d7d9d1;
+        border-radius: 6px;
+    }
+    QLabel#manualSectionTitle {
+        color: #1d3033;
+        font-size: 16px;
+        font-weight: 800;
+    }
+    QLabel#manualTableHeader,
+    QLabel#taskSummaryLabel {
+        color: #2d7069;
+        font-size: 11px;
+        font-weight: 800;
+    }
+    QLabel#manualTableHeader {
+        padding: 5px 6px;
+        background: #edf3ee;
+        border-radius: 5px;
+    }
+    QLabel#manualTableCell {
+        color: #40514e;
+        padding: 5px 6px;
+    }
+    QFrame#manualNote {
+        background: #f2f5ee;
+    }
+    QFrame#taskSummaryItem[selected="true"] {
+        border-color: #4d9087;
+        background: #eef5f0;
+    }
+    QPushButton#taskSummaryButton {
+        border: none;
+        background: transparent;
+        text-align: left;
+    }
+    QPushButton#taskSummaryButton:hover {
+        border: 1px solid #8eb5ac;
+        border-radius: 6px;
+        background: #f0f6f1;
+    }
+    QLabel#taskSummaryValue,
+    QLabel#taskRowTitle {
+        color: #1d3033;
+        font-weight: 800;
+    }
+    QLabel#taskSummaryValue {
+        font-size: 16px;
+    }
+    QLabel#taskDateHeader {
+        color: #2f7771;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 8px 2px 2px;
+    }
+    QFrame#taskRowActions,
+    QFrame#aiThread {
+        background: transparent;
+        border: none;
+    }
+    QPushButton#taskDeleteButton {
+        color: #945b35;
+    }
+    QLabel#strengthBadge {
+        min-width: 34px;
+        max-width: 34px;
+        min-height: 34px;
+        max-height: 34px;
+        border-radius: 6px;
+        color: #f7fbf8;
+        background: #347d76;
+        font-size: 11px;
+        font-weight: 800;
+    }
+    QLabel#strengthTitle {
+        color: #25383a;
+        font-size: 14px;
+        font-weight: 800;
+    }
+    QLabel#strengthBody {
+        color: #667370;
+        font-size: 12px;
+    }
+    QFrame#rightSupportPanel {
+        background: #f0f3ee;
+    }
+    QLabel#aiRailTitle {
+        color: #223638;
+        font-size: 18px;
+        font-weight: 800;
+    }
+    QLabel#aiRailBadge,
+    QLabel#aiChip {
+        min-height: 22px;
+        padding: 2px 8px;
+        border: 1px solid #b9d4cc;
+        border-radius: 5px;
+        color: #2e746d;
+        background: #eaf3ee;
+        font-size: 11px;
+        font-weight: 800;
+    }
+    QTextEdit#aiRailThread,
+    QTextEdit#aiRailInput {
+        border: 1px solid #cbd5ce;
+        border-radius: 6px;
+        background: #fffdf8;
+        color: #30413f;
+    }
+    QLabel#aiBubbleUser {
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: #f5faf7;
+        background: #347d76;
+    }
+    QLabel#aiBubbleBot {
+        padding: 8px 10px;
+        border: 1px solid #c4dcd3;
+        border-radius: 6px;
+        color: #2e403d;
+        background: #edf5ef;
+    }
+    QFrame#aiInput {
+        border: 1px solid #c7d1ca;
+        border-radius: 6px;
+        background: #fffdf8;
+    }
+    QLabel#aiInputHint,
+    QLabel#aiStatus {
+        color: #71807b;
+        font-size: 11px;
+    }
+    QPushButton#aiSendButton:disabled,
+    QPushButton:disabled,
+    QTextEdit:disabled,
+    QCheckBox:disabled {
+        color: #98a39f;
+        background: #edf0eb;
+        border-color: #d5dad4;
+    }
+    QFrame#strengthDivider,
+    QFrame#railDivider {
+        color: #d8ddd6;
     }
     """
