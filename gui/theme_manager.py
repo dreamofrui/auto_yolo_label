@@ -158,13 +158,9 @@ class ThemeManager:
         shadow_light = BORDER_SHADOW.DARK_LIGHT if is_dark else BORDER_SHADOW.LIGHT_LIGHT
         shadow_medium = BORDER_SHADOW.DARK_MEDIUM if is_dark else BORDER_SHADOW.LIGHT_MEDIUM
 
-        # Global transition setup (300ms for color properties only)
-        # Excludes progress bars, spinners, and pulse animations
-        transition_rule = """
-            transition: background-color 0.3s ease,
-                        border-color 0.3s ease,
-                        color 0.3s ease;
-        """
+        # Note: QSS does not support CSS transition property.
+        # Theme transitions are handled by Python code in set_theme() method.
+        # Component animations use QPropertyAnimation in gui/animations.py.
 
         stylesheet = f"""
 /* ============================================================================
@@ -175,7 +171,7 @@ class ThemeManager:
 /* Global Base Styles */
 * {{
     font-family: {font_family};
-    {transition_rule}
+    /* Transitions handled by QPropertyAnimation in Python */
 }}
 
 QWidget {{
@@ -500,7 +496,7 @@ QProgressBar {{
     border: none;
     border-radius: {RADIUS.SM}px;
     text-align: center;
-    transition: none;  /* Exclude from theme transition */
+    /* Animations handled by QPropertyAnimation */
 }}
 
 QProgressBar::chunk {{
