@@ -421,6 +421,9 @@ Rules:
 - Existing XML blocks by default.
 - Missing classes, missing images, duplicate same-stem images, invalid labels,
   and XML conversion errors block.
+- Annotation failures keep the visible summary compact and put actionable
+  diagnostics in the log: label path, line number, raw YOLO row, matched image
+  path and size, class, converted pixel bounds, and the violated boundary.
 - No file writes happen before preflight and confirmation.
 - Completion shows written XML count, skipped count, failed count, and target
   locations.
