@@ -9,6 +9,12 @@ All notable changes to this repo are recorded here.
   separating blocking behavior and safety checks from semantic and visual
   review, and classifying existing GUI assertions for migration.
 
+### Product / GUI
+
+- Added the Issue #26 HITL homepage prototype with a production-line entry model, local-first trust boundaries, disabled preview states, and wide/small desktop review artifacts. It is isolated under `.prototypes/` and does not change the PySide6 product surface.
+
+- Defined the enterprise visual-data-operations, local-first workbench, and product-homepage terms that guide the new UI redesign route.
+
 ### Tests
 
 - Relocated tests into ownership-based hierarchy: `tests/core/` (core logic), `tests/workers/` (desktop worker lifecycle), `tests/gui/` (GUI shell and widgets), `tests/utils/` (shared infrastructure), `tests/server_scripts/` (standalone server scripts), and `tests/integration/` (scenario chains). Root-level contract and import-boundary tests remain in `tests/`. Existing test collection (353 pytest cases) preserved.

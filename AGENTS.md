@@ -1,4 +1,4 @@
-﻿# AGENTS.md
+# AGENTS.md
 
 > Start here for any work in this repo. Read this file, then
 > `docs/dev/ONBOARDING_SUMMARY.md`, `docs/dev/PRODUCT_SPEC.md`, and
@@ -107,7 +107,7 @@ This is a single-context repo with optional root `CONTEXT.md` and
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **auto_yolo_label** (3113 symbols, 6445 relationships, 274 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **auto_yolo_label** (3209 symbols, 6601 relationships, 282 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
