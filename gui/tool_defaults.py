@@ -19,7 +19,9 @@ class ToolDefaults:
     restore: dict[str, object] = field(default_factory=dict)
 
 
-DEFAULT_TOOL_DEFAULTS_PATH = Path.home() / ".autolabeler" / "tool_defaults.json"
+DEFAULT_TOOL_DEFAULTS_PATH = (
+    Path(__file__).resolve().parents[1] / ".autolabeler" / "tool_defaults.json"
+)
 
 
 def load_tool_defaults(path: Path | None = None) -> ToolDefaults:

@@ -229,7 +229,6 @@ QWidget {{
     color: {colors.TEXT_TERTIARY};
     font-size: 11px;
     font-weight: {FONT_WEIGHT.SEMIBOLD};
-    text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: 20px 20px 8px;
 }}
@@ -401,7 +400,6 @@ QPushButton[objectName="moduleCardButton"] {{
 QPushButton[objectName="moduleCardButton"]:hover {{
     border-color: {colors.BORDER_DEFAULT};
     border-bottom: 3px solid {shadow_medium[1]};
-    transform: translateY(-2px);
 }}
 
 /* ============================================================================
@@ -425,7 +423,6 @@ QPushButton[objectName="moduleCardButton"]:hover {{
     font-size: {FONT_SIZE.CAPTION}px;
     font-weight: {FONT_WEIGHT.SEMIBOLD};
     color: {colors.TEXT_TERTIARY};
-    text-transform: uppercase;
     letter-spacing: 0.5px;
 }}
 
