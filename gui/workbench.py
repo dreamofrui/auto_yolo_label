@@ -439,14 +439,9 @@ class LoginView(QWidget):
             item.setWordWrap(True)
             boundary_layout.addWidget(item, index // 2, index % 2)
 
-        strip = QGridLayout()
-        strip.setHorizontalSpacing(10)
-        strip.setVerticalSpacing(10)
-        for index, text in enumerate(("可追溯", "少标注", "可复核", "可写回")):
-            tile = QLabel(text)
-            tile.setObjectName("loginStripTile")
-            tile.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            strip.addWidget(tile, 0, index)
+        # Footer copyright per design spec
+        footer = QLabel("© 2026 Auto Labeler. 企业级 AI 标注解决方案")
+        footer.setObjectName("loginStoryFooter")
 
         story_layout.addWidget(brand)
         story_layout.addWidget(headline)
@@ -458,7 +453,7 @@ class LoginView(QWidget):
         story_layout.addSpacing(48)
         story_layout.addWidget(self.login_boundary_panel, 0)
         story_layout.addStretch(1)
-        story_layout.addLayout(strip)
+        story_layout.addWidget(footer)
 
         # P0 Fix: Hide test panels as required by design spec section 2.2
         self.login_workflow_panel.setVisible(False)
@@ -469,42 +464,73 @@ class LoginView(QWidget):
         card.setObjectName("loginCard")
         card.setProperty("surfaceRole", "access")
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(28, 28, 28, 28)
-        card_layout.setSpacing(14)
+        card_layout.setContentsMargins(48, 48, 48, 48)
+        card_layout.setSpacing(0)
 
-        title = QLabel("进入工作台")
-        title.setObjectName("panelTitle")
-        note = QLabel("第一版保留企业 SSO 入口，实际使用本地演示登录。")
-        note.setObjectName("mutedText")
-        note.setWordWrap(True)
-        sso_button = QPushButton("企业 SSO（预留）")
-        sso_button.setEnabled(False)
-        sso_button.setObjectName("secondaryButton")
-        sso_button.setProperty("buttonRole", "reservedAccess")
-        self.demo_login_button = QPushButton("本地演示登录")
+        # Form title and subtitle per design spec
+        title = QLabel("登录")
+        title.setObjectName("loginFormTitle")
+
+        subtitle = QLabel("欢迎回来，请输入您的凭据继续使用")
+        subtitle.setObjectName("loginFormSubtitle")
+        subtitle.setWordWrap(True)
+
+        # Username field with label
+        username_label = QLabel("用户名")
+        username_label.setObjectName("loginFieldLabel")
+        username = QLineEdit()
+        username.setPlaceholderText("输入您的用户名")
+        username.setObjectName("formInput")
+
+        # Password field with label
+        password_label = QLabel("密码")
+        password_label.setObjectName("loginFieldLabel")
+        password = QLineEdit()
+        password.setPlaceholderText("输入您的密码")
+        password.setEchoMode(QLineEdit.EchoMode.Password)
+        password.setObjectName("formInput")
+
+        # Forgot password link
+        forgot_link = QLabel('<a href="#" style="color: #0EA5E9; text-decoration: none;">忘记密码？</a>')
+        forgot_link.setObjectName("loginForgotLink")
+        forgot_link.setAlignment(Qt.AlignmentFlag.AlignRight)
+        forgot_link.setOpenExternalLinks(False)
+
+        # Primary login button
+        self.demo_login_button = QPushButton("登录")
         self.demo_login_button.setObjectName("primaryButton")
         self.demo_login_button.setProperty("buttonRole", "primaryAccess")
         self.demo_login_button.clicked.connect(self.login_requested.emit)
 
-        username = QLineEdit()
-        username.setPlaceholderText("账号")
-        username.setObjectName("formInput")
-        password = QLineEdit()
-        password.setPlaceholderText("密码（第一版不校验）")
-        password.setEchoMode(QLineEdit.EchoMode.Password)
-        password.setObjectName("formInput")
-        footnote = QLabel("这里不实现真实权限或云端身份管理，避免界面承诺不存在的安全能力。")
-        footnote.setObjectName("footnote")
-        footnote.setWordWrap(True)
+        # Enterprise section
+        enterprise_label = QLabel("企业用户")
+        enterprise_label.setObjectName("loginOptionLabel")
 
+        sso_button = QPushButton("使用 SSO 登录")
+        sso_button.setEnabled(False)
+        sso_button.setObjectName("secondaryButton")
+        sso_button.setProperty("buttonRole", "reservedAccess")
+
+        # Layout assembly per design spec
         card_layout.addWidget(title)
-        card_layout.addWidget(note)
-        card_layout.addWidget(sso_button)
+        card_layout.addSpacing(12)
+        card_layout.addWidget(subtitle)
+        card_layout.addSpacing(48)
+        card_layout.addWidget(username_label)
+        card_layout.addSpacing(8)
         card_layout.addWidget(username)
+        card_layout.addSpacing(24)
+        card_layout.addWidget(password_label)
+        card_layout.addSpacing(8)
         card_layout.addWidget(password)
+        card_layout.addSpacing(10)
+        card_layout.addWidget(forgot_link)
+        card_layout.addSpacing(16)
         card_layout.addWidget(self.demo_login_button)
-        card_layout.addStretch(1)
-        card_layout.addWidget(footnote)
+        card_layout.addSpacing(32)
+        card_layout.addWidget(enterprise_label)
+        card_layout.addSpacing(12)
+        card_layout.addWidget(sso_button)
 
         root.addWidget(story, 1)
         root.addWidget(card, 0)
