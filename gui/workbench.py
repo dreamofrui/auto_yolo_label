@@ -345,14 +345,14 @@ class LoginView(QWidget):
         story_layout.setContentsMargins(34, 32, 34, 32)
         story_layout.setSpacing(18)
 
-        brand = QLabel("AutoLabeler")
+        brand = QLabel("Auto Labeler")
         brand.setObjectName("loginBrand")
-        headline = QLabel("半自动图像标注工作台")
+        headline = QLabel("AI 驱动的\n智能标注平台")
         headline.setObjectName("loginHeadline")
         headline.setWordWrap(True)
         copy = QLabel(
-            "把扫描、抽样、标注、训练、推理、复核和 XML 写回放在一个桌面工作台里，"
-            "减少重复人工标注，同时保留可追溯流程。"
+            "使用先进的机器学习技术，自动完成数据标注任务，"
+            "将标注效率提升 10 倍，助力制造业质检团队实现智能化升级。"
         )
         copy.setObjectName("mutedText")
         copy.setWordWrap(True)
@@ -377,6 +377,47 @@ class LoginView(QWidget):
             step = QLabel(text)
             step.setObjectName("loginWorkflowStep")
             workflow_layout.addWidget(step, index // 3, index % 3)
+
+        # Statistics display - industrial readout style
+        self.login_stats = QWidget()
+        stats_layout = QHBoxLayout(self.login_stats)
+        stats_layout.setContentsMargins(0, 0, 0, 0)
+        stats_layout.setSpacing(56)
+
+        stats_data = [
+            ("95%", "标注准确率"),
+            ("10x", "效率提升"),
+            ("50K+", "处理图像")
+        ]
+
+        for i, (value, label) in enumerate(stats_data):
+            stat_widget = QWidget()
+            stat_widget.setObjectName("loginStatReadout")
+            stat_vbox = QVBoxLayout(stat_widget)
+            stat_vbox.setContentsMargins(0, 0, 0, 0)
+            stat_vbox.setSpacing(6)
+            stat_vbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            stat_value = QLabel(value)
+            stat_value.setObjectName("loginStatValue")
+            stat_value.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            stat_label = QLabel(label)
+            stat_label.setObjectName("loginStatLabel")
+            stat_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            stat_vbox.addWidget(stat_value)
+            stat_vbox.addWidget(stat_label)
+            stats_layout.addWidget(stat_widget)
+
+            # Add separator line (except after last stat)
+            if i < len(stats_data) - 1:
+                separator = QFrame()
+                separator.setObjectName("loginStatSeparator")
+                separator.setFrameShape(QFrame.Shape.VLine)
+                separator.setFixedWidth(1)
+                separator.setFixedHeight(60)
+                stats_layout.addWidget(separator)
 
         self.login_boundary_panel = QFrame()
         self.login_boundary_panel.setObjectName("loginBoundaryPanel")
@@ -410,7 +451,11 @@ class LoginView(QWidget):
         story_layout.addWidget(brand)
         story_layout.addWidget(headline)
         story_layout.addWidget(copy)
+        story_layout.addSpacing(24)
         story_layout.addWidget(self.login_workflow_panel, 0)
+        story_layout.addSpacing(24)
+        story_layout.addWidget(self.login_stats)
+        story_layout.addSpacing(24)
         story_layout.addWidget(self.login_boundary_panel, 0)
         story_layout.addStretch(1)
         story_layout.addLayout(strip)
@@ -2525,6 +2570,11 @@ def _stylesheet() -> str:
         color: #6B7785;
         font-size: 14px;
         font-weight: 400;
+        letter-spacing: 0.3px;
+    }
+    QFrame#loginStatSeparator {
+        background: #21262D;
+        border: none;
     }
     QLabel#loginFormTitle {
         color: #E6EDF3;
