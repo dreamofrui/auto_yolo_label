@@ -451,14 +451,18 @@ class LoginView(QWidget):
         story_layout.addWidget(brand)
         story_layout.addWidget(headline)
         story_layout.addWidget(copy)
-        story_layout.addSpacing(24)
+        story_layout.addSpacing(48)
         story_layout.addWidget(self.login_workflow_panel, 0)
-        story_layout.addSpacing(24)
+        story_layout.addSpacing(48)
         story_layout.addWidget(self.login_stats)
-        story_layout.addSpacing(24)
+        story_layout.addSpacing(48)
         story_layout.addWidget(self.login_boundary_panel, 0)
         story_layout.addStretch(1)
         story_layout.addLayout(strip)
+
+        # P0 Fix: Hide test panels as required by design spec section 2.2
+        self.login_workflow_panel.setVisible(False)
+        self.login_boundary_panel.setVisible(False)
 
         self.login_card = QFrame()
         card = self.login_card
