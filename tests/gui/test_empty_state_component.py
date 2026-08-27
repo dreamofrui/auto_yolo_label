@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QApplication, QPushButton, QLabel
 from PySide6.QtCore import Qt
 
 from gui.components import EmptyState
-from gui.design_system import DARK_THEME, FONT_SIZE
+from gui.design_system import FONT_SIZE, LIGHT_THEME
 
 
 @pytest.fixture(scope="module")
@@ -48,14 +48,14 @@ def test_empty_state_custom_content(qapp):
     assert empty_state._title_label.text() == "暂无任务记录"
     assert empty_state._title_label.objectName() == "emptyStateTitle"
     assert f"{FONT_SIZE.H3}px" in empty_state._title_label.styleSheet()
-    assert DARK_THEME.TEXT_SECONDARY in empty_state._title_label.styleSheet()
+    assert LIGHT_THEME.TEXT_SECONDARY in empty_state._title_label.styleSheet()
     assert "600" in empty_state._title_label.styleSheet()  # font-weight
 
     # Check description
     assert "当您运行扫描" in empty_state._desc_label.text()
     assert empty_state._desc_label.objectName() == "emptyStateDescription"
     assert f"{FONT_SIZE.BODY}px" in empty_state._desc_label.styleSheet()
-    assert DARK_THEME.TEXT_TERTIARY in empty_state._desc_label.styleSheet()
+    assert LIGHT_THEME.TEXT_TERTIARY in empty_state._desc_label.styleSheet()
     assert "1.6" in empty_state._desc_label.styleSheet()  # line-height
     assert empty_state._desc_label.maximumWidth() == 480
 
@@ -108,7 +108,7 @@ def test_empty_state_secondary_link(qapp):
     # Verify link styling
     assert link.objectName() == "emptyStateSecondaryLink"
     assert "13px" in link.styleSheet()
-    assert DARK_THEME.BRAND_PRIMARY in link.styleSheet()
+    assert LIGHT_THEME.BRAND_PRIMARY in link.styleSheet()
     assert link.cursor().shape() == Qt.PointingHandCursor
 
 

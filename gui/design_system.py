@@ -403,10 +403,10 @@ def get_current_theme() -> DarkThemeColors | LightThemeColors:
     """
     Get the current active theme
 
-    TODO: Implement theme switching logic
-    Returns dark theme by default
+    ThemeManager owns runtime switching. This design-system helper provides the
+    same light default for callers that only need a palette without a manager.
     """
-    return DARK_THEME
+    return LIGHT_THEME
 
 
 def get_qss_color(color_name: str, theme: DarkThemeColors | LightThemeColors = None) -> str:

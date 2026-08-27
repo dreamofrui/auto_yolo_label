@@ -112,17 +112,17 @@ class ThemeManager:
             app.setStyleSheet(self.get_stylesheet())
 
     def _load_persisted_theme(self) -> ThemeMode:
-        """Load theme preference from disk, defaulting to dark theme."""
+        """Load theme preference from disk, defaulting to light theme."""
         try:
             if self._config_path.exists():
                 data = json.loads(self._config_path.read_text(encoding="utf-8"))
-                theme = data.get("theme", "dark")
+                theme = data.get("theme", "light")
                 if theme in ("dark", "light"):
                     return theme
         except (OSError, json.JSONDecodeError):
             pass  # Fall through to default
 
-        return "dark"  # Default theme
+        return "light"  # Default theme
 
     def _persist_theme(self, theme: ThemeMode) -> None:
         """Save theme preference to disk."""
@@ -198,8 +198,8 @@ QWidget {{
    ============================================================================ */
 
 #sideNav {{
-    background-color: {colors.BG_APP};
-    border-right: 1px solid {colors.BORDER_SUBTLE};
+    background-color: {DARK_THEME.BG_APP};
+    border-right: 1px solid {DARK_THEME.BORDER_SUBTLE};
     min-width: 240px;
     max-width: 240px;
 }}
@@ -219,23 +219,25 @@ QWidget {{
 }}
 
 #navBrand {{
-    color: {colors.TEXT_PRIMARY};
+    color: {DARK_THEME.TEXT_PRIMARY};
     font-size: 16px;
     font-weight: {FONT_WEIGHT.SEMIBOLD};
     line-height: {LINE_HEIGHT.TIGHT};
 }}
 
 #navSection {{
-    color: {colors.TEXT_TERTIARY};
+    color: {DARK_THEME.TEXT_TERTIARY};
     font-size: 11px;
     font-weight: {FONT_WEIGHT.SEMIBOLD};
     letter-spacing: 0.5px;
     padding: 20px 20px 8px;
 }}
 
-QPushButton[objectName="navButton"] {{
+QPushButton#navButton,
+QPushButton#navFlowButton,
+QPushButton#navUtilityButton {{
     background-color: transparent;
-    color: {colors.TEXT_SECONDARY};
+    color: {DARK_THEME.TEXT_SECONDARY};
     border: none;
     border-left: 3px solid transparent;
     border-radius: {RADIUS.MD}px;
@@ -246,16 +248,51 @@ QPushButton[objectName="navButton"] {{
     text-align: left;
 }}
 
-QPushButton[objectName="navButton"]:hover {{
-    background-color: {colors.BG_SURFACE};
-    color: {colors.TEXT_PRIMARY};
+QPushButton#navButton:hover,
+QPushButton#navFlowButton:hover,
+QPushButton#navUtilityButton:hover {{
+    background-color: {DARK_THEME.BG_SURFACE};
+    color: {DARK_THEME.TEXT_PRIMARY};
 }}
 
-QPushButton[objectName="navButton"][selected="true"] {{
-    background-color: {colors.BRAND_SUBTLE};
-    color: {colors.BRAND_PRIMARY};
-    border-left: 3px solid {colors.BRAND_PRIMARY};
+QPushButton#navButton[selected="true"],
+QPushButton#navFlowButton[selected="true"],
+QPushButton#navUtilityButton[selected="true"] {{
+    background-color: {DARK_THEME.BRAND_SUBTLE};
+    color: {DARK_THEME.BRAND_PRIMARY};
+    border-left: 3px solid {DARK_THEME.BRAND_PRIMARY};
     font-weight: {FONT_WEIGHT.SEMIBOLD};
+}}
+
+#navStepNumber, #navUtilityBadge {{
+    background-color: {DARK_THEME.BG_SURFACE};
+    border: 1px solid {DARK_THEME.BORDER_DEFAULT};
+    border-radius: {RADIUS.SM}px;
+    color: {DARK_THEME.TEXT_SECONDARY};
+}}
+
+#navStepTitle {{
+    color: {DARK_THEME.TEXT_PRIMARY};
+    font-weight: {FONT_WEIGHT.SEMIBOLD};
+}}
+
+#navStepSubtitle {{
+    color: {DARK_THEME.TEXT_TERTIARY};
+    font-size: {FONT_SIZE.CAPTION}px;
+}}
+
+QPushButton#navFlowButton[selected="true"] #navStepNumber,
+QPushButton#navFlowButton[selected="true"] #navUtilityBadge {{
+    background-color: {DARK_THEME.BRAND_PRIMARY};
+    border-color: {DARK_THEME.BRAND_PRIMARY};
+    color: #FFFFFF;
+}}
+
+QPushButton#navFlowButton[selected="true"] #navStepTitle,
+QPushButton#navFlowButton[selected="true"] #navStepSubtitle,
+QPushButton#navUtilityButton[selected="true"] #navStepTitle,
+QPushButton#navUtilityButton[selected="true"] #navStepSubtitle {{
+    color: {DARK_THEME.TEXT_PRIMARY};
 }}
 
 /* ============================================================================
@@ -321,13 +358,14 @@ QPushButton[objectName="navButton"][selected="true"] {{
     color: {colors.TEXT_PRIMARY};
     border: 1px solid {colors.BORDER_DEFAULT};
     border-radius: {RADIUS.MD}px;
-    padding: 10px 12px;
+    padding: 12px 14px;
     font-size: {FONT_SIZE.BODY}px;
 }}
 
 #formInput:focus, QLineEdit:focus {{
     border-color: {colors.BRAND_PRIMARY};
     outline: 2px solid rgba(14, 165, 233, 0.2);
+    outline-offset: 0px;
 }}
 
 #formInput:disabled, QLineEdit:disabled {{
@@ -368,7 +406,6 @@ QFrame[objectName*="Card"], QFrame[objectName*="Panel"] {{
     border: 1px solid {colors.BORDER_SUBTLE};
     border-bottom: 2px solid {shadow_light[1]};
     border-radius: {RADIUS.LG}px;
-    padding: {PADDING.CARD_PADDING}px;
 }}
 
 #homeHero, #homeModulePanel, #homeSupportPanel {{
@@ -400,6 +437,95 @@ QPushButton[objectName="moduleCardButton"] {{
 QPushButton[objectName="moduleCardButton"]:hover {{
     border-color: {colors.BORDER_DEFAULT};
     border-bottom: 3px solid {shadow_medium[1]};
+}}
+
+/* ============================================================================
+   Semantic role surfaces and feedback
+   ============================================================================ */
+
+QFrame[surfaceRole="product"] {{
+    background-color: {colors.BG_APP};
+    border: none;
+}}
+
+QFrame[surfaceRole="access"] {{
+    background-color: {colors.BG_ELEVATED};
+}}
+
+QFrame[surfaceRole="workflow"] {{
+    background-color: {colors.BRAND_SUBTLE};
+    border: 1px solid {colors.BORDER_DEFAULT};
+}}
+
+QFrame[surfaceRole="boundary"] {{
+    background-color: {colors.BG_HOVER};
+    border: 1px solid {colors.BORDER_DEFAULT};
+}}
+
+QFrame[surfaceRole="support"] {{
+    background-color: {colors.BG_SURFACE};
+    border: 1px solid {colors.BORDER_DEFAULT};
+}}
+
+QTextEdit[surfaceRole="log"] {{
+    background-color: {colors.BG_INPUT};
+    color: {colors.TEXT_PRIMARY};
+}}
+
+QLabel[feedbackRole="explanation"] {{
+    background-color: {colors.BG_HOVER};
+    border: 1px solid {colors.BORDER_DEFAULT};
+    border-radius: {RADIUS.MD}px;
+    color: {colors.TEXT_SECONDARY};
+    padding: 9px 11px;
+}}
+
+QLabel[feedbackRole="status"] {{
+    background-color: {colors.INFO_BG};
+    border: 1px solid {colors.INFO_BORDER};
+    border-radius: {RADIUS.MD}px;
+    color: {colors.INFO};
+    padding: 8px 11px;
+}}
+
+QLabel[feedbackRole="result"] {{
+    background-color: {colors.SUCCESS_BG};
+    border: 1px solid {colors.SUCCESS_BORDER};
+    border-radius: {RADIUS.MD}px;
+    color: {colors.SUCCESS};
+    padding: 10px 12px;
+}}
+
+QLabel[feedbackRole="output"] {{
+    background-color: {colors.BG_HOVER};
+    border: 1px solid {colors.INFO_BORDER};
+    border-radius: {RADIUS.MD}px;
+    color: {colors.TEXT_PRIMARY};
+    padding: 10px 12px;
+}}
+
+QLabel[feedbackRole="risk"],
+QPushButton[buttonRole="riskConfirm"] {{
+    background-color: {colors.WARNING_BG};
+    border: 1px solid {colors.WARNING_BORDER};
+    border-radius: {RADIUS.MD}px;
+    color: {colors.WARNING};
+    padding: 8px 10px;
+}}
+
+QCheckBox[feedbackRole="riskConfirm"] {{
+    color: {colors.WARNING};
+    spacing: 8px;
+}}
+
+QPushButton#primaryButton[buttonRole="primaryAccess"] {{
+    background-color: {colors.BRAND_PRIMARY};
+    color: #FFFFFF;
+}}
+
+QPushButton#secondaryButton[buttonRole="reservedAccess"] {{
+    background-color: {colors.BG_ELEVATED};
+    color: {colors.TEXT_SECONDARY};
 }}
 
 /* ============================================================================

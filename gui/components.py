@@ -22,9 +22,7 @@ from PySide6.QtWidgets import (
     QFrame, QGraphicsOpacityEffect
 )
 
-from gui.design_system import (
-    DARK_THEME, SPACING, RADIUS, FONT_SIZE, PADDING
-)
+from gui.design_system import LIGHT_THEME, SPACING, RADIUS, FONT_SIZE, PADDING
 
 
 # =============================================================================
@@ -192,7 +190,7 @@ class Spinner(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
 
         # Set pen
-        pen = QPen(QColor(DARK_THEME.BRAND_PRIMARY))
+        pen = QPen(QColor(LIGHT_THEME.BRAND_PRIMARY))
         pen.setWidth(max(2, self._size // 8))
         pen.setCapStyle(Qt.RoundCap)
         painter.setPen(pen)
@@ -377,7 +375,7 @@ class EmptyState(QWidget):
         self._title_label.setAlignment(Qt.AlignCenter)
         # Spec: 18px, 600 weight, #9DA9BB (TEXT_SECONDARY)
         self._title_label.setStyleSheet(
-            f"font-size: {FONT_SIZE.H3}px; font-weight: 600; color: {DARK_THEME.TEXT_SECONDARY};"
+            f"font-size: {FONT_SIZE.H3}px; font-weight: 600; color: {LIGHT_THEME.TEXT_SECONDARY};"
         )
         layout.addWidget(self._title_label)
         layout.addSpacing(12)  # margin-bottom per spec
@@ -389,7 +387,7 @@ class EmptyState(QWidget):
         self._desc_label.setWordWrap(True)
         # Spec: 14px (BODY), #6B7785 (TEXT_TERTIARY), line-height 1.6, max-width 480px
         self._desc_label.setStyleSheet(
-            f"font-size: {FONT_SIZE.BODY}px; color: {DARK_THEME.TEXT_TERTIARY}; line-height: 1.6;"
+            f"font-size: {FONT_SIZE.BODY}px; color: {LIGHT_THEME.TEXT_TERTIARY}; line-height: 1.6;"
         )
         self._desc_label.setMaximumWidth(480)
         layout.addWidget(self._desc_label)
@@ -422,7 +420,7 @@ class EmptyState(QWidget):
         label.setObjectName("emptyStateSecondaryLink")
         label.setAlignment(Qt.AlignCenter)
         label.setStyleSheet(
-            f"font-size: 13px; color: {DARK_THEME.BRAND_PRIMARY}; text-decoration: none;"
+            f"font-size: 13px; color: {LIGHT_THEME.BRAND_PRIMARY}; text-decoration: none;"
         )
         label.setCursor(Qt.PointingHandCursor)
         self._action_layout.addWidget(label, alignment=Qt.AlignCenter)
@@ -480,7 +478,7 @@ class LoadingPanel(QWidget):
         self._message_label.setObjectName("loadingPanelMessage")
         self._message_label.setAlignment(Qt.AlignCenter)
         self._message_label.setStyleSheet(
-            f"font-size: {FONT_SIZE.BODY}px; color: {DARK_THEME.TEXT_SECONDARY};"
+            f"font-size: {FONT_SIZE.BODY}px; color: {LIGHT_THEME.TEXT_SECONDARY};"
         )
         layout.addWidget(self._message_label)
 
@@ -533,7 +531,7 @@ class SkeletonLoader(QWidget):
 
         # Set background style
         self.setStyleSheet(
-            f"background-color: {DARK_THEME.BG_HOVER}; border-radius: {RADIUS.SM}px;"
+            f"background-color: {LIGHT_THEME.BG_HOVER}; border-radius: {RADIUS.SM}px;"
         )
 
     def start(self) -> None:

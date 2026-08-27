@@ -3,6 +3,18 @@
 All notable changes to this repo are recorded here.
 
 ## [Unreleased]
+### Product / GUI
+
+- Changed the default application theme to light, using `#F8FAFC` surfaces,
+  white elevated cards, and `#0F172A` primary text across the desktop shell.
+- Restored role-based navigation, feedback, and confirmation styling in the
+  generated stylesheet while keeping the side navigation dark for contrast.
+
+### Tests
+
+- Updated theme manager coverage for the light default, light stylesheet color
+  tokens, and isolated singleton state between tests.
+
 ### Documentation
 
 - Added an owner-confirmed UI regression boundary for staged redesign work,
