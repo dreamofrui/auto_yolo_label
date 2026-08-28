@@ -34,7 +34,7 @@ feedback, logs, result summary, and actionable errors.
 
 ## 2. Design Direction
 
-Use a light main workspace, dark side navigation, and restrained brand accent.
+Use a consistent light workspace and navigation with a restrained brand accent.
 The interface should look professional, stable, and task-focused.
 
 Design rules:

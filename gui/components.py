@@ -16,13 +16,13 @@ from PySide6.QtCore import (
     Qt, QSize, QRect, QPoint, QPropertyAnimation, QEasingCurve,
     QTimer, Property, Signal
 )
-from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QLinearGradient, QPaintEvent
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QLinearGradient, QPaintEvent, QPalette
 from PySide6.QtWidgets import (
     QPushButton, QProgressBar, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QFrame, QGraphicsOpacityEffect
 )
 
-from gui.design_system import LIGHT_THEME, SPACING, RADIUS, FONT_SIZE, PADDING
+from gui.design_system import SPACING, RADIUS, FONT_SIZE, PADDING
 
 
 # =============================================================================
@@ -190,7 +190,9 @@ class Spinner(QWidget):
         painter.setRenderHint(QPainter.Antialiasing)
 
         # Set pen
-        pen = QPen(QColor(LIGHT_THEME.BRAND_PRIMARY))
+        # The active theme stylesheet updates WindowText when the application
+        # theme changes, so the painted arc follows the current palette.
+        pen = QPen(self.palette().color(QPalette.WindowText))
         pen.setWidth(max(2, self._size // 8))
         pen.setCapStyle(Qt.RoundCap)
         painter.setPen(pen)
@@ -324,8 +326,8 @@ class EmptyState(QWidget):
 
     Features:
     - Icon/emoji display (64px, opacity 0.6)
-    - Title (18px, 600 weight, #9DA9BB)
-    - Description (14px, #6B7785, line-height 1.6, max-width 480px)
+    - Title (18px, 600 weight; color supplied by the active theme QSS)
+    - Description (14px, line-height 1.6, max-width 480px; color supplied by the active theme QSS)
     - Primary action button (optional)
     - Secondary action link (optional)
     - Container: padding 60px 40px, min-height 320px
@@ -373,9 +375,9 @@ class EmptyState(QWidget):
         self._title_label = QLabel(title)
         self._title_label.setObjectName("emptyStateTitle")
         self._title_label.setAlignment(Qt.AlignCenter)
-        # Spec: 18px, 600 weight, #9DA9BB (TEXT_SECONDARY)
+        # Spec: 18px, 600 weight; color is supplied by the active theme QSS.
         self._title_label.setStyleSheet(
-            f"font-size: {FONT_SIZE.H3}px; font-weight: 600; color: {LIGHT_THEME.TEXT_SECONDARY};"
+            f"font-size: {FONT_SIZE.H3}px; font-weight: 600;"
         )
         layout.addWidget(self._title_label)
         layout.addSpacing(12)  # margin-bottom per spec
@@ -385,9 +387,9 @@ class EmptyState(QWidget):
         self._desc_label.setObjectName("emptyStateDescription")
         self._desc_label.setAlignment(Qt.AlignCenter)
         self._desc_label.setWordWrap(True)
-        # Spec: 14px (BODY), #6B7785 (TEXT_TERTIARY), line-height 1.6, max-width 480px
+        # Spec: 14px (BODY), line-height 1.6, max-width 480px; color comes from QSS.
         self._desc_label.setStyleSheet(
-            f"font-size: {FONT_SIZE.BODY}px; color: {LIGHT_THEME.TEXT_TERTIARY}; line-height: 1.6;"
+            f"font-size: {FONT_SIZE.BODY}px; line-height: 1.6;"
         )
         self._desc_label.setMaximumWidth(480)
         layout.addWidget(self._desc_label)
@@ -413,14 +415,14 @@ class EmptyState(QWidget):
 
         The label should be configured as a clickable link:
         - font-size: 13px
-        - color: #0EA5E9 (BRAND_PRIMARY)
+        - color supplied by the active theme QSS
         - cursor: pointer
         - text-decoration: none (or underline on hover)
         """
         label.setObjectName("emptyStateSecondaryLink")
         label.setAlignment(Qt.AlignCenter)
         label.setStyleSheet(
-            f"font-size: 13px; color: {LIGHT_THEME.BRAND_PRIMARY}; text-decoration: none;"
+            "font-size: 13px; text-decoration: none;"
         )
         label.setCursor(Qt.PointingHandCursor)
         self._action_layout.addWidget(label, alignment=Qt.AlignCenter)
@@ -478,7 +480,7 @@ class LoadingPanel(QWidget):
         self._message_label.setObjectName("loadingPanelMessage")
         self._message_label.setAlignment(Qt.AlignCenter)
         self._message_label.setStyleSheet(
-            f"font-size: {FONT_SIZE.BODY}px; color: {LIGHT_THEME.TEXT_SECONDARY};"
+            f"font-size: {FONT_SIZE.BODY}px;"
         )
         layout.addWidget(self._message_label)
 
@@ -528,11 +530,6 @@ class SkeletonLoader(QWidget):
         self._pulse_animation.setEndValue(0.7)
         self._pulse_animation.setEasingCurve(QEasingCurve.InOutSine)
         self._pulse_animation.setLoopCount(-1)  # Infinite loop
-
-        # Set background style
-        self.setStyleSheet(
-            f"background-color: {LIGHT_THEME.BG_HOVER}; border-radius: {RADIUS.SM}px;"
-        )
 
     def start(self) -> None:
         """Start the pulsing animation."""

@@ -2,8 +2,7 @@
 Theme Manager for AutoLabeler
 ==============================
 
-Handles theme switching between dark and light themes with optimized performance.
-Implements preloading, batched stylesheet updates, and theme persistence.
+Generates the application's stable light-theme stylesheet.
 
 Version: 1.0
 Last Updated: 2026-08-24
@@ -11,140 +10,49 @@ Last Updated: 2026-08-24
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-from typing import Literal
-
-from PySide6.QtWidgets import QApplication
-
 from gui.design_system import (
-    DARK_THEME,
     LIGHT_THEME,
     FONT_FAMILY,
     FONT_SIZE,
     FONT_WEIGHT,
     LINE_HEIGHT,
-    SPACING,
-    PADDING,
     RADIUS,
     BORDER_SHADOW,
-    DarkThemeColors,
-    LightThemeColors,
 )
-
-ThemeMode = Literal["dark", "light"]
-
-# Default theme persistence location
-_DEFAULT_THEME_CONFIG_PATH = Path.home() / ".autolabeler" / "theme.json"
 
 
 class ThemeManager:
     """
     Singleton theme manager for the AutoLabeler application.
 
-    Responsibilities:
-    - Generate complete QSS stylesheets for both themes
-    - Switch themes with batched updates (300ms transitions)
-    - Persist theme preference to disk
-    - Provide current theme access
+    Responsibility:
+    - Generate the complete light QSS stylesheet
     """
 
     _instance: ThemeManager | None = None
 
-    def __new__(cls, config_path: Path | None = None) -> ThemeManager:
+    def __new__(cls) -> ThemeManager:
         """Singleton pattern: ensure only one instance exists."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, config_path: Path | None = None) -> None:
+    def __init__(self) -> None:
         """Initialize theme manager (only once due to singleton pattern)."""
         if self._initialized:
             return
 
-        self._config_path = config_path or _DEFAULT_THEME_CONFIG_PATH
-        self._current_theme: ThemeMode = self._load_persisted_theme()
-        self._dark_stylesheet = self._generate_stylesheet(DARK_THEME, "dark")
-        self._light_stylesheet = self._generate_stylesheet(LIGHT_THEME, "light")
+        self._light_stylesheet = self._generate_stylesheet()
         self._initialized = True
 
-    def get_current_theme(self) -> ThemeMode:
-        """Return the currently active theme mode."""
-        return self._current_theme
-
-    def set_theme(self, theme: ThemeMode) -> None:
-        """
-        Switch to the specified theme.
-
-        Args:
-            theme: "dark" or "light"
-        """
-        if theme not in ("dark", "light"):
-            raise ValueError(f"Invalid theme: {theme}. Must be 'dark' or 'light'.")
-
-        if theme == self._current_theme:
-            return  # Already on this theme
-
-        self._current_theme = theme
-        self._apply_current_stylesheet()
-        self._persist_theme(theme)
-
-    def toggle_theme(self) -> ThemeMode:
-        """
-        Toggle between dark and light themes.
-
-        Returns:
-            The new theme mode after toggling
-        """
-        new_theme: ThemeMode = "light" if self._current_theme == "dark" else "dark"
-        self.set_theme(new_theme)
-        return new_theme
-
     def get_stylesheet(self) -> str:
-        """Return the complete QSS stylesheet for the current theme."""
-        return self._dark_stylesheet if self._current_theme == "dark" else self._light_stylesheet
+        """Return the complete light-theme QSS stylesheet."""
+        return self._light_stylesheet
 
-    def _apply_current_stylesheet(self) -> None:
-        """Apply the current theme's stylesheet to the application."""
-        app = QApplication.instance()
-        if app is not None:
-            app.setStyleSheet(self.get_stylesheet())
-
-    def _load_persisted_theme(self) -> ThemeMode:
-        """Load theme preference from disk, defaulting to light theme."""
-        try:
-            if self._config_path.exists():
-                data = json.loads(self._config_path.read_text(encoding="utf-8"))
-                theme = data.get("theme", "light")
-                if theme in ("dark", "light"):
-                    return theme
-        except (OSError, json.JSONDecodeError):
-            pass  # Fall through to default
-
-        return "light"  # Default theme
-
-    def _persist_theme(self, theme: ThemeMode) -> None:
-        """Save theme preference to disk."""
-        try:
-            self._config_path.parent.mkdir(parents=True, exist_ok=True)
-            data = {"theme": theme}
-            self._config_path.write_text(
-                json.dumps(data, indent=2, ensure_ascii=False),
-                encoding="utf-8"
-            )
-        except OSError:
-            pass  # Silent fail on persistence errors
-
-    def _generate_stylesheet(
-        self, colors: DarkThemeColors | LightThemeColors, mode: str
-    ) -> str:
+    def _generate_stylesheet(self) -> str:
         """
-        Generate complete QSS stylesheet for a theme.
-
-        Args:
-            colors: Theme color palette
-            mode: "dark" or "light" for mode-specific adjustments
+        Generate the complete light-theme QSS stylesheet.
 
         Returns:
             Complete QSS stylesheet string
@@ -153,18 +61,19 @@ class ThemeManager:
         font_family = FONT_FAMILY.get_sans_serif_family()
         mono_family = FONT_FAMILY.get_monospace_family()
 
+        colors = LIGHT_THEME
+
         # Border shadow helpers
-        is_dark = mode == "dark"
-        shadow_light = BORDER_SHADOW.DARK_LIGHT if is_dark else BORDER_SHADOW.LIGHT_LIGHT
-        shadow_medium = BORDER_SHADOW.DARK_MEDIUM if is_dark else BORDER_SHADOW.LIGHT_MEDIUM
+        shadow_light = BORDER_SHADOW.LIGHT_LIGHT
+        shadow_medium = BORDER_SHADOW.LIGHT_MEDIUM
 
         # Note: QSS does not support CSS transition property.
-        # Theme transitions are handled by Python code in set_theme() method.
+        # Theme transitions are not needed for the stable light theme.
         # Component animations use QPropertyAnimation in gui/animations.py.
 
         stylesheet = f"""
 /* ============================================================================
-   AutoLabeler Theme: {mode.capitalize()}
+   AutoLabeler Theme: Light
    Generated by ThemeManager
    ============================================================================ */
 
@@ -198,8 +107,8 @@ QWidget {{
    ============================================================================ */
 
 #sideNav {{
-    background-color: {DARK_THEME.BG_APP};
-    border-right: 1px solid {DARK_THEME.BORDER_SUBTLE};
+    background-color: {colors.BG_APP};
+    border-right: 1px solid {colors.BORDER_SUBTLE};
     min-width: 240px;
     max-width: 240px;
 }}
@@ -219,14 +128,14 @@ QWidget {{
 }}
 
 #navBrand {{
-    color: {DARK_THEME.TEXT_PRIMARY};
+    color: {colors.TEXT_PRIMARY};
     font-size: 16px;
     font-weight: {FONT_WEIGHT.SEMIBOLD};
     line-height: {LINE_HEIGHT.TIGHT};
 }}
 
 #navSection {{
-    color: {DARK_THEME.TEXT_TERTIARY};
+    color: {colors.TEXT_TERTIARY};
     font-size: 11px;
     font-weight: {FONT_WEIGHT.SEMIBOLD};
     letter-spacing: 0.5px;
@@ -237,7 +146,7 @@ QPushButton#navButton,
 QPushButton#navFlowButton,
 QPushButton#navUtilityButton {{
     background-color: transparent;
-    color: {DARK_THEME.TEXT_SECONDARY};
+    color: {colors.TEXT_SECONDARY};
     border: none;
     border-left: 3px solid transparent;
     border-radius: {RADIUS.MD}px;
@@ -251,40 +160,40 @@ QPushButton#navUtilityButton {{
 QPushButton#navButton:hover,
 QPushButton#navFlowButton:hover,
 QPushButton#navUtilityButton:hover {{
-    background-color: {DARK_THEME.BG_SURFACE};
-    color: {DARK_THEME.TEXT_PRIMARY};
+    background-color: {colors.BG_SURFACE};
+    color: {colors.TEXT_PRIMARY};
 }}
 
 QPushButton#navButton[selected="true"],
 QPushButton#navFlowButton[selected="true"],
 QPushButton#navUtilityButton[selected="true"] {{
-    background-color: {DARK_THEME.BRAND_SUBTLE};
-    color: {DARK_THEME.BRAND_PRIMARY};
-    border-left: 3px solid {DARK_THEME.BRAND_PRIMARY};
+    background-color: {colors.BRAND_SUBTLE};
+    color: {colors.BRAND_PRIMARY};
+    border-left: 3px solid {colors.BRAND_PRIMARY};
     font-weight: {FONT_WEIGHT.SEMIBOLD};
 }}
 
 #navStepNumber, #navUtilityBadge {{
-    background-color: {DARK_THEME.BG_SURFACE};
-    border: 1px solid {DARK_THEME.BORDER_DEFAULT};
+    background-color: {colors.BG_SURFACE};
+    border: 1px solid {colors.BORDER_DEFAULT};
     border-radius: {RADIUS.SM}px;
-    color: {DARK_THEME.TEXT_SECONDARY};
+    color: {colors.TEXT_SECONDARY};
 }}
 
 #navStepTitle {{
-    color: {DARK_THEME.TEXT_PRIMARY};
+    color: {colors.TEXT_PRIMARY};
     font-weight: {FONT_WEIGHT.SEMIBOLD};
 }}
 
 #navStepSubtitle {{
-    color: {DARK_THEME.TEXT_TERTIARY};
+    color: {colors.TEXT_TERTIARY};
     font-size: {FONT_SIZE.CAPTION}px;
 }}
 
 QPushButton#navFlowButton[selected="true"] #navStepNumber,
 QPushButton#navFlowButton[selected="true"] #navUtilityBadge {{
-    background-color: {DARK_THEME.BRAND_PRIMARY};
-    border-color: {DARK_THEME.BRAND_PRIMARY};
+    background-color: {colors.BRAND_PRIMARY};
+    border-color: {colors.BRAND_PRIMARY};
     color: #FFFFFF;
 }}
 
@@ -292,7 +201,7 @@ QPushButton#navFlowButton[selected="true"] #navStepTitle,
 QPushButton#navFlowButton[selected="true"] #navStepSubtitle,
 QPushButton#navUtilityButton[selected="true"] #navStepTitle,
 QPushButton#navUtilityButton[selected="true"] #navStepSubtitle {{
-    color: {DARK_THEME.TEXT_PRIMARY};
+    color: {colors.TEXT_PRIMARY};
 }}
 
 /* ============================================================================
@@ -304,14 +213,13 @@ QPushButton#navUtilityButton[selected="true"] #navStepSubtitle {{
     color: #FFFFFF;
     border: none;
     border-radius: {RADIUS.MD}px;
-    padding: {PADDING.BUTTON_MD[0]}px {PADDING.BUTTON_MD[1]}px;
-    font-size: {FONT_SIZE.BODY}px;
-    font-weight: {FONT_WEIGHT.MEDIUM};
+    padding: 14px 28px;
+    font-size: 15px;
+    font-weight: {FONT_WEIGHT.SEMIBOLD};
 }}
 
 #primaryButton:hover {{
     background-color: {colors.BRAND_HOVER};
-    border-bottom: 2px solid {colors.BRAND_ACTIVE};
 }}
 
 #primaryButton:pressed {{
@@ -328,7 +236,7 @@ QPushButton#navUtilityButton[selected="true"] #navStepSubtitle {{
     color: {colors.TEXT_SECONDARY};
     border: 1px solid {colors.BORDER_DEFAULT};
     border-radius: {RADIUS.MD}px;
-    padding: {PADDING.BUTTON_MD[0]}px {PADDING.BUTTON_MD[1]}px;
+    padding: 12px 24px;
     font-size: {FONT_SIZE.BODY}px;
     font-weight: {FONT_WEIGHT.MEDIUM};
 }}
@@ -345,8 +253,50 @@ QPushButton#navUtilityButton[selected="true"] #navStepSubtitle {{
 
 #secondaryButton:disabled {{
     background-color: transparent;
-    color: {colors.TEXT_DISABLED};
-    border-color: {colors.BORDER_SUBTLE};
+    color: {colors.TEXT_TERTIARY};
+    border-color: {colors.BORDER_DEFAULT};
+}}
+
+/* Keep the dense desktop tool chrome usable in small windows. */
+QPushButton#primaryButton {{
+    min-height: 36px;
+    padding: 8px 16px;
+}}
+
+QPushButton#secondaryButton,
+QPushButton#supportActionButton,
+QPushButton#manualNavButton,
+QPushButton#manualStepButton,
+QPushButton#tabButton,
+QPushButton#tabButtonActive,
+QPushButton#advancedToggleButton,
+QPushButton#taskBackButton,
+QPushButton#taskDeleteButton {{
+    min-height: 34px;
+    padding: 7px 13px;
+}}
+
+QPushButton#tabButton,
+QPushButton#tabButtonActive,
+QPushButton#advancedToggleButton {{
+    background-color: {colors.BG_SURFACE};
+    text-align: left;
+}}
+
+QPushButton#tabButton:hover,
+QPushButton#tabButtonActive:hover,
+QPushButton#advancedToggleButton:hover {{
+    background-color: {colors.BG_HOVER};
+    border-color: {colors.BORDER_EMPHASIS};
+}}
+
+QPushButton#tabButton:checked,
+QPushButton#tabButtonActive,
+QPushButton#advancedToggleButton:checked {{
+    background-color: {colors.BRAND_SUBTLE};
+    border-color: {colors.BRAND_PRIMARY};
+    color: {colors.BRAND_ACTIVE};
+    font-weight: {FONT_WEIGHT.SEMIBOLD};
 }}
 
 /* ============================================================================
@@ -358,7 +308,7 @@ QPushButton#navUtilityButton[selected="true"] #navStepSubtitle {{
     color: {colors.TEXT_PRIMARY};
     border: 1px solid {colors.BORDER_DEFAULT};
     border-radius: {RADIUS.MD}px;
-    padding: 12px 14px;
+    padding: 8px 10px;
     font-size: {FONT_SIZE.BODY}px;
 }}
 
@@ -378,7 +328,7 @@ QComboBox {{
     color: {colors.TEXT_PRIMARY};
     border: 1px solid {colors.BORDER_DEFAULT};
     border-radius: {RADIUS.MD}px;
-    padding: 10px 12px;
+    padding: 6px 8px;
     font-size: {FONT_SIZE.BODY}px;
 }}
 
@@ -395,6 +345,118 @@ QComboBox QAbstractItemView {{
     border: 1px solid {colors.BORDER_DEFAULT};
     selection-background-color: {colors.BRAND_SUBTLE};
     selection-color: {colors.BRAND_PRIMARY};
+}}
+
+QScrollArea#toolScrollArea,
+QScrollArea#manualContentScroll,
+QScrollArea#settingsContentScroll {{
+    border: none;
+    background: transparent;
+}}
+
+QScrollArea#toolScrollArea QWidget,
+QScrollArea#manualContentScroll QWidget,
+QScrollArea#settingsContentScroll QWidget {{
+    background: transparent;
+}}
+
+QFrame#leftMainPanel,
+QFrame#rightSupportPanel,
+QFrame#homeRulePanel,
+QFrame#flowStrip,
+QFrame#loginWorkflowPanel,
+QFrame#loginBoundaryPanel,
+QFrame#manualStepsPanel,
+QFrame#settingsStatusPanel,
+QFrame#taskCenterSummaryPanel,
+QFrame#taskRow,
+QFrame#scanStructureExample,
+QFrame#reviewEmptyState,
+QFrame#reviewStatusPanel {{
+    background-color: {colors.BG_SURFACE};
+    border: 1px solid {colors.BORDER_DEFAULT};
+    border-radius: {RADIUS.LG}px;
+}}
+
+QFrame#rightSupportPanel[surfaceRole="support"] {{
+    background-color: {colors.BG_SURFACE};
+}}
+
+QFrame#preflightPanel,
+QFrame#runtimePanel,
+QFrame#sourceChoicePanel,
+QFrame#commonOptionsPanel,
+QFrame#advancedOptionsPanel,
+QFrame#reviewSelectionPanel {{
+    background-color: {colors.BG_HOVER};
+    border: 1px solid {colors.BORDER_DEFAULT};
+    border-radius: {RADIUS.LG}px;
+}}
+
+QLabel#strengthPill,
+QLabel#formPlaceholder,
+QLabel#flowStep,
+QLabel#preflightSummary {{
+    padding: 9px 11px;
+    background-color: {colors.BG_HOVER};
+    border: 1px solid {colors.BORDER_DEFAULT};
+    border-radius: {RADIUS.SM}px;
+    color: {colors.TEXT_SECONDARY};
+}}
+
+QToolButton#pathBrowseButton {{
+    min-width: 58px;
+    border: none;
+    border-left: 1px solid {colors.BORDER_DEFAULT};
+    background-color: {colors.BG_HOVER};
+    color: {colors.BRAND_ACTIVE};
+    font-weight: {FONT_WEIGHT.SEMIBOLD};
+}}
+
+QToolButton#pathBrowseButton:hover {{
+    background-color: {colors.BRAND_SUBTLE};
+}}
+
+QToolButton#pathBrowseButton:pressed {{
+    background-color: {colors.BG_ACTIVE};
+}}
+
+QFrame#pathPicker {{
+    min-height: 34px;
+    border: 1px solid {colors.BORDER_DEFAULT};
+    border-radius: {RADIUS.LG}px;
+    background-color: {colors.BG_INPUT};
+}}
+
+QFrame#pathPicker QLineEdit#formInput {{
+    border: none;
+    background: transparent;
+    padding: 8px 10px;
+}}
+
+QTextEdit#logBox[surfaceRole="log"] {{
+    border: 1px solid {colors.BORDER_DEFAULT};
+    background-color: {colors.BG_HOVER};
+    color: {colors.TEXT_PRIMARY};
+    font-family: {mono_family};
+    font-size: 12px;
+}}
+
+QProgressBar#taskProgressBar {{
+    min-height: 16px;
+    max-height: 18px;
+    border: 1px solid {colors.BORDER_DEFAULT};
+    border-radius: {RADIUS.SM}px;
+    background-color: {colors.BG_INPUT};
+    color: {colors.TEXT_PRIMARY};
+    text-align: center;
+    font-size: {FONT_SIZE.CAPTION}px;
+    font-weight: {FONT_WEIGHT.SEMIBOLD};
+}}
+
+QProgressBar#taskProgressBar::chunk {{
+    border-radius: {RADIUS.SM}px;
+    background-color: {colors.BRAND_PRIMARY};
 }}
 
 /* ============================================================================
@@ -531,6 +593,35 @@ QPushButton#secondaryButton[buttonRole="reservedAccess"] {{
 /* ============================================================================
    Typography
    ============================================================================ */
+
+/* ============================================================================
+   Reusable loading and empty-state components
+   ============================================================================ */
+
+QWidget#spinner {{
+    color: {colors.BRAND_PRIMARY};
+}}
+
+QLabel#emptyStateTitle {{
+    color: {colors.TEXT_SECONDARY};
+}}
+
+QLabel#emptyStateDescription {{
+    color: {colors.TEXT_TERTIARY};
+}}
+
+QLabel#emptyStateSecondaryLink {{
+    color: {colors.BRAND_PRIMARY};
+}}
+
+QLabel#loadingPanelMessage {{
+    color: {colors.TEXT_SECONDARY};
+}}
+
+QWidget#skeletonLoader {{
+    background-color: {colors.BG_HOVER};
+    border-radius: {RADIUS.SM}px;
+}}
 
 #toolTitle {{
     font-size: {FONT_SIZE.H1}px;
@@ -693,7 +784,7 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
     font-size: 36px;
     font-weight: {FONT_WEIGHT.BOLD};
     color: {colors.TEXT_PRIMARY};
-    line-height: {LINE_HEIGHT.TIGHT};
+    line-height: 1.3;
 }}
 
 #loginSubheadline {{
@@ -717,12 +808,24 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
 #loginFormSubtitle {{
     font-size: {FONT_SIZE.BODY}px;
     color: {colors.TEXT_SECONDARY};
+    line-height: 1.5;
 }}
 
 #loginFieldLabel {{
     font-size: {FONT_SIZE.BODY}px;
     font-weight: {FONT_WEIGHT.MEDIUM};
     color: {colors.TEXT_PRIMARY};
+}}
+
+#loginDescription {{
+    font-size: 16px;
+    font-weight: {FONT_WEIGHT.REGULAR};
+    color: {colors.TEXT_SECONDARY};
+    line-height: {LINE_HEIGHT.RELAXED};
+}}
+
+#loginStatReadout {{
+    background: transparent;
 }}
 
 #loginStatValue {{
@@ -733,7 +836,41 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
 
 #loginStatLabel {{
     font-size: {FONT_SIZE.BODY}px;
+    font-weight: {FONT_WEIGHT.REGULAR};
     color: {colors.TEXT_TERTIARY};
+    letter-spacing: 0.3px;
+}}
+
+#loginStatSeparator {{
+    background: {colors.BORDER_SUBTLE};
+    border: none;
+}}
+
+#loginStoryFooter {{
+    font-size: 13px;
+    color: {colors.TEXT_TERTIARY};
+    line-height: 1.5;
+}}
+
+#loginCardContainer {{
+    background: {colors.BG_SURFACE};
+}}
+
+#loginOptionLabel {{
+    font-size: 12px;
+    color: {colors.TEXT_TERTIARY};
+    font-weight: {FONT_WEIGHT.SEMIBOLD};
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}}
+
+#loginForgotLink {{
+    font-size: 13px;
+    color: {colors.BRAND_PRIMARY};
+}}
+
+#loginForgotLink:hover {{
+    color: {colors.BRAND_HOVER};
 }}
 
 /* ============================================================================
@@ -827,24 +964,20 @@ QFrame[objectName*="success"], QFrame[objectName*="Success"] {{
 _theme_manager_instance: ThemeManager | None = None
 
 
-def get_theme_manager(config_path: Path | None = None) -> ThemeManager:
+def get_theme_manager() -> ThemeManager:
     """
     Get the singleton ThemeManager instance.
-
-    Args:
-        config_path: Optional custom config path (only used on first call)
 
     Returns:
         ThemeManager singleton instance
     """
     global _theme_manager_instance
     if _theme_manager_instance is None:
-        _theme_manager_instance = ThemeManager(config_path)
+        _theme_manager_instance = ThemeManager()
     return _theme_manager_instance
 
 
 __all__ = [
     "ThemeManager",
-    "ThemeMode",
     "get_theme_manager",
 ]

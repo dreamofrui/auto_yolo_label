@@ -3,7 +3,7 @@ AutoLabeler Design System
 ========================
 
 Design tokens and constants extracted from UI_DESIGN_SPEC_v2.md sections 1.1-1.5.
-Defines color palettes (dark/light themes), typography, spacing, border radius, and shadow system.
+Defines the light color palette, typography, spacing, border radius, and shadow system.
 
 Version: 2.1 (Performance Optimized)
 Last Updated: 2026-08-24
@@ -18,56 +18,6 @@ from PySide6.QtWidgets import QGraphicsDropShadowEffect
 # =============================================================================
 # 1.1 COLOR SYSTEM
 # =============================================================================
-
-@dataclass(frozen=True)
-class DarkThemeColors:
-    """Deep Professional Dark Theme (Default)"""
-
-    # Background Colors
-    BG_APP: str = "#0A0E14"          # Application base (deepest layer)
-    BG_SURFACE: str = "#141922"      # Main content area background
-    BG_ELEVATED: str = "#1C2128"     # Cards, dialogs (floating layer)
-    BG_HOVER: str = "#252D38"        # Hover state background
-    BG_ACTIVE: str = "#2D3642"       # Active/selected state background
-    BG_INPUT: str = "#1A1F29"        # Input field background
-
-    # Text Colors
-    TEXT_PRIMARY: str = "#E6EDF3"    # Primary text (titles, key info)
-    TEXT_SECONDARY: str = "#9DA9BB"  # Secondary text (descriptions)
-    TEXT_TERTIARY: str = "#6B7785"   # Auxiliary text (hints, placeholders)
-    TEXT_DISABLED: str = "#484F5C"   # Disabled state text
-
-    # Brand Colors
-    BRAND_PRIMARY: str = "#0EA5E9"   # Primary brand color (sky blue)
-    BRAND_HOVER: str = "#0284C7"     # Hover state
-    BRAND_ACTIVE: str = "#0369A1"    # Active state
-    BRAND_SUBTLE: str = "#082F49"    # Brand background in dark mode
-
-    # Semantic Colors - Success
-    SUCCESS: str = "#10B981"
-    SUCCESS_BG: str = "#064E3B"
-    SUCCESS_BORDER: str = "#065F46"
-
-    # Semantic Colors - Warning
-    WARNING: str = "#F59E0B"
-    WARNING_BG: str = "#78350F"
-    WARNING_BORDER: str = "#92400E"
-
-    # Semantic Colors - Error
-    ERROR: str = "#EF4444"
-    ERROR_BG: str = "#7F1D1D"
-    ERROR_BORDER: str = "#991B1B"
-
-    # Semantic Colors - Info
-    INFO: str = "#3B82F6"
-    INFO_BG: str = "#1E3A8A"
-    INFO_BORDER: str = "#1E40AF"
-
-    # Borders and Dividers
-    BORDER_DEFAULT: str = "#30363D"  # Default border
-    BORDER_SUBTLE: str = "#21262D"   # Subtle divider
-    BORDER_EMPHASIS: str = "#525964" # Emphasis border
-
 
 @dataclass(frozen=True)
 class LightThemeColors:
@@ -87,7 +37,7 @@ class LightThemeColors:
     TEXT_TERTIARY: str = "#94A3B8"   # Auxiliary text
     TEXT_DISABLED: str = "#CBD5E1"   # Disabled state
 
-    # Brand Colors (consistent with dark theme)
+    # Brand Colors
     BRAND_PRIMARY: str = "#0EA5E9"
     BRAND_HOVER: str = "#0284C7"
     BRAND_ACTIVE: str = "#0369A1"
@@ -119,8 +69,6 @@ class LightThemeColors:
     BORDER_EMPHASIS: str = "#CBD5E1"
 
 
-# Theme instances
-DARK_THEME = DarkThemeColors()
 LIGHT_THEME = LightThemeColors()
 
 
@@ -285,11 +233,6 @@ class BorderSimulatedShadow:
     Avoids QGraphicsDropShadowEffect performance overhead.
     """
 
-    # Dark theme border shadows
-    DARK_LIGHT: Tuple[str, str, int] = ("#21262D", "#1A1F29", 2)  # (border, bottom_border, bottom_width)
-    DARK_MEDIUM: Tuple[str, str, int] = ("#30363D", "#21262D", 3)
-    DARK_EMPHASIS: Tuple[str, str, int] = ("#525964", "#30363D", 4)
-
     # Light theme border shadows
     LIGHT_LIGHT: Tuple[str, str, int] = ("#E2E8F0", "#CBD5E1", 2)
     LIGHT_MEDIUM: Tuple[str, str, int] = ("#CBD5E1", "#94A3B8", 3)
@@ -318,33 +261,6 @@ class RealShadowFactory:
     - AVOID for: static cards, lists with many items (>10)
     - QGraphicsDropShadowEffect has significant rendering cost
     """
-
-    @staticmethod
-    def create_small_shadow_dark() -> QGraphicsDropShadowEffect:
-        """Small shadow for dark theme (temporary/hover elements)"""
-        effect = QGraphicsDropShadowEffect()
-        effect.setBlurRadius(4)
-        effect.setColor(QColor(0, 0, 0, 128))  # 50% opacity
-        effect.setOffset(0, 2)
-        return effect
-
-    @staticmethod
-    def create_medium_shadow_dark() -> QGraphicsDropShadowEffect:
-        """Medium shadow for dark theme (dialogs, modals)"""
-        effect = QGraphicsDropShadowEffect()
-        effect.setBlurRadius(8)
-        effect.setColor(QColor(0, 0, 0, 128))  # 50% opacity
-        effect.setOffset(0, 4)
-        return effect
-
-    @staticmethod
-    def create_large_shadow_dark() -> QGraphicsDropShadowEffect:
-        """Large shadow for dark theme (prominent dialogs)"""
-        effect = QGraphicsDropShadowEffect()
-        effect.setBlurRadius(16)
-        effect.setColor(QColor(0, 0, 0, 102))  # 40% opacity
-        effect.setOffset(0, 8)
-        return effect
 
     @staticmethod
     def create_small_shadow_light() -> QGraphicsDropShadowEffect:
@@ -399,17 +315,16 @@ REAL_SHADOW = RealShadowFactory()
 # UTILITY FUNCTIONS
 # =============================================================================
 
-def get_current_theme() -> DarkThemeColors | LightThemeColors:
+def get_current_theme() -> LightThemeColors:
     """
     Get the current active theme
 
-    ThemeManager owns runtime switching. This design-system helper provides the
-    same light default for callers that only need a palette without a manager.
+    The application has one stable light palette.
     """
     return LIGHT_THEME
 
 
-def get_qss_color(color_name: str, theme: DarkThemeColors | LightThemeColors = None) -> str:
+def get_qss_color(color_name: str, theme: LightThemeColors | None = None) -> str:
     """
     Get color value by name from theme
 
@@ -431,9 +346,7 @@ def get_qss_color(color_name: str, theme: DarkThemeColors | LightThemeColors = N
 
 __all__ = [
     # Color themes
-    "DARK_THEME",
     "LIGHT_THEME",
-    "DarkThemeColors",
     "LightThemeColors",
 
     # Typography

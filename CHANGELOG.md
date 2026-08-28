@@ -9,11 +9,14 @@ All notable changes to this repo are recorded here.
   white elevated cards, and `#0F172A` primary text across the desktop shell.
 - Restored role-based navigation, feedback, and confirmation styling in the
   generated stylesheet while keeping the side navigation dark for contrast.
+- Simplified theme management to a single generated light stylesheet; removed
+  dark palette definitions, runtime switching, and theme preference persistence.
 
 ### Tests
 
 - Updated theme manager coverage for the light default, light stylesheet color
   tokens, and isolated singleton state between tests.
+- Removed obsolete dark-theme and persistence assertions from GUI coverage.
 
 ### Documentation
 

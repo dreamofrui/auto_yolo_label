@@ -7,9 +7,12 @@ Verifies compliance with UI_DESIGN_SPEC_v2.md section 2.12.
 import pytest
 from PySide6.QtWidgets import QApplication, QPushButton, QLabel
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QPalette
 
-from gui.components import EmptyState
+from gui.components import EmptyState, LoadingPanel, SkeletonLoader, Spinner
 from gui.design_system import FONT_SIZE, LIGHT_THEME
+import gui.theme_manager as theme_manager_module
+from gui.theme_manager import ThemeManager
 
 
 @pytest.fixture(scope="module")
@@ -19,6 +22,23 @@ def qapp():
     if app is None:
         app = QApplication([])
     yield app
+
+
+@pytest.fixture(autouse=True)
+def reset_theme_manager():
+    """Keep theme state and application stylesheet isolated per test."""
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    original_stylesheet = app.styleSheet()
+    ThemeManager._instance = None
+    theme_manager_module._theme_manager_instance = None
+    manager = ThemeManager()
+    app.setStyleSheet(manager.get_stylesheet())
+    yield manager
+    app.setStyleSheet(original_stylesheet)
+    ThemeManager._instance = None
+    theme_manager_module._theme_manager_instance = None
 
 
 def test_empty_state_default_creation(qapp):
@@ -48,14 +68,14 @@ def test_empty_state_custom_content(qapp):
     assert empty_state._title_label.text() == "暂无任务记录"
     assert empty_state._title_label.objectName() == "emptyStateTitle"
     assert f"{FONT_SIZE.H3}px" in empty_state._title_label.styleSheet()
-    assert LIGHT_THEME.TEXT_SECONDARY in empty_state._title_label.styleSheet()
+    assert LIGHT_THEME.TEXT_SECONDARY not in empty_state._title_label.styleSheet()
     assert "600" in empty_state._title_label.styleSheet()  # font-weight
 
     # Check description
     assert "当您运行扫描" in empty_state._desc_label.text()
     assert empty_state._desc_label.objectName() == "emptyStateDescription"
     assert f"{FONT_SIZE.BODY}px" in empty_state._desc_label.styleSheet()
-    assert LIGHT_THEME.TEXT_TERTIARY in empty_state._desc_label.styleSheet()
+    assert LIGHT_THEME.TEXT_TERTIARY not in empty_state._desc_label.styleSheet()
     assert "1.6" in empty_state._desc_label.styleSheet()  # line-height
     assert empty_state._desc_label.maximumWidth() == 480
 
@@ -108,7 +128,7 @@ def test_empty_state_secondary_link(qapp):
     # Verify link styling
     assert link.objectName() == "emptyStateSecondaryLink"
     assert "13px" in link.styleSheet()
-    assert LIGHT_THEME.BRAND_PRIMARY in link.styleSheet()
+    assert LIGHT_THEME.BRAND_PRIMARY not in link.styleSheet()
     assert link.cursor().shape() == Qt.PointingHandCursor
 
 
@@ -165,3 +185,35 @@ def test_empty_state_container_padding(qapp):
     assert right == 40
     assert top == 60
     assert bottom == 60
+
+
+def test_empty_state_colors_follow_light_theme(qapp, reset_theme_manager):
+    """Reusable components use the stable light palette without switching state."""
+    empty_state = EmptyState(title="Title", description="Description")
+    link = QLabel("Details")
+    empty_state.addSecondaryLink(link)
+    empty_state.show()
+    qapp.processEvents()
+
+    assert LIGHT_THEME.TEXT_SECONDARY.lower() in qapp.styleSheet().lower()
+    assert empty_state._title_label.palette().color(QPalette.WindowText).name().upper() == LIGHT_THEME.TEXT_SECONDARY
+    assert empty_state._desc_label.palette().color(QPalette.WindowText).name().upper() == LIGHT_THEME.TEXT_TERTIARY
+    assert link.palette().color(QPalette.WindowText).name().upper() == LIGHT_THEME.BRAND_PRIMARY
+    assert empty_state._action_layout.count() == 1
+
+
+def test_loading_components_follow_light_theme(qapp, reset_theme_manager):
+    """Spinner, loading text, and skeleton surfaces use the light theme."""
+    loading = LoadingPanel(message="Loading")
+    skeleton = SkeletonLoader()
+    loading.show()
+    skeleton.show()
+    qapp.processEvents()
+
+    spinner_color_light = loading._spinner.palette().color(QPalette.WindowText).name().upper()
+    assert spinner_color_light == LIGHT_THEME.BRAND_PRIMARY
+    assert loading._message_label.palette().color(QPalette.WindowText).name().upper() == LIGHT_THEME.TEXT_SECONDARY
+    assert skeleton.styleSheet() == ""
+    assert LIGHT_THEME.BG_HOVER.lower() in qapp.styleSheet().lower()
+
+    loading.stop()
