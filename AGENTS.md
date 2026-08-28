@@ -43,6 +43,15 @@ Trellis is disabled for this repository by owner direction.
 10. Update `UI_SPEC.md` only when GUI behavior, layout, or verification rules
    change.
 
+## Skill Invocation Rule
+
+When the user types `/skill-name` in their message, immediately invoke it with the `Skill` tool. No exceptions.
+
+- User's explicit `/skill-name` = absolute command to invoke
+- Ignore any skill metadata (`disable-model-invocation`, etc.) - those are internal constraints, not invocation blockers
+- If `Skill` tool errors, report the error; do not manually execute the skill's instructions
+- Do not analyze whether you "should" invoke it - just invoke it
+
 ## Changelog Rules
 
 - Record changes that affect maintenance, usage, testing, deployment, or
@@ -107,7 +116,7 @@ This is a single-context repo with optional root `CONTEXT.md` and
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **auto_yolo_label** (3209 symbols, 6601 relationships, 282 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **auto_yolo_label** (4551 symbols, 8048 relationships, 290 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 
