@@ -16,7 +16,7 @@ from PySide6.QtCore import (
     Qt, QSize, QRect, QPoint, QPropertyAnimation, QEasingCurve,
     QTimer, Property, Signal
 )
-from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QLinearGradient, QPaintEvent, QPalette
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QLinearGradient, QPaintEvent, QPalette, QMouseEvent
 from PySide6.QtWidgets import (
     QPushButton, QProgressBar, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
     QFrame, QGraphicsOpacityEffect, QGraphicsDropShadowEffect
@@ -45,19 +45,35 @@ class PrimaryButton(QPushButton):
         self.setMinimumHeight(40)
         self._press_animation: Optional[QPropertyAnimation] = None
 
-    def mousePressEvent(self, event) -> None:
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         """Handle mouse press with animation."""
         super().mousePressEvent(event)
+
+        # Skip animation if disabled for performance/accessibility
+        if not get_animations_enabled():
+            return
+
+        # Clean up previous animation
         if self._press_animation:
             self._press_animation.stop()
+            self._press_animation.deleteLater()
+
         self._press_animation = create_button_press_animation(self, pressed=True)
         self._press_animation.start()
 
-    def mouseReleaseEvent(self, event) -> None:
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         """Handle mouse release with animation."""
         super().mouseReleaseEvent(event)
+
+        # Skip animation if disabled for performance/accessibility
+        if not get_animations_enabled():
+            return
+
+        # Clean up previous animation
         if self._press_animation:
             self._press_animation.stop()
+            self._press_animation.deleteLater()
+
         self._press_animation = create_button_press_animation(self, pressed=False)
         self._press_animation.start()
 
@@ -292,6 +308,11 @@ class Card(QFrame):
         self._base_y = 0
         self._hover_animation: Optional[QPropertyAnimation] = None
         self._is_clickable = False
+
+        # Validate shadow_mode parameter
+        if shadow_mode not in ("border", "real"):
+            raise ValueError(f"shadow_mode must be 'border' or 'real', got '{shadow_mode}'")
+
         self._shadow_mode = shadow_mode
         self._applyShadowMode()
 
@@ -301,7 +322,7 @@ class Card(QFrame):
             # Apply real QGraphicsDropShadowEffect
             shadow = QGraphicsDropShadowEffect(self)
             shadow.setBlurRadius(8)
-            shadow.setColor(QColor(0, 0, 0, 25))  # rgba(0, 0, 0, 0.1)
+            shadow.setColor(QColor(0, 0, 0, 25))  # alpha 25/255 ≈ 10% opacity
             shadow.setOffset(0, 2)
             self.setGraphicsEffect(shadow)
         # else: "border" mode uses QSS border styling (default)
@@ -582,9 +603,6 @@ class SkeletonLoader(QWidget):
     Used to show content structure while data is loading.
 
     Object name: "skeletonLoader" for QSS styling.
-
-    Uses QPropertyAnimation with windowOpacity instead of QGraphicsOpacityEffect
-    for better performance with multiple instances.
     """
 
     def __init__(
@@ -597,11 +615,14 @@ class SkeletonLoader(QWidget):
         self.setObjectName("skeletonLoader")
         self.setFixedSize(width, height)
 
-        # Set initial opacity
-        self.setWindowOpacity(0.3)
+        # Opacity effect for pulsing animation
+        # Note: QGraphicsOpacityEffect is required for child widgets
+        # windowOpacity only works on top-level windows
+        self._opacity_effect = QGraphicsOpacityEffect(self)
+        self.setGraphicsEffect(self._opacity_effect)
 
-        # Pulse animation using windowOpacity
-        self._pulse_animation = QPropertyAnimation(self, b"windowOpacity")
+        # Pulse animation
+        self._pulse_animation = QPropertyAnimation(self._opacity_effect, b"opacity")
         self._pulse_animation.setDuration(1000)
         self._pulse_animation.setStartValue(0.3)
         self._pulse_animation.setEndValue(0.7)

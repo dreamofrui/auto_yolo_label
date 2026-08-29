@@ -101,7 +101,7 @@
 | `display: grid` | `QGridLayout` | 网格布局 |
 | `display: flex` | `QHBoxLayout` / `QVBoxLayout` | 弹性盒子布局 |
 | `gap: 12px` | `layout.setSpacing(12)` | 元素间距 |
-| `padding: 10px 20px` | `setContentsMargins(20, 10, 20, 10)` | 内边距 |
+| `padding: 10px 20px` | `setContentsMargins(20, 10, 20, 10)` | 内边距（Qt 顺序：left, top, right, bottom） |
 | `margin: 16px` | `setMargin(16)` | 外边距 |
 | `background-color` | `setStyleSheet("background-color: ...")` | 背景色 |
 | `border-radius` | QSS `border-radius` | 圆角 |
