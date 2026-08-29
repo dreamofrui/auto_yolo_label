@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
     QFrame, QGraphicsOpacityEffect
 )
 
-from gui.design_system import SPACING, RADIUS, FONT_SIZE, PADDING
+from gui.design_system import SPACING, RADIUS, FONT_SIZE, PADDING, LIGHT_THEME
 
 
 # =============================================================================
@@ -648,7 +648,7 @@ class ErrorPanel(QFrame):
         self._title_label = QLabel(f"{icon} {title}")
         self._title_label.setObjectName("errorTitle")
         self._title_label.setStyleSheet(
-            f"font-size: {15}px; font-weight: 600; color: #EF4444;"
+            f"font-size: {15}px; font-weight: 600; color: {LIGHT_THEME.ERROR};"
         )
         title_layout.addWidget(self._title_label)
         title_layout.addStretch()
@@ -662,7 +662,7 @@ class ErrorPanel(QFrame):
             self._desc_label.setObjectName("errorDescription")
             self._desc_label.setWordWrap(True)
             self._desc_label.setStyleSheet(
-                f"font-size: {14}px; color: #FEE2E2; line-height: 1.6;"
+                f"font-size: {14}px; color: {LIGHT_THEME.TEXT_SECONDARY}; line-height: 1.6;"
             )
             layout.addWidget(self._desc_label)
             layout.addSpacing(12)  # margin-bottom per spec
@@ -674,7 +674,7 @@ class ErrorPanel(QFrame):
             self._suggestions_label.setObjectName("errorSuggestions")
             self._suggestions_label.setWordWrap(True)
             self._suggestions_label.setStyleSheet(
-                f"font-size: {14}px; color: #FEE2E2; line-height: 1.6;"
+                f"font-size: {14}px; color: {LIGHT_THEME.TEXT_SECONDARY}; line-height: 1.6;"
             )
             layout.addWidget(self._suggestions_label)
             layout.addSpacing(12)  # margin-bottom per spec
@@ -690,7 +690,7 @@ class ErrorPanel(QFrame):
             self._toggle_button.setFlat(True)
             self._toggle_button.setCursor(Qt.PointingHandCursor)
             self._toggle_button.setStyleSheet(
-                "background: transparent; border: none; color: #EF4444; "
+                f"background: transparent; border: none; color: {LIGHT_THEME.ERROR}; "
                 "font-size: 13px; font-weight: 500; text-align: left; padding: 6px 0;"
             )
             self._toggle_button.clicked.connect(self._toggle_technical_details)
@@ -702,9 +702,9 @@ class ErrorPanel(QFrame):
             self._details_label.setWordWrap(True)
             self._details_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
             self._details_label.setStyleSheet(
-                "background: #5C1B1B; border-radius: 4px; padding: 12px 14px; "
+                f"background: {LIGHT_THEME.ERROR_BG}; border-radius: 4px; padding: 12px 14px; "
                 "font-size: 13px; font-family: 'Consolas', 'Monaco', monospace; "
-                "color: #FCA5A5; line-height: 1.5;"
+                f"color: {LIGHT_THEME.ERROR}; line-height: 1.5;"
             )
             self._details_label.setMaximumHeight(240)  # max-height per spec
             self._details_label.hide()
@@ -714,9 +714,9 @@ class ErrorPanel(QFrame):
         # Container styling per spec
         self.setStyleSheet(
             "QFrame#errorPanel { "
-            "background-color: #7F1D1D; "
-            "border: 1px solid #991B1B; "
-            "border-left: 4px solid #EF4444; "
+            f"background-color: {LIGHT_THEME.ERROR_BG}; "
+            f"border: 1px solid {LIGHT_THEME.ERROR_BORDER}; "
+            f"border-left: 4px solid {LIGHT_THEME.ERROR}; "
             "border-radius: 6px; "
             "}"
         )
@@ -799,7 +799,7 @@ class WarningPanel(QFrame):
         self._title_label = QLabel(f"⚠️ {title}")
         self._title_label.setObjectName("warningTitle")
         self._title_label.setStyleSheet(
-            f"font-size: {14}px; font-weight: 600; color: #F59E0B;"
+            f"font-size: {14}px; font-weight: 600; color: {LIGHT_THEME.WARNING};"
         )
         title_layout.addWidget(self._title_label)
         title_layout.addStretch()
@@ -813,16 +813,16 @@ class WarningPanel(QFrame):
             self._desc_label.setObjectName("warningDescription")
             self._desc_label.setWordWrap(True)
             self._desc_label.setStyleSheet(
-                f"font-size: {13}px; color: #FEF3C7; line-height: 1.5;"
+                f"font-size: {13}px; color: {LIGHT_THEME.TEXT_SECONDARY}; line-height: 1.5;"
             )
             layout.addWidget(self._desc_label)
 
         # Container styling per spec
         self.setStyleSheet(
             "QFrame#warningPanel { "
-            "background-color: #78350F; "
-            "border: 1px solid #92400E; "
-            "border-left: 4px solid #F59E0B; "
+            f"background-color: {LIGHT_THEME.WARNING_BG}; "
+            f"border: 1px solid {LIGHT_THEME.WARNING_BORDER}; "
+            f"border-left: 4px solid {LIGHT_THEME.WARNING}; "
             "border-radius: 6px; "
             "}"
         )
