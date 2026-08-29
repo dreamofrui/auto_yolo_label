@@ -507,6 +507,9 @@ class SkeletonLoader(QWidget):
     Used to show content structure while data is loading.
 
     Object name: "skeletonLoader" for QSS styling.
+
+    Uses QPropertyAnimation with windowOpacity instead of QGraphicsOpacityEffect
+    for better performance with multiple instances.
     """
 
     def __init__(
@@ -519,12 +522,11 @@ class SkeletonLoader(QWidget):
         self.setObjectName("skeletonLoader")
         self.setFixedSize(width, height)
 
-        # Opacity effect for pulsing
-        self._opacity_effect = QGraphicsOpacityEffect(self)
-        self.setGraphicsEffect(self._opacity_effect)
+        # Set initial opacity
+        self.setWindowOpacity(0.3)
 
-        # Pulse animation
-        self._pulse_animation = QPropertyAnimation(self._opacity_effect, b"opacity")
+        # Pulse animation using windowOpacity
+        self._pulse_animation = QPropertyAnimation(self, b"windowOpacity")
         self._pulse_animation.setDuration(1000)
         self._pulse_animation.setStartValue(0.3)
         self._pulse_animation.setEndValue(0.7)
