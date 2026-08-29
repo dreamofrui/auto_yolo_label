@@ -20,8 +20,8 @@
 ### ⚡ 性能优化方案
 1. **阴影系统优化**：边框模拟 + 选择性真实阴影，避免大量 QGraphicsDropShadowEffect
 2. **动画策略优化**：明确动画参数，减少不必要的过渡效果
-3. **主题切换优化**：预加载 + 分批更新，避免闪烁
-4. **渲染优化**：合理使用硬件加速，避免过度重绘
+3. **渲染优化**：合理使用硬件加速，避免过度重绘
+4. **深色主题移除**：v2.1 版本已移除深色主题支持，简化代码维护
 
 ---
 
@@ -55,10 +55,9 @@
   - [3.2 进度反馈设计](#32-进度反馈设计)
   - [3.3 错误提示设计](#33-错误提示设计)
   - [3.4 成功反馈设计](#34-成功反馈设计)
-  - [3.5 主题切换实现（性能优化）](#35-主题切换实现性能优化)
-  - [3.6 响应式适配（简化版）](#36-响应式适配简化版)
-  - [3.7 多语言预留](#37-多语言预留)
-  - [3.8 长文本显示策略（新增）](#38-长文本显示策略新增)
+  - [3.5 响应式适配（简化版）](#35-响应式适配简化版)
+  - [3.6 多语言预留](#36-多语言预留)
+  - [3.7 长文本显示策略（新增）](#37-长文本显示策略新增)
 - [第四部分：实施建议](#第四部分实施建议)
   - [4.1 实施优先级（调整版）](#41-实施优先级调整版)
   - [4.2 技术实现路径（性能优化）](#42-技术实现路径性能优化)
@@ -78,8 +77,8 @@
 ### 设计目标
 1. **对外形象**：高端、专业、可靠（对标 Labelbox 的工具感）
 2. **对内效率**：操作清晰、反馈明确、降低新人出错率
-3. **技术约束**：PySide6 桌面应用、1920x1080 为主、支持主题切换、预留多语言
-4. **性能目标**：流畅 60fps、主题切换 < 300ms、页面加载 < 500ms
+3. **技术约束**：PySide6 桌面应用、1920x1080 为主、浅色主题、预留多语言
+4. **性能目标**：流畅 60fps、页面加载 < 500ms
 
 ### 设计优先级
 1. **视觉重构** > 交互优化 > 新增功能
@@ -93,65 +92,9 @@
 
 ### 1.1 色彩规范
 
-#### 深色主题（默认）— Dark Professional
+#### 浅色主题 — Light Professional
 
-**背景色系**
-```
---bg-app: #0A0E14          // 应用底色（最深层）
---bg-surface: #141922      // 主内容区底色
---bg-elevated: #1C2128     // 卡片、弹窗底色（悬浮层）
---bg-hover: #252D38        // Hover 状态背景
---bg-active: #2D3642       // Active/选中状态背景
---bg-input: #1A1F29        // 输入框背景
-```
-
-**文字色系**
-```
---text-primary: #E6EDF3    // 主要文字（标题、重点信息）
---text-secondary: #9DA9BB  // 次要文字（描述、说明）
---text-tertiary: #6B7785   // 辅助文字（提示、占位符）
---text-disabled: #484F5C   // 禁用状态文字
-```
-
-**品牌色与强调色**
-```
---brand-primary: #0EA5E9   // 品牌主色（天蓝）— 主按钮、链接、选中状态
---brand-hover: #0284C7     // Hover 状态
---brand-active: #0369A1    // Active 状态
---brand-subtle: #082F49    // 品牌色背景（深色模式下的浅色块）
-```
-
-**语义色系**
-```
-// 成功
---success: #10B981
---success-bg: #064E3B
---success-border: #065F46
-
-// 警告
---warning: #F59E0B
---warning-bg: #78350F
---warning-border: #92400E
-
-// 错误
---error: #EF4444
---error-bg: #7F1D1D
---error-border: #991B1B
-
-// 信息
---info: #3B82F6
---info-bg: #1E3A8A
---info-border: #1E40AF
-```
-
-**边框与分割线**
-```
---border-default: #30363D  // 默认边框
---border-subtle: #21262D   // 轻微分割线
---border-emphasis: #525964 // 强调边框
-```
-
-#### 浅色主题（日间模式）— Light Professional
+> **说明**：本项目采用浅色主题作为唯一主题。深色主题已在 v2.1 版本中移除。
 
 **背景色系**
 ```
@@ -171,7 +114,7 @@
 --text-disabled: #CBD5E1   // 禁用状态
 ```
 
-**品牌色**（与深色主题一致）
+**品牌色**
 ```
 --brand-primary: #0EA5E9
 --brand-hover: #0284C7
@@ -335,76 +278,7 @@ RADIUS_FULL = 9999 # 圆形元素
 > - **仅在必要处使用真实阴影**（QGraphicsDropShadowEffect）
 > - **Hover 状态动态启用阴影**（静态状态不启用）
 
-#### 深色主题
-
 **方案 A：边框模拟阴影（推荐，高性能）**
-```python
-# 轻微阴影（静态卡片）
-border: 1px solid #21262D
-border-bottom: 2px solid #1A1F29  # 模拟阴影
-
-# 中等阴影（重要卡片）
-border: 1px solid #30363D
-border-bottom: 3px solid #21262D
-
-# 强调阴影（悬浮元素）
-border: 1px solid #525964
-border-bottom: 4px solid #30363D
-```
-
-**方案 B：真实阴影（选择性使用，QGraphicsDropShadowEffect）**
-```python
-# 仅在以下场景使用
-# 1. 登录页卡片（静态，数量少）
-# 2. 弹窗/模态框（临时显示）
-# 3. 主页卡片 Hover 状态（动态启用）
-
-SHADOW_SM_REAL = QGraphicsDropShadowEffect()
-SHADOW_SM_REAL.setBlurRadius(4)
-SHADOW_SM_REAL.setColor(QColor(0, 0, 0, 128))  # 50% 不透明度
-SHADOW_SM_REAL.setOffset(0, 2)
-
-SHADOW_MD_REAL = QGraphicsDropShadowEffect()
-SHADOW_MD_REAL.setBlurRadius(8)
-SHADOW_MD_REAL.setColor(QColor(0, 0, 0, 128))
-SHADOW_MD_REAL.setOffset(0, 4)
-
-SHADOW_LG_REAL = QGraphicsDropShadowEffect()
-SHADOW_LG_REAL.setBlurRadius(16)
-SHADOW_LG_REAL.setColor(QColor(0, 0, 0, 102))  # 40% 不透明度
-SHADOW_LG_REAL.setOffset(0, 8)
-```
-
-**阴影使用决策树与组件对照表**（完整版）
-
-```
-需要阴影效果？
-├─ 是否静态显示？
-│  ├─ 是 → 边框模拟阴影（方案 A）
-│  └─ 否（Hover/临时）→ 真实阴影（方案 B）
-└─ 元素数量 > 10？
-   ├─ 是 → 边框模拟阴影（方案 A）
-   └─ 否 → 可用真实阴影（方案 B）
-```
-
-**组件阴影方案对照表**（实施指南）
-
-| 组件类型 | 方案 | 阴影规格 | 理由 |
-|---------|------|---------|------|
-| 主页模块卡片（静态） | 方案 A | border-bottom: 2px | 8 个卡片，静态显示 |
-| 主页模块卡片（Hover） | 方案 A | border-bottom: 3px + translateY(-2px) | 动画用 transform，不用真实阴影 |
-| 登录页表单卡片 | 方案 B | SHADOW_MD_REAL | 单一卡片，可用真实阴影 |
-| 任务中心任务卡片 | 方案 A | border-bottom: 2px | 数量不定，用边框模拟 |
-| 预检结果卡片 | 方案 A | border-bottom: 2px | 页面内多个卡片 |
-| 手册页章节卡片 | 方案 A | border: 1px solid | 无阴影，仅边框 |
-| 设置页参数组卡片 | 方案 A | border: 1px solid | 无阴影，仅边框 |
-| 按钮（Primary） | 方案 A | border-bottom: 2px（Hover） | 高频交互，用边框 |
-| 输入框（Focus） | 无阴影 | outline: 2px | 用 outline 模拟外发光 |
-| 弹窗/确认对话框 | 方案 B | SHADOW_LG_REAL | 临时显示，可用真实阴影 |
-
-#### 浅色主题
-
-**方案 A：边框模拟阴影（推荐）**
 ```python
 # 轻微阴影
 border: 1px solid #E2E8F0
@@ -436,11 +310,12 @@ SHADOW_MD_REAL.setOffset(0, 4)
 
 ### 1.6 组件规范
 
+> **说明**：以下组件规范基于浅色主题。深色主题已在 v2.1 版本中移除。
+
 #### 按钮（Button）
 
 **主要按钮（Primary）**
 ```python
-# 深色主题
 background: #0EA5E9
 color: #FFFFFF
 border: none
@@ -461,28 +336,27 @@ transform: translateY(1px)  # 按下效果配合边框
 border-bottom: 1px solid #0369A1  # 同步调整
 
 # Disabled
-background: #30363D
-color: #6B7785
+background: #E2E8F0
+color: #94A3B8
 cursor: not-allowed
 border-bottom: none
 ```
 
 **次要按钮（Secondary）**
 ```python
-# 深色主题
 background: transparent
-color: #9DA9BB
-border: 1px solid #30363D
+color: #475569
+border: 1px solid #E2E8F0
 border-radius: 6px
 padding: 10px 20px
 
 # Hover
-background: #252D38
-border-color: #525964
-color: #E6EDF3
+background: #F1F5F9
+border-color: #CBD5E1
+color: #0F172A
 
 # Active
-background: #2D3642
+background: #E2E8F0
 ```
 
 **危险按钮（Danger）**
@@ -498,10 +372,9 @@ border-bottom: 2px solid #B91C1C  # 边框模拟阴影
 #### 输入框（Input）
 
 ```python
-# 深色主题
-background: #1A1F29
-color: #E6EDF3
-border: 1px solid #30363D
+background: #FFFFFF
+color: #0F172A
+border: 1px solid #E2E8F0
 border-radius: 6px
 padding: 10px 12px
 font-size: 14px
@@ -517,8 +390,8 @@ border-color: #EF4444
 outline: 2px solid rgba(239, 68, 68, 0.2)
 
 # Disabled
-background: #0A0E14
-color: #6B7785
+background: #F8FAFC
+color: #94A3B8
 cursor: not-allowed
 ```
 
@@ -526,27 +399,26 @@ cursor: not-allowed
 
 ```python
 # 与输入框保持一致的样式
-# 下拉箭头颜色：#9DA9BB
-# 下拉面板背景：#1C2128
-# 选项 Hover：#252D38
-# 选中项背景：#082F49
+# 下拉箭头颜色：#475569
+# 下拉面板背景：#FFFFFF
+# 选项 Hover：#F1F5F9
+# 选中项背景：#E0F2FE
 # 选中项文字：#0EA5E9
 ```
 
 #### 卡片（Card）
 
 ```python
-# 深色主题
-background: #141922
-border: 1px solid #21262D
+background: #FFFFFF
+border: 1px solid #E2E8F0
 border-radius: 8px
 padding: 24px
 # 性能优化：静态卡片用边框模拟阴影
-border-bottom: 2px solid #1A1F29
+border-bottom: 2px solid #CBD5E1
 
 # Hover（可交互卡片）
-border-color: #30363D
-border-bottom: 3px solid #21262D  # 加强阴影
+border-color: #CBD5E1
+border-bottom: 3px solid #94A3B8  # 加强阴影
 transform: translateY(-2px)
 # 过渡动画（性能优化：只过渡 transform 和 border）
 transition: transform 0.2s ease, border-color 0.2s ease
@@ -557,7 +429,7 @@ transition: transform 0.2s ease, border-color 0.2s ease
 **小进度条（8px）- 用于紧凑场景**
 ```python
 # 容器
-background: #1A1F29
+background: #F1F5F9
 height: 8px
 border-radius: 4px
 overflow: hidden
@@ -576,7 +448,7 @@ height: 100%
 **大进度条（24px）- 用于主要展示**
 ```python
 # 容器
-background: #1A1F29
+background: #F1F5F9
 height: 24px
 border-radius: 6px
 padding: 0 12px
@@ -591,7 +463,7 @@ height: 100%
 
 # 文字
 font-size: 14px
-color: #E6EDF3
+color: #0F172A
 line-height: 24px
 text-align: center
 ```
@@ -605,18 +477,18 @@ text-align: center
 
 ```python
 # 默认标签
-background: #252D38
-color: #9DA9BB
+background: #F1F5F9
+color: #475569
 padding: 4px 10px
 border-radius: 4px
 font-size: 12px
 font-weight: 500
 
 # 状态标签
-# 运行中：background: #065F46, color: #10B981
-# 已完成：background: #1E3A8A, color: #3B82F6
-# 失败：background: #7F1D1D, color: #EF4444
-# 等待中：background: #92400E, color: #F59E0B
+# 运行中：background: #D1FAE5, color: #10B981
+# 已完成：background: #DBEAFE, color: #3B82F6
+# 失败：background: #FEE2E2, color: #EF4444
+# 等待中：background: #FEF3C7, color: #F59E0B
 ```
 
 ---
@@ -819,7 +691,6 @@ class AnimationMonitor:
 │  ─────────────     │  │                             │   │
 │  📖 使用手册       │  │                             │   │
 │  ⚙️ 设置           │  └─────────────────────────────┘   │
-│  🌓 主题切换       │                                      │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -918,50 +789,6 @@ transition: background-color 0.15s ease, color 0.15s ease
 ## 选中时编号徽章
 background: #0EA5E9
 color: #FFFFFF
-
-# 底部工具按钮区域
-position: absolute
-bottom: 0
-width: 100%
-padding: 16px 20px
-border-top: 1px solid #21262D
-background: #0A0E14
-
-## 主题切换按钮
-display: flex
-align-items: center
-justify-content: space-between
-padding: 8px 12px
-border-radius: 6px
-background: #141922
-color: #9DA9BB
-font-size: 13px
-cursor: pointer
-
-## 切换开关（Toggle）
-width: 40px
-height: 22px
-border-radius: 11px
-background: #30363D
-position: relative
-transition: background-color 0.2s ease
-
-## 开关滑块
-width: 18px
-height: 18px
-border-radius: 9px
-background: #9DA9BB
-position: absolute
-top: 2px
-left: 2px
-transition: transform 0.2s ease, background-color 0.2s ease
-
-## 激活状态（深色模式）
-# Toggle 背景
-background: #0EA5E9
-# 滑块
-background: #FFFFFF
-transform: translateX(18px)
 ```
 
 **视觉效果对比**：
@@ -2264,11 +2091,7 @@ animation: spin 0.8s linear infinite
     100% { transform: rotate(360deg); }
 }
 
-# 颜色（深色主题）
-border: 3px solid #30363D      # 轨道颜色（灰色）
-border-top-color: #0EA5E9     # 旋转部分（品牌色）
-
-# 颜色（浅色主题）
+# 颜色
 border: 3px solid #E2E8F0      # 轨道颜色（浅灰）
 border-top-color: #0EA5E9     # 旋转部分（品牌色）
 ```
@@ -2907,239 +2730,7 @@ line-height: 1.5
 
 ---
 
-### 3.5 主题切换实现（性能优化）
-
-> **性能优化策略**：预加载 + 分批更新 + 选择性过渡
-
-#### 主题系统架构
-
-```python
-# 主题管理器
-class ThemeManager:
-    def __init__(self):
-        self.current_theme = "dark"  # "dark" | "light"
-        self.dark_stylesheet = self._load_stylesheet("dark")
-        self.light_stylesheet = self._load_stylesheet("light")
-        self.transitioning = False
-    
-    def toggle_theme(self):
-        """切换主题（性能优化版本）"""
-        if self.transitioning:
-            return  # 防止重复切换
-        
-        self.transitioning = True
-        new_theme = "light" if self.current_theme == "dark" else "dark"
-        new_stylesheet = self.light_stylesheet if new_theme == "light" else self.dark_stylesheet
-        
-        # 步骤 1：禁用所有动画（避免过渡冲突）
-        self._disable_animations()
-        
-        # 步骤 2：分批更新样式表（减少单次阻塞时间）
-        QTimer.singleShot(0, lambda: self._apply_stylesheet_batch_1(new_stylesheet))
-        QTimer.singleShot(50, lambda: self._apply_stylesheet_batch_2(new_stylesheet))
-        QTimer.singleShot(100, lambda: self._apply_stylesheet_batch_3(new_stylesheet))
-        
-        # 步骤 3：恢复动画
-        QTimer.singleShot(350, lambda: self._enable_animations())
-        
-        # 步骤 4：更新状态
-        self.current_theme = new_theme
-        self.transitioning = False
-    
-    def _apply_stylesheet_batch_1(self, stylesheet: str):
-        """批次 1：应用全局样式"""
-        QApplication.instance().setStyleSheet(stylesheet)
-    
-    def _apply_stylesheet_batch_2(self, stylesheet: str):
-        """批次 2：更新主窗口"""
-        main_window = QApplication.instance().activeWindow()
-        if main_window:
-            main_window.update()
-    
-    def _apply_stylesheet_batch_3(self, stylesheet: str):
-        """批次 3：更新子组件"""
-        # 强制重绘所有可见组件
-        for widget in QApplication.instance().allWidgets():
-            if widget.isVisible():
-                widget.update()
-    
-    def _disable_animations(self):
-        """临时禁用动画（避免切换闪烁）"""
-        # 设置全局标志，动画代码检查此标志
-        global ANIMATIONS_ENABLED
-        ANIMATIONS_ENABLED = False
-    
-    def _enable_animations(self):
-        """恢复动画"""
-        global ANIMATIONS_ENABLED
-        ANIMATIONS_ENABLED = True
-```
-
-#### 主题样式表结构
-
-```python
-# 深色主题 QSS
-DARK_THEME_QSS = """
-/* 全局通用 */
-* {
-    /* 仅过渡颜色，不过渡布局属性 */
-    transition: background-color 0.3s ease,
-                border-color 0.3s ease,
-                color 0.3s ease;
-}
-
-/* 排除动画元素 */
-QProgressBar, .spinner, .pulse-animation {
-    transition: none !important;
-}
-
-/* 背景色 */
-QMainWindow {
-    background-color: #0A0E14;
-}
-
-QWidget#workbenchView {
-    background-color: #141922;
-}
-
-/* 导航栏 */
-QFrame#sideNav {
-    background-color: #0A0E14;
-    border-right: 1px solid #21262D;
-}
-
-/* 按钮 */
-QPushButton#primaryButton {
-    background-color: #0EA5E9;
-    color: #FFFFFF;
-    border: none;
-    border-radius: 6px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-QPushButton#primaryButton:hover {
-    background-color: #0284C7;
-}
-
-/* ... 更多样式 ... */
-"""
-
-# 浅色主题 QSS
-LIGHT_THEME_QSS = """
-/* 全局通用 */
-* {
-    transition: background-color 0.3s ease,
-                border-color 0.3s ease,
-                color 0.3s ease;
-}
-
-/* 排除动画元素 */
-QProgressBar, .spinner, .pulse-animation {
-    transition: none !important;
-}
-
-/* 背景色 */
-QMainWindow {
-    background-color: #F8FAFC;
-}
-
-QWidget#workbenchView {
-    background-color: #FFFFFF;
-}
-
-/* ... 更多样式 ... */
-"""
-```
-
-#### 主题切换按钮（侧边栏底部）
-
-```python
-# 见 2.1 节侧边导航设计 "底部工具按钮区域"
-# Toggle 开关实现
-
-class ThemeToggle(QWidget):
-    theme_changed = Signal(str)  # "dark" | "light"
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.current_theme = "dark"
-        self._init_ui()
-    
-    def _init_ui(self):
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        
-        # 标签
-        label = QLabel("深色模式")
-        label.setObjectName("themeToggleLabel")
-        
-        # Toggle 开关
-        self.toggle = ToggleSwitch(self)
-        self.toggle.setChecked(True)  # 深色模式默认开启
-        self.toggle.toggled.connect(self._on_toggle)
-        
-        layout.addWidget(label)
-        layout.addStretch()
-        layout.addWidget(self.toggle)
-    
-    def _on_toggle(self, checked: bool):
-        self.current_theme = "dark" if checked else "light"
-        self.theme_changed.emit(self.current_theme)
-
-class ToggleSwitch(QWidget):
-    toggled = Signal(bool)
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedSize(40, 22)
-        self._checked = False
-        self._animation = QPropertyAnimation(self, b"thumb_position")
-        self._animation.setDuration(200)
-        self._animation.setEasingCurve(QEasingCurve.Type.OutCubic)
-        self._thumb_position = 2  # 初始位置
-    
-    def setChecked(self, checked: bool):
-        if self._checked != checked:
-            self._checked = checked
-            target = 20 if checked else 2
-            self._animation.setStartValue(self._thumb_position)
-            self._animation.setEndValue(target)
-            self._animation.start()
-            self.toggled.emit(checked)
-    
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        
-        # 绘制轨道
-        track_color = QColor("#0EA5E9") if self._checked else QColor("#30363D")
-        painter.setBrush(track_color)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawRoundedRect(0, 0, 40, 22, 11, 11)
-        
-        # 绘制滑块
-        thumb_color = QColor("#FFFFFF") if self._checked else QColor("#9DA9BB")
-        painter.setBrush(thumb_color)
-        painter.drawEllipse(int(self._thumb_position), 2, 18, 18)
-    
-    @pyqtProperty(int)
-    def thumb_position(self):
-        return self._thumb_position
-    
-    @thumb_position.setter
-    def thumb_position(self, pos):
-        self._thumb_position = pos
-        self.update()
-    
-    def mousePressEvent(self, event):
-        self.setChecked(not self._checked)
-```
-
----
-
-### 3.6 响应式适配（简化版）
+### 3.5 响应式适配（简化版）
 
 > **简化策略**：3 个断点 + 明确降级规则
 
@@ -3281,7 +2872,7 @@ class ResponsiveManager:
 
 ---
 
-### 3.7 多语言预留
+### 3.6 多语言预留
 
 > **设计说明**：多语言预留沿用 `UI_SPEC.md` 规格，此处不展开。
 
@@ -3293,7 +2884,7 @@ class ResponsiveManager:
 
 ---
 
-### 3.8 长文本显示策略（完整版）
+### 3.7 长文本显示策略（完整版）
 
 > **通用原则**：优先截断 + Tooltip 显示完整 + 可展开详情
 
@@ -3502,7 +3093,6 @@ class ExpandableDetails(QWidget):
 │  └─ 组件阴影决策表
 │
 ├─ QSS 主题文件编写（2 天）
-│  ├─ 深色主题完整 QSS
 │  ├─ 浅色主题完整 QSS
 │  ├─ 组件样式（按钮/输入框/卡片/标签）
 │  └─ 动画/过渡定义
@@ -3511,17 +3101,10 @@ class ExpandableDetails(QWidget):
 │  ├─ 静态卡片边框样式
 │  ├─ Hover 状态增强
 │  └─ 组件对照表验证
-│
-└─ 主题切换管理器（2 天）
-   ├─ ThemeManager 类
-   ├─ Toggle 开关组件
-   ├─ 性能优化（分批更新）
-   └─ 主题持久化
 ```
 
 **验收标准**：
-- [ ] 深色/浅色主题完整 QSS 文件
-- [ ] 主题切换流畅无闪烁（< 300ms）
+- [ ] 浅色主题完整 QSS 文件
 - [ ] 边框模拟阴影视觉效果达标
 - [ ] 所有组件使用统一 Design Token
 
@@ -3534,8 +3117,7 @@ class ExpandableDetails(QWidget):
 │  ├─ 宽度增加到 240px
 │  ├─ 修复选中状态跳动（透明边框占位）
 │  ├─ 编号徽章视觉分离
-│  ├─ Hover/选中状态优化
-│  └─ 主题切换按钮集成
+│  └─ Hover/选中状态优化
 │
 ├─ 登录页（2 天）
 │  ├─ 左右布局（40% / 60%）
@@ -3625,18 +3207,12 @@ class ExpandableDetails(QWidget):
 
 ```python
 # 1. 定义阴影工具函数
-def apply_border_shadow(widget: QWidget, theme: str = "dark"):
-    """应用边框模拟阴影"""
-    if theme == "dark":
-        widget.setStyleSheet("""
-            border: 1px solid #21262D;
-            border-bottom: 2px solid #1A1F29;
-        """)
-    else:
-        widget.setStyleSheet("""
-            border: 1px solid #E2E8F0;
-            border-bottom: 2px solid #CBD5E1;
-        """)
+def apply_border_shadow(widget: QWidget):
+    """应用边框模拟阴影（浅色主题）"""
+    widget.setStyleSheet("""
+        border: 1px solid #E2E8F0;
+        border-bottom: 2px solid #CBD5E1;
+    """)
 
 def apply_real_shadow(widget: QWidget, size: str = "medium"):
     """应用真实阴影（仅必要场景）"""
@@ -3650,7 +3226,7 @@ def apply_real_shadow(widget: QWidget, size: str = "medium"):
     else:  # large
         shadow.setBlurRadius(16)
         shadow.setOffset(0, 8)
-    shadow.setColor(QColor(0, 0, 0, 128))
+    shadow.setColor(QColor(0, 0, 0, 13))  # 5% 不透明度（浅色主题）
     widget.setGraphicsEffect(shadow)
 
 # 2. 按组件对照表应用
@@ -3662,38 +3238,10 @@ for card in self.home_module_buttons:
 apply_real_shadow(self.login_card, "medium")
 ```
 
-#### 主题切换实施
-
-```python
-# 1. 准备主题 QSS 文件
-# themes/dark.qss
-# themes/light.qss
-
-# 2. 实现 ThemeManager（见 3.5 节）
-
-# 3. 集成到主窗口
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.theme_manager = ThemeManager()
-        self.theme_toggle = ThemeToggle(self)
-        self.theme_toggle.theme_changed.connect(
-            self.theme_manager.toggle_theme
-        )
-        self._load_initial_theme()
-    
-    def _load_initial_theme(self):
-        # 加载用户上次选择的主题
-        settings = QSettings("AutoLabeler", "UI")
-        theme = settings.value("theme", "dark")
-        self.theme_manager.set_theme(theme)
-        self.theme_toggle.setChecked(theme == "dark")
-```
-
 #### 响应式实施
 
 ```python
-# 1. 实现 ResponsiveManager（见 3.6 节）
+# 1. 实现 ResponsiveManager（见 3.5 节）
 
 # 2. 集成到主窗口
 class MainWindow(QMainWindow):
@@ -3719,12 +3267,10 @@ class MainWindow(QMainWindow):
 标准：WCAG AA（4.5:1 for normal text, 3:1 for large text）
 
 检查项：
-[ ] 深色主题 - 主要文字 vs 背景（#E6EDF3 on #141922）
-[ ] 深色主题 - 次要文字 vs 背景（#9DA9BB on #141922）
-[ ] 深色主题 - 品牌色 vs 背景（#0EA5E9 on #141922）
 [ ] 浅色主题 - 主要文字 vs 背景（#0F172A on #FFFFFF）
 [ ] 浅色主题 - 次要文字 vs 背景（#475569 on #FFFFFF）
 [ ] 浅色主题 - 辅助文字 vs 背景（#94A3B8 on #FFFFFF）
+[ ] 浅色主题 - 品牌色 vs 背景（#0EA5E9 on #FFFFFF）
 ```
 
 **字体渲染**
@@ -3825,7 +3371,6 @@ class MainWindow(QMainWindow):
 检查项：
 [ ] 主页渲染 < 500ms
 [ ] 页面切换 < 200ms
-[ ] 主题切换 < 300ms
 [ ] 卡片 Hover 动画流畅（60fps）
 [ ] 进度条更新流畅（60fps）
 [ ] 任务中心自动刷新不卡顿
@@ -3839,7 +3384,6 @@ class MainWindow(QMainWindow):
 检查项：
 [ ] 启动后内存 < 150MB
 [ ] 页面切换无内存泄漏
-[ ] 主题切换无内存泄漏
 [ ] 长时间运行（1 小时）内存稳定
 ```
 
@@ -3934,21 +3478,7 @@ UI 测试工程师：0.5 人 × 2 周
 
 #### 高风险
 
-**风险 1：主题切换性能优化未达预期**
-```
-描述：300ms 目标可能无法达成，大量组件同时更新导致卡顿
-影响：用户体验下降，主题切换不流畅
-概率：中（30%）
-影响：高
-
-应对措施：
-- 预案 A：延长目标到 500ms，仍优于无优化版本
-- 预案 B：实施更激进的分批更新策略（5 批次）
-- 预案 C：提供"禁用主题切换动画"选项，立即切换
-- 降级方案：保持深色主题为唯一主题，移除切换功能
-```
-
-**风险 2：阴影系统双轨制维护成本高**
+**风险 1：阴影系统双轨制维护成本高**
 ```
 描述：边框模拟 + 真实阴影混用，开发者难以决策，调试困难
 影响：实施延期，视觉不一致
@@ -3964,7 +3494,7 @@ UI 测试工程师：0.5 人 × 2 周
 
 #### 中风险
 
-**风险 3：响应式适配测试工作量超预期**
+**风险 2：响应式适配测试工作量超预期**
 ```
 描述：3 个断点 × 12 个页面 = 36+ 场景，测试时间不足
 影响：实施延期，部分页面响应式不完整
@@ -3978,7 +3508,7 @@ UI 测试工程师：0.5 人 × 2 周
 - 降级方案：只支持 >= 1366px 分辨率
 ```
 
-**风险 4：空状态/Loading/错误状态设计不一致**
+**风险 3：空状态/Loading/错误状态设计不一致**
 ```
 描述：补充设计时间紧张，组件复用不足，视觉不统一
 影响：用户体验不一致，维护成本高
@@ -3994,7 +3524,7 @@ UI 测试工程师：0.5 人 × 2 周
 
 #### 低风险
 
-**风险 5：色彩对比度不符合 WCAG AA 标准**
+**风险 4：色彩对比度不符合 WCAG AA 标准**
 ```
 描述：部分颜色组合对比度不足 4.5:1
 影响：可访问性不达标，视觉疲劳
@@ -4007,7 +3537,7 @@ UI 测试工程师：0.5 人 × 2 周
 - 预案 C：提供"高对比度模式"（可选）
 ```
 
-**风险 6：字体回退问题（macOS）**
+**风险 5：字体回退问题（macOS）**
 ```
 描述：macOS 上微软雅黑不可用，PingFang SC 渲染效果与设计稿差异大
 影响：macOS 用户视觉体验下降
@@ -4029,7 +3559,7 @@ UI 测试工程师：0.5 人 × 2 周
 - 及时启动应对措施
 
 关键里程碑检查：
-- Phase 1 结束：主题切换性能达标？
+- Phase 1 结束：阴影系统性能达标？
 - Phase 2 结束：响应式适配策略可行？
 - Phase 3 结束：组件库复用率 > 80%？
 - Phase 4 中期：功能页进度是否按计划？
@@ -4042,12 +3572,14 @@ UI 测试工程师：0.5 人 × 2 周
 ### A. 设计 Token 速查表
 
 ```python
-# 色彩
+# 色彩（浅色主题）
 BRAND_PRIMARY = "#0EA5E9"
-TEXT_PRIMARY_DARK = "#E6EDF3"
-TEXT_SECONDARY_DARK = "#9DA9BB"
-BG_SURFACE_DARK = "#141922"
-BG_ELEVATED_DARK = "#1C2128"
+TEXT_PRIMARY = "#0F172A"
+TEXT_SECONDARY = "#475569"
+TEXT_TERTIARY = "#94A3B8"
+BG_APP = "#F8FAFC"
+BG_SURFACE = "#FFFFFF"
+BG_ELEVATED = "#FFFFFF"
 
 # 字体
 FONT_SIZE_H1 = 28
