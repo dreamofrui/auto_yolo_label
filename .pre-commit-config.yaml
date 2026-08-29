@@ -18,7 +18,7 @@ repos:
     rev: 24.4.2
     hooks:
       - id: black
-        files: ^(core|utils|gui|api|tests|scripts|examples)/.*\.py$
+        files: ^(core|utils|gui|tests|scripts|server_scripts|examples)/.*\.py$
         language_version: python3.11
 
   # Lint + import 排序
@@ -27,9 +27,9 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-        files: ^(core|utils|gui|api|tests|scripts|examples)/.*\.py$
+        files: ^(core|utils|gui|tests|scripts|server_scripts|examples)/.*\.py$
       - id: ruff-format
-        files: ^(core|utils|gui|api|tests|scripts|examples)/.*\.py$
+        files: ^(core|utils|gui|tests|scripts|server_scripts|examples)/.*\.py$
 
   # 项目纪律检查（10 条强制纪律中可机器化的 6 条）
   - repo: local

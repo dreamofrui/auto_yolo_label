@@ -213,6 +213,7 @@ class SamplePage(QWidget):
         self.log_box.setMinimumHeight(72)
         self.log_box.setMaximumHeight(96)
         left.addWidget(self.log_box, 0)
+        left.addStretch(1)
         left.addLayout(actions)
 
         self.ai_assistant_panel = build_ai_assistant_panel(

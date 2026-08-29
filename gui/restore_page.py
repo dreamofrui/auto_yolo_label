@@ -41,6 +41,7 @@ from gui.workers.restore_worker import (
     RestoreWorkerOutcome,
 )
 from gui.tool_defaults import ToolDefaults
+from utils.exceptions import ErrorInfo
 from utils.task_registry import TaskRegistry
 
 
@@ -247,11 +248,12 @@ class RestorePage(QWidget):
         left.addLayout(writeback_controls)
         left.addWidget(self.result_summary)
         left.addWidget(self.preflight_panel)
-        left.addLayout(actions)
         self.log_box = build_log_box("[ready] 等待还原预检")
         self.log_box.setMinimumHeight(96)
         self.log_box.setMaximumHeight(140)
         left.addWidget(self.log_box, 0)
+        left.addStretch(1)
+        left.addLayout(actions)
 
         self.ai_assistant_panel = build_ai_assistant_panel(
             context="还原页用于把 YOLO 标签写回为原图同级 VOC XML"
@@ -338,9 +340,7 @@ class RestorePage(QWidget):
 
     def _handle_preflight_outcome(self, outcome: RestorePreflightOutcome) -> None:
         if not outcome.success or outcome.result is None:
-            error = outcome.error
-            details = "" if error is None else f"{error.code}: {error.message}"
-            self._show_error("预检失败", details)
+            self._show_error_info("预检失败", outcome.error)
             self._preflight_ready = False
             self._sync_action_state()
             return
@@ -376,9 +376,7 @@ class RestorePage(QWidget):
 
     def _handle_restore_outcome(self, outcome: RestoreWorkerOutcome) -> None:
         if not outcome.success or outcome.result is None:
-            error = outcome.error
-            details = "" if error is None else f"{error.code}: {error.message}"
-            self._show_error("还原失败", details)
+            self._show_error_info("还原失败", outcome.error)
             return
         self._show_success(outcome.result)
         self._preflight_ready = False
@@ -505,6 +503,21 @@ class RestorePage(QWidget):
                 )
             )
         )
+
+    def _show_error_info(self, message: str, error: ErrorInfo | None) -> None:
+        """Show a compact failure summary and full actionable diagnostics."""
+        if error is None:
+            self._show_error(message, "")
+            return
+        self.result_summary.setText(f"{message}：{error.code}: {error.message}")
+        lines = [
+            f"[failed] {message}",
+            f"code: {error.code}",
+            f"message: {error.message}",
+        ]
+        if error.details:
+            lines.extend(error.details.splitlines())
+        self.log_box.setPlainText("\n".join(lines))
 
     def _show_error(self, message: str, details: str) -> None:
         text = message if not details else f"{message}：{details}"

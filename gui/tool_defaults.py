@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -10,16 +11,35 @@ from typing import Any
 
 @dataclass(frozen=True)
 class ToolDefaults:
-    """Non-path default parameters for tool pages."""
+    """Default parameters for tool pages.
+
+    Includes both non-path parameters (numeric/enum) and tool configuration paths
+    (Python interpreter, external tool paths). Work data paths (input/output dirs)
+    are not persisted here.
+    """
 
     sample: dict[str, object] = field(default_factory=dict)
     train: dict[str, object] = field(default_factory=dict)
     infer: dict[str, object] = field(default_factory=dict)
     convert: dict[str, object] = field(default_factory=dict)
     restore: dict[str, object] = field(default_factory=dict)
+    labelimg: dict[str, object] = field(default_factory=dict)
 
 
-DEFAULT_TOOL_DEFAULTS_PATH = Path.home() / ".autolabeler" / "tool_defaults.json"
+def _get_app_root() -> Path:
+    """Return application root directory for user configuration.
+
+    Always returns the user's home directory to ensure configs are writable
+    in both development and packaged modes. This avoids permission issues
+    when installed to system directories like Program Files.
+
+    Returns:
+        User home directory (e.g., C:/Users/username on Windows)
+    """
+    return Path.home()
+
+
+DEFAULT_TOOL_DEFAULTS_PATH = _get_app_root() / ".autolabeler" / "tool_defaults.json"
 
 
 def load_tool_defaults(path: Path | None = None) -> ToolDefaults:
@@ -39,6 +59,7 @@ def load_tool_defaults(path: Path | None = None) -> ToolDefaults:
         infer=_dict_value(raw, "infer"),
         convert=_dict_value(raw, "convert"),
         restore=_dict_value(raw, "restore"),
+        labelimg=_dict_value(raw, "labelimg"),
     )
 
 
@@ -76,6 +97,34 @@ def default_bool(defaults: ToolDefaults, section: str, key: str, fallback: bool)
     if isinstance(value, int):
         return bool(value)
     return fallback
+
+
+def default_path(defaults: ToolDefaults, section: str, key: str, fallback: str) -> str:
+    """Read one default value as path string.
+
+    Returns the configured path if present, otherwise returns fallback.
+    Does not validate path existence - validation happens at usage time.
+    However, validates that the value can be converted to a valid Path object.
+
+    Args:
+        defaults: Tool defaults configuration
+        section: Configuration section name
+        key: Configuration key name
+        fallback: Default value if not configured or invalid
+
+    Returns:
+        Configured path string or fallback
+    """
+    value = _section(defaults, section).get(key)
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return fallback
+    try:
+        # Validate it's a valid path string (not that it exists)
+        Path(str(value))
+        return str(value)
+    except (ValueError, TypeError, OSError):
+        # Invalid path string (e.g., null bytes, invalid characters)
+        return fallback
 
 
 def _section(defaults: ToolDefaults, section: str) -> dict[str, object]:

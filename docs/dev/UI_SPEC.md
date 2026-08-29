@@ -2,6 +2,7 @@
 
 > Status: owner-confirmed GUI spec.
 > Last updated: 2026-05-28
+> Regression gate: `docs/dev/UI_REGRESSION_BOUNDARY.md`.
 
 This document defines the first-version desktop GUI direction. It complements
 `docs/dev/PRODUCT_SPEC.md`; when product behavior and UI differ, clarify before
@@ -33,7 +34,7 @@ feedback, logs, result summary, and actionable errors.
 
 ## 2. Design Direction
 
-Use a light main workspace, dark side navigation, and restrained brand accent.
+Use a consistent light workspace and navigation with a restrained brand accent.
 The interface should look professional, stable, and task-focused.
 
 Design rules:
@@ -420,6 +421,9 @@ Rules:
 - Existing XML blocks by default.
 - Missing classes, missing images, duplicate same-stem images, invalid labels,
   and XML conversion errors block.
+- Annotation failures keep the visible summary compact and put actionable
+  diagnostics in the log: label path, line number, raw YOLO row, matched image
+  path and size, class, converted pixel bounds, and the violated boundary.
 - No file writes happen before preflight and confirmation.
 - Completion shows written XML count, skipped count, failed count, and target
   locations.

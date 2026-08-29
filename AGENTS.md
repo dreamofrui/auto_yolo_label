@@ -4,16 +4,17 @@
 > `docs/dev/ONBOARDING_SUMMARY.md`, `docs/dev/PRODUCT_SPEC.md`, and
 > `docs/dev/UI_SPEC.md`.
 
-## Direction
+## Trellis Disabled
 
-- Desktop-first.
-- GUI is the formal first-version product surface.
-- Core logic stays stable and framework-free.
-- `runtime/` and `cli/` are deleted; do not reintroduce them as active
-  architecture surfaces.
-- Web, FastAPI, browser UI, and Node subprocess integration are not current
-  goals.
-- `legacy/` is read-only.
+Trellis is disabled for this repository by owner direction.
+
+- Do not invoke any Trellis skill, command, agent, hook, or workflow unless the
+  owner explicitly requests Trellis in the current message.
+- Do not read `.trellis*`, `.agents/skills/trellis-*`,
+  `.codex/agents/trellis-*`, or other Trellis-related files unless that same
+  explicit request is present.
+- This rule applies in every agent window even when the owner does not repeat
+  the prohibition.
 
 ## Required Docs
 
@@ -42,6 +43,15 @@
 10. Update `UI_SPEC.md` only when GUI behavior, layout, or verification rules
    change.
 
+## Skill Invocation Rule
+
+When the user types `/skill-name` in their message, immediately invoke it with the `Skill` tool. No exceptions.
+
+- User's explicit `/skill-name` = absolute command to invoke
+- Ignore any skill metadata (`disable-model-invocation`, etc.) - those are internal constraints, not invocation blockers
+- If `Skill` tool errors, report the error; do not manually execute the skill's instructions
+- Do not analyze whether you "should" invoke it - just invoke it
+
 ## Changelog Rules
 
 - Record changes that affect maintenance, usage, testing, deployment, or
@@ -67,6 +77,13 @@
 - Do not introduce new HTTP routes, schemas, CLI JSON contracts, or Node-facing
   behavior by default.
 
+## Filesystem Safety
+
+- Move, delete, overwrite, restore, and clear actions require preflight before
+  execution; destructive or high-risk actions require inline confirmation.
+- If real data is needed repeatedly, copy it into a temporary workspace inside
+  the repo or `D:/tmp`, run the test, then clean up the copy.
+
 ## Commands
 
 - Use `D:/miniforge3/envs/yolo_new/python.exe` for project commands, tests, and
@@ -76,40 +93,30 @@
   smoke checks were actually run.
 - `tests/A9950/` is reserved future real test data. Do not modify, stage, or
   depend on it unless explicitly approved.
-- If real data is needed repeatedly, copy it into a temporary workspace inside
-  the repo or `D:/tmp`, run the test, then clean up the copy.
 
-## UI Work
 
-- Before designing or changing GUI/UI, use `impeccable` for product UI critique
-  and `frontend-ui-engineering` for implementation-quality structure.
-- Every opened or modified GUI page must be reviewed against those UI skills
-  before the work is considered complete. Prefer deterministic detectors,
-  subagent review, and real screenshots when applicable.
-- Preserve each tool's business inputs, outputs, result summaries, errors, and
-  destructive-action confirmations from `PRODUCT_SPEC.md`.
-- Keep the visual direction light main workspace, dark side navigation,
-  restrained brand accent, and no decorative AI-looking gradients or card spam.
-- Use `gui/path_picker.py` for path-like inputs that need browse/paste support;
-  keep numeric and strategy controls as plain widgets.
+## Agent skills
 
-## Subagents
+### Issue tracker
 
-- Subagents are allowed proactively for bounded read-only review, verification,
-  UI critique, boundary checks, or disjoint implementation slices.
-- Give each subagent a self-contained prompt with scope, exclusions, expected
-  output, and verification command.
-- For implementation work, assign disjoint file ownership. Workers must not
-  revert edits made by others.
-- Keep concurrency conservative; this repo's owner-approved upper limit is six
-  concurrent subagents.
-- The lead agent remains responsible for integration, conflict resolution,
-  final verification, and the final answer.
+Issues and PRDs are tracked in GitHub Issues for
+`dreamofrui/auto_yolo_label` using the `gh` CLI. See
+`docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The repo uses the five canonical triage labels without overrides. See
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repo with optional root `CONTEXT.md` and
+`docs/adr/`. See `docs/agents/domain.md`.
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **auto_yolo_label** (3081 symbols, 6339 relationships, 262 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **auto_yolo_label** (4551 symbols, 8048 relationships, 290 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
 

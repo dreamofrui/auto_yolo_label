@@ -40,6 +40,8 @@ D:/miniforge3/envs/yolo_new/python.exe -m pytest tests/test_imports.py -q
   module ownership, and maintenance risks.
 - `docs/dev/PRODUCT_SPEC.md`: product behavior and module contract baseline.
 - `docs/dev/UI_SPEC.md`: desktop GUI structure and interaction baseline.
+- `docs/dev/UI_REGRESSION_BOUNDARY.md`: behavior and verification gates for
+  staged GUI redesign work.
 - `CHANGELOG.md`: notable product, architecture, and test changes.
 
 `runtime/` and `cli/` are not part of the active architecture. Web, FastAPI,

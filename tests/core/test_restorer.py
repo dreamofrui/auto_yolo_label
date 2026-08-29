@@ -160,6 +160,33 @@ def test_flow_restore_preflight_reports_impact_without_writing(tmp_path: Path) -
     assert mapping_path.read_text(encoding="utf-8") == mapping_before
 
 
+def test_flow_preflight_reports_invalid_yolo_box_diagnostics(tmp_path: Path) -> None:
+    """Flow preflight exposes the same row-level diagnostics without writing."""
+    site = tmp_path / "site"
+    make_site_with_mapping(site)
+    run = site / ".autolabeler" / "inference_results" / "run_20260513_103000"
+    write_classes(run / "classes.txt")
+    label_path = run / "labels" / "CodeA" / "Product1" / "a1.txt"
+    write_label(label_path, "0 0.5 0.99 0.2 0.04\n")
+
+    with pytest.raises(AutoLabelerError) as exc_info:
+        Restorer().preflight(
+            RestoreConfig(
+                site_folder=site,
+                source_type="inference",
+                run_id="run_20260513_103000",
+            )
+        )
+
+    error = exc_info.value
+    assert error.details is not None
+    assert f"label_file: {label_path}" in error.details
+    assert "line: 1" in error.details
+    assert "pixel_bounds: xmin=40 ymin=97 xmax=60 ymax=101" in error.details
+    assert "violation: ymax=101 exceeds image_height=100" in error.details
+    assert not (site / "CodeA" / "Product1" / "a1.xml").exists()
+
+
 def test_independent_restore_preflight_reports_impact_without_writing(
     tmp_path: Path,
 ) -> None:
@@ -184,6 +211,82 @@ def test_independent_restore_preflight_reports_impact_without_writing(
     assert result.classes_path == label_root / "classes.txt"
     assert result.target_folders == [image_root / "Product1"]
     assert not (image_root / "Product1" / "a.xml").exists()
+
+
+def test_independent_preflight_reports_exact_invalid_yolo_box(
+    tmp_path: Path,
+) -> None:
+    """Invalid pixel bounds identify the source row and violated image edge."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    image_path = image_root / "Product1" / "a.jpg"
+    image_path.parent.mkdir(parents=True)
+    Image.new("RGB", (100, 100), color=(255, 0, 0)).save(image_path)
+    write_classes(label_root / "classes.txt")
+    label_path = label_root / "Product1" / "a.txt"
+    invalid_row = "0 0.5 0.99 0.2 0.04"
+    write_label(label_path, f"0 0.5 0.5 0.2 0.2\n{invalid_row}\n")
+
+    with pytest.raises(AutoLabelerError) as exc_info:
+        Restorer().preflight_independent(
+            IndependentRestoreConfig(image_root=image_root, label_root=label_root)
+        )
+
+    error = exc_info.value
+    assert error.code == ErrorCode.VALIDATION_ERROR
+    assert error.message == "Invalid YOLO box"
+    assert error.details is not None
+    assert f"label_file: {label_path}" in error.details
+    assert "line: 2" in error.details
+    assert f"raw_row: {invalid_row}" in error.details
+    assert f"image_file: {image_path}" in error.details
+    assert "image_size: 100x100" in error.details
+    assert "class_id: 0" in error.details
+    assert "class_name: CodeA" in error.details
+    assert "normalized_box: x=0.5 y=0.99 w=0.2 h=0.04" in error.details
+    assert "pixel_bounds: xmin=40 ymin=97 xmax=60 ymax=101" in error.details
+    assert "violation: ymax=101 exceeds image_height=100" in error.details
+    assert not (image_root / "Product1" / "a.xml").exists()
+
+
+@pytest.mark.parametrize(
+    ("invalid_row", "expected_violation"),
+    (
+        ("0 0.5 nan 0.2 0.2", "violation: y=nan is not finite"),
+        ("0 0.5 1e308 0.2 0.2", "violation: y=1e+308 exceeds 1"),
+        ("0 1.1 0.5 0.2 0.2", "violation: x=1.1 exceeds 1"),
+        (
+            "0 0.5 0.5 -0.2 0.2",
+            "violation: w=-0.2 must be greater than 0",
+        ),
+    ),
+)
+def test_independent_preflight_reports_invalid_yolo_geometry(
+    tmp_path: Path, invalid_row: str, expected_violation: str
+) -> None:
+    """Diagnostic formatting preserves invalid geometry validation errors."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    image_path = image_root / "Product1" / "a.jpg"
+    image_path.parent.mkdir(parents=True)
+    Image.new("RGB", (100, 100), color=(255, 0, 0)).save(image_path)
+    write_classes(label_root / "classes.txt")
+    label_path = label_root / "Product1" / "a.txt"
+    write_label(label_path, f"{invalid_row}\n")
+
+    with pytest.raises(AutoLabelerError) as exc_info:
+        Restorer().preflight_independent(
+            IndependentRestoreConfig(image_root=image_root, label_root=label_root)
+        )
+
+    error = exc_info.value
+    assert error.message == "Invalid YOLO geometry"
+    assert error.details is not None
+    assert f"label_file: {label_path}" in error.details
+    assert "line: 1" in error.details
+    assert f"raw_row: {invalid_row}" in error.details
+    assert expected_violation in error.details
+    assert "validation_detail: line 1" in error.details
 
 
 def test_independent_restore_uses_explicit_classes_file(

@@ -33,6 +33,7 @@ from gui.convert_page import ConvertPage
 from gui.scan_page import ScanPage
 from gui.labelimg_page import LabelImgPage
 from gui.task_runner import AsyncTaskRunner, TaskRunner
+from gui.theme_manager import get_theme_manager
 from gui.tool_defaults import (
     DEFAULT_TOOL_DEFAULTS_PATH,
     ToolDefaults,
@@ -334,28 +335,29 @@ class LoginView(QWidget):
         self.setObjectName("loginView")
 
         root = QHBoxLayout(self)
-        root.setContentsMargins(48, 42, 48, 42)
-        root.setSpacing(24)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
 
         self.login_story = QFrame()
         story = self.login_story
         story.setObjectName("loginStory")
         story.setProperty("surfaceRole", "product")
         story_layout = QVBoxLayout(story)
-        story_layout.setContentsMargins(34, 32, 34, 32)
-        story_layout.setSpacing(18)
+        story_layout.setContentsMargins(56, 56, 56, 64)
+        story_layout.setSpacing(0)
 
-        brand = QLabel("AutoLabeler")
+        brand = QLabel("Auto Labeler")
         brand.setObjectName("loginBrand")
-        headline = QLabel("半自动图像标注工作台")
+        headline = QLabel("AI 驱动的\n智能标注平台")
         headline.setObjectName("loginHeadline")
         headline.setWordWrap(True)
         copy = QLabel(
-            "把扫描、抽样、标注、训练、推理、复核和 XML 写回放在一个桌面工作台里，"
-            "减少重复人工标注，同时保留可追溯流程。"
+            "使用先进的机器学习技术，自动完成数据标注任务，"
+            "将标注效率提升 10 倍，助力制造业质检团队实现智能化升级。"
         )
-        copy.setObjectName("mutedText")
+        copy.setObjectName("loginDescription")
         copy.setWordWrap(True)
+        copy.setMaximumWidth(480)
 
         self.login_workflow_panel = QFrame()
         self.login_workflow_panel.setObjectName("loginWorkflowPanel")
@@ -378,6 +380,47 @@ class LoginView(QWidget):
             step.setObjectName("loginWorkflowStep")
             workflow_layout.addWidget(step, index // 3, index % 3)
 
+        # Statistics display - industrial readout style
+        self.login_stats = QWidget()
+        stats_layout = QHBoxLayout(self.login_stats)
+        stats_layout.setContentsMargins(0, 0, 0, 0)
+        stats_layout.setSpacing(56)
+
+        stats_data = [
+            ("95%", "标注准确率"),
+            ("10x", "效率提升"),
+            ("50K+", "处理图像")
+        ]
+
+        for i, (value, label) in enumerate(stats_data):
+            stat_widget = QWidget()
+            stat_widget.setObjectName("loginStatReadout")
+            stat_vbox = QVBoxLayout(stat_widget)
+            stat_vbox.setContentsMargins(0, 0, 0, 0)
+            stat_vbox.setSpacing(6)
+            stat_vbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            stat_value = QLabel(value)
+            stat_value.setObjectName("loginStatValue")
+            stat_value.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            stat_label = QLabel(label)
+            stat_label.setObjectName("loginStatLabel")
+            stat_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+            stat_vbox.addWidget(stat_value)
+            stat_vbox.addWidget(stat_label)
+            stats_layout.addWidget(stat_widget)
+
+            # Add separator line (except after last stat)
+            if i < len(stats_data) - 1:
+                separator = QFrame()
+                separator.setObjectName("loginStatSeparator")
+                separator.setFrameShape(QFrame.Shape.VLine)
+                separator.setFixedWidth(1)
+                separator.setFixedHeight(60)
+                stats_layout.addWidget(separator)
+
         self.login_boundary_panel = QFrame()
         self.login_boundary_panel.setObjectName("loginBoundaryPanel")
         self.login_boundary_panel.setProperty("surfaceRole", "boundary")
@@ -398,67 +441,114 @@ class LoginView(QWidget):
             item.setWordWrap(True)
             boundary_layout.addWidget(item, index // 2, index % 2)
 
-        strip = QGridLayout()
-        strip.setHorizontalSpacing(10)
-        strip.setVerticalSpacing(10)
-        for index, text in enumerate(("可追溯", "少标注", "可复核", "可写回")):
-            tile = QLabel(text)
-            tile.setObjectName("loginStripTile")
-            tile.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            strip.addWidget(tile, 0, index)
+        # Footer copyright per design spec
+        footer = QLabel("© 2026 Auto Labeler. 企业级 AI 标注解决方案")
+        footer.setObjectName("loginStoryFooter")
 
         story_layout.addWidget(brand)
+        story_layout.addSpacing(90)
         story_layout.addWidget(headline)
+        story_layout.addSpacing(24)
         story_layout.addWidget(copy)
+        story_layout.addSpacing(64)
         story_layout.addWidget(self.login_workflow_panel, 0)
+        story_layout.addSpacing(48)
+        story_layout.addWidget(self.login_stats)
+        story_layout.addSpacing(48)
         story_layout.addWidget(self.login_boundary_panel, 0)
         story_layout.addStretch(1)
-        story_layout.addLayout(strip)
+        story_layout.addWidget(footer)
+
+        # P0 Fix: Hide test panels as required by design spec section 2.2
+        self.login_workflow_panel.setVisible(False)
+        self.login_boundary_panel.setVisible(False)
 
         self.login_card = QFrame()
         card = self.login_card
         card.setObjectName("loginCard")
         card.setProperty("surfaceRole", "access")
+        card.setFixedWidth(440)
         card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(28, 28, 28, 28)
-        card_layout.setSpacing(14)
+        card_layout.setContentsMargins(48, 48, 48, 48)
+        card_layout.setSpacing(0)
 
-        title = QLabel("进入工作台")
-        title.setObjectName("panelTitle")
-        note = QLabel("第一版保留企业 SSO 入口，实际使用本地演示登录。")
-        note.setObjectName("mutedText")
-        note.setWordWrap(True)
-        sso_button = QPushButton("企业 SSO（预留）")
+        # Form title and subtitle per design spec
+        title = QLabel("登录")
+        title.setObjectName("loginFormTitle")
+
+        subtitle = QLabel("欢迎回来，请输入您的凭据继续使用")
+        subtitle.setObjectName("loginFormSubtitle")
+        subtitle.setWordWrap(True)
+
+        # Username field with label
+        username_label = QLabel("用户名")
+        username_label.setObjectName("loginFieldLabel")
+        username = QLineEdit()
+        username.setPlaceholderText("输入您的用户名")
+        username.setObjectName("formInput")
+
+        # Password field with label
+        password_label = QLabel("密码")
+        password_label.setObjectName("loginFieldLabel")
+        password = QLineEdit()
+        password.setPlaceholderText("输入您的密码")
+        password.setEchoMode(QLineEdit.EchoMode.Password)
+        password.setObjectName("formInput")
+
+        # Forgot password link
+        forgot_link = QLabel('<a href="#" style="color: #0EA5E9; text-decoration: none;">忘记密码？</a>')
+        forgot_link.setObjectName("loginForgotLink")
+        forgot_link.setAlignment(Qt.AlignmentFlag.AlignRight)
+        forgot_link.setOpenExternalLinks(False)
+
+        # Primary login button
+        self.demo_login_button = QPushButton("登录")
+        self.demo_login_button.setObjectName("primaryButton")
+        self.demo_login_button.setProperty("buttonRole", "primaryAccess")
+        self.demo_login_button.setMinimumHeight(46)
+        self.demo_login_button.clicked.connect(self.login_requested.emit)
+
+        # Enterprise section
+        enterprise_label = QLabel("企业用户")
+        enterprise_label.setObjectName("loginOptionLabel")
+
+        sso_button = QPushButton("使用 SSO 登录")
         sso_button.setEnabled(False)
         sso_button.setObjectName("secondaryButton")
         sso_button.setProperty("buttonRole", "reservedAccess")
-        self.demo_login_button = QPushButton("本地演示登录")
-        self.demo_login_button.setObjectName("primaryButton")
-        self.demo_login_button.setProperty("buttonRole", "primaryAccess")
-        self.demo_login_button.clicked.connect(self.login_requested.emit)
+        sso_button.setMinimumHeight(42)
 
-        username = QLineEdit()
-        username.setPlaceholderText("账号")
-        username.setObjectName("formInput")
-        password = QLineEdit()
-        password.setPlaceholderText("密码（第一版不校验）")
-        password.setEchoMode(QLineEdit.EchoMode.Password)
-        password.setObjectName("formInput")
-        footnote = QLabel("这里不实现真实权限或云端身份管理，避免界面承诺不存在的安全能力。")
-        footnote.setObjectName("footnote")
-        footnote.setWordWrap(True)
-
+        # Layout assembly per design spec
         card_layout.addWidget(title)
-        card_layout.addWidget(note)
-        card_layout.addWidget(sso_button)
+        card_layout.addSpacing(12)
+        card_layout.addWidget(subtitle)
+        card_layout.addSpacing(48)
+        card_layout.addWidget(username_label)
+        card_layout.addSpacing(8)
         card_layout.addWidget(username)
+        card_layout.addSpacing(24)
+        card_layout.addWidget(password_label)
+        card_layout.addSpacing(8)
         card_layout.addWidget(password)
+        card_layout.addSpacing(10)
+        card_layout.addWidget(forgot_link)
+        card_layout.addSpacing(16)
         card_layout.addWidget(self.demo_login_button)
-        card_layout.addStretch(1)
-        card_layout.addWidget(footnote)
+        card_layout.addSpacing(32)
+        card_layout.addWidget(enterprise_label)
+        card_layout.addSpacing(12)
+        card_layout.addWidget(sso_button)
 
-        root.addWidget(story, 1)
-        root.addWidget(card, 0)
+        # Wrap card in container for centering
+        card_container = QWidget()
+        card_container.setObjectName("loginCardContainer")
+        card_container_layout = QVBoxLayout(card_container)
+        card_container_layout.setContentsMargins(80, 80, 80, 80)
+        card_container_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        card_container_layout.addWidget(card)
+
+        root.addWidget(story, 40)
+        root.addWidget(card_container, 60)
 
 
 class WorkbenchView(QWidget):
@@ -685,14 +775,12 @@ class WorkbenchView(QWidget):
         layout.addLayout(brand_row)
         layout.addSpacing(14)
 
-        home_button = QPushButton("首页")
-        home_button.setObjectName("navButton")
+        home_button = _nav_utility_button("首页", "首", "工作台概览")
         home_button.clicked.connect(self.show_home)
         self.nav_buttons["home"] = home_button
         layout.addWidget(home_button)
 
-        task_button = QPushButton("任务中心")
-        task_button.setObjectName("navUtilityButton")
+        task_button = _nav_utility_button("任务中心", "任", "运行状态和历史")
         task_button.clicked.connect(self.show_task_center)
         self.nav_buttons["tasks"] = task_button
         layout.addWidget(task_button)
@@ -709,12 +797,10 @@ class WorkbenchView(QWidget):
             layout.addWidget(button)
 
         layout.addStretch(1)
-        manual = QPushButton("使用手册")
-        manual.setObjectName("navUtilityButton")
+        manual = _nav_utility_button("使用手册", "册", "参数流程参考")
         manual.clicked.connect(self.show_manual)
         self.nav_buttons["manual"] = manual
-        settings = QPushButton("设置")
-        settings.setObjectName("navUtilityButton")
+        settings = _nav_utility_button("设置", "设", "工具默认参数")
         settings.clicked.connect(self.show_settings)
         self.nav_buttons["settings"] = settings
         layout.addWidget(manual)
@@ -1907,7 +1993,10 @@ class AutoLabelerWindow(QMainWindow):
         self._stack.addWidget(self.workbench_view)
         self.setCentralWidget(self._stack)
         self.login_view.login_requested.connect(self.enter_workbench)
-        self.setStyleSheet(_stylesheet())
+
+        # Apply theme stylesheet from ThemeManager
+        theme_manager = get_theme_manager()
+        self.setStyleSheet(theme_manager.get_stylesheet())
 
     def enter_workbench(self) -> None:
         """Enter the main workbench after local/demo login."""
@@ -1960,6 +2049,40 @@ def _nav_flow_button(index: int, module: ModuleEntry) -> QPushButton:
     text_layout.addWidget(subtitle)
 
     layout.addWidget(number, 0)
+    layout.addLayout(text_layout, 1)
+    return button
+
+
+def _nav_utility_button(title: str, badge_char: str, subtitle: str) -> QPushButton:
+    """Build a structured side-nav entry for utility navigation."""
+    button = QPushButton()
+    button.setObjectName("navUtilityButton")
+    button.setCursor(Qt.CursorShape.PointingHandCursor)
+    button.setMinimumHeight(50)
+    button.setText("")
+
+    layout = QHBoxLayout(button)
+    layout.setContentsMargins(10, 7, 10, 7)
+    layout.setSpacing(9)
+
+    badge = QLabel(badge_char)
+    badge.setObjectName("navUtilityBadge")
+    badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    badge.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+    text_layout = QVBoxLayout()
+    text_layout.setContentsMargins(0, 0, 0, 0)
+    text_layout.setSpacing(1)
+    title_label = QLabel(title)
+    title_label.setObjectName("navStepTitle")
+    subtitle_label = QLabel(subtitle)
+    subtitle_label.setObjectName("navStepSubtitle")
+    for label in (title_label, subtitle_label):
+        label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+    text_layout.addWidget(title_label)
+    text_layout.addWidget(subtitle_label)
+
+    layout.addWidget(badge, 0)
     layout.addLayout(text_layout, 1)
     return button
 
@@ -2278,978 +2401,3 @@ def _task_empty_state(message: str) -> QLabel:
     label.setObjectName("formPlaceholder")
     label.setWordWrap(True)
     return label
-
-
-def _stylesheet() -> str:
-    return """
-    QWidget {
-        color: #202b33;
-        background: #eef3f4;
-        font-family: "Microsoft YaHei UI";
-        font-size: 13px;
-    }
-    QLabel {
-        background: transparent;
-    }
-    QScrollArea#toolScrollArea {
-        border: none;
-        background: transparent;
-    }
-    QScrollArea#toolScrollArea QWidget {
-        background: transparent;
-    }
-    QFrame#sideNav {
-        min-width: 238px;
-        max-width: 238px;
-        background: #17242d;
-        border-right: 1px solid #101a21;
-    }
-    QLabel#navMark {
-        min-width: 34px;
-        max-width: 34px;
-        min-height: 34px;
-        max-height: 34px;
-        border-radius: 8px;
-        background: #007b78;
-        color: #eefaf9;
-        font-weight: 800;
-    }
-    QLabel#navBrand {
-        color: #f2f7f8;
-        font-size: 15px;
-        font-weight: 700;
-        line-height: 1.25;
-    }
-    QLabel#navSection {
-        color: #93a6af;
-        font-size: 12px;
-        padding: 10px 8px 4px;
-    }
-    QPushButton#navButton,
-    QPushButton#navUtilityButton,
-    QPushButton#navFlowButton {
-        min-height: 42px;
-        padding: 8px 12px;
-        border: 1px solid transparent;
-        border-radius: 8px;
-        background: transparent;
-        color: #d9e6ea;
-        text-align: left;
-    }
-    QPushButton#navButton:hover,
-    QPushButton#navUtilityButton:hover,
-    QPushButton#navFlowButton:hover {
-        background: #243641;
-    }
-    QPushButton#navButton[selected="true"] {
-        background: #23333d;
-        border-color: #567981;
-        color: #f8fbfb;
-    }
-    QPushButton#navUtilityButton[selected="true"],
-    QPushButton#navFlowButton[selected="true"] {
-        background: #23333d;
-        border-color: #567981;
-        color: #f8fbfb;
-    }
-    QPushButton#navFlowButton {
-        min-height: 50px;
-        max-height: 56px;
-        padding: 0px;
-    }
-    QLabel#navStepNumber {
-        min-width: 32px;
-        max-width: 32px;
-        min-height: 28px;
-        max-height: 28px;
-        border-radius: 7px;
-        background: #20323c;
-        border: 1px solid #39535d;
-        color: #a9c4ca;
-        font-size: 12px;
-        font-weight: 800;
-    }
-    QLabel#navStepTitle {
-        color: #edf6f7;
-        font-size: 13px;
-        font-weight: 800;
-    }
-    QLabel#navStepSubtitle {
-        color: #9fb4bb;
-        font-size: 12px;
-        font-weight: 500;
-    }
-    QPushButton#navFlowButton[selected="true"] QLabel#navStepNumber {
-        background: #008981;
-        border-color: #31aaa0;
-        color: #f2fbfb;
-    }
-    QPushButton#navFlowButton[selected="true"] QLabel#navStepTitle {
-        color: #f8fbfb;
-    }
-    QPushButton#navFlowButton[selected="true"] QLabel#navStepSubtitle {
-        color: #cce2e4;
-    }
-    QFrame#loginStory,
-    QFrame#loginCard,
-    QFrame#homeHero,
-    QFrame#homeModulePanel,
-    QFrame#homeSupportPanel,
-    QFrame#homeRulePanel,
-    QFrame#flowStrip,
-    QFrame#leftMainPanel,
-    QFrame#rightSupportPanel,
-    QFrame#aiPreview,
-    QFrame#loginWorkflowPanel,
-    QFrame#loginBoundaryPanel,
-    QFrame#manualStepsPanel,
-    QFrame#settingsStatusPanel,
-    QFrame#taskCenterSummaryPanel,
-    QFrame#taskRow,
-    QFrame#scanStructureExample,
-    QFrame#reviewEmptyState,
-    QFrame#reviewStatusPanel {
-        background: #fbfdfd;
-        border: 1px solid #cfdade;
-        border-radius: 8px;
-    }
-    QFrame#homeRulePanel {
-        min-width: 258px;
-        max-width: 258px;
-        background: #f4f8f8;
-    }
-    QLabel#loginBrand,
-    QLabel#eyebrow {
-        color: #287c78;
-        font-weight: 700;
-    }
-    QLabel#homeEyebrow {
-        color: #287c78;
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0px;
-    }
-    QLabel#loginHeadline {
-        font-size: 38px;
-        font-weight: 800;
-        line-height: 1.2;
-    }
-    QLabel#homeTitle {
-        font-size: 23px;
-        font-weight: 800;
-    }
-    QLabel#toolTitle {
-        font-size: 30px;
-        font-weight: 800;
-    }
-    QLabel#panelTitle {
-        font-size: 20px;
-        font-weight: 720;
-    }
-    QLabel#smallTitle {
-        font-size: 15px;
-        font-weight: 700;
-    }
-    QLabel#homeSectionTitle,
-    QLabel#flowTitle {
-        color: #26333b;
-        font-size: 16px;
-        font-weight: 800;
-    }
-    QLabel#mutedText,
-    QLabel#footnote {
-        color: #607078;
-        line-height: 1.5;
-    }
-    QLabel#loginStripTile,
-    QLabel#strengthPill,
-    QLabel#formPlaceholder,
-    QLabel#flowStep {
-        padding: 10px 12px;
-        background: #edf5f4;
-        border: 1px solid #d2e1df;
-        border-radius: 8px;
-        color: #2c5559;
-    }
-    QLabel#strengthPill {
-        min-height: 38px;
-        max-height: 42px;
-        font-size: 12px;
-    }
-    QLabel#flowStep {
-        min-height: 38px;
-        max-height: 44px;
-        padding: 6px 6px;
-        background: #f7fbfa;
-        color: #33575a;
-        font-size: 12px;
-    }
-    QPushButton#moduleTile {
-        min-height: 84px;
-        max-height: 92px;
-        padding: 11px 14px;
-        border: 1px solid #cfdade;
-        border-radius: 8px;
-        background: #fbfdfd;
-        color: #25323a;
-        text-align: left;
-        font-weight: 660;
-    }
-    QPushButton#moduleTile:hover {
-        border-color: #6ca8a3;
-        background: #f2faf8;
-    }
-    QPushButton#moduleTile:pressed {
-        background: #e6f4f2;
-    }
-    QPushButton#primaryButton {
-        min-height: 36px;
-        padding: 8px 16px;
-        border: 1px solid #1f6c68;
-        border-radius: 8px;
-        background: #007b78;
-        color: #f7fbfb;
-        font-weight: 700;
-    }
-    QPushButton#secondaryButton,
-    QPushButton#supportActionButton,
-    QPushButton#manualNavButton,
-    QPushButton#manualStepButton,
-    QPushButton#tabButton,
-    QPushButton#tabButtonActive {
-        min-height: 34px;
-        padding: 7px 13px;
-        border: 1px solid #cfd9dd;
-        border-radius: 8px;
-        background: #f8fbfb;
-        color: #40515a;
-    }
-    QPushButton#secondaryButton:hover,
-    QPushButton#supportActionButton:hover,
-    QPushButton#manualNavButton:hover,
-    QPushButton#manualStepButton:hover,
-    QPushButton#tabButton:hover {
-        border-color: #9eb7bd;
-        background: #eef5f4;
-    }
-    QPushButton#manualNavButton {
-        text-align: left;
-        color: #236d69;
-        border: 0px;
-        border-radius: 6px;
-        background: transparent;
-        min-height: 28px;
-        padding: 5px 8px;
-        font-weight: 700;
-    }
-    QPushButton#manualNavButton:hover {
-        background: #eef7f6;
-        color: #174f4d;
-    }
-    QPushButton#manualStepButton {
-        min-height: 58px;
-        padding: 8px 10px;
-        text-align: left;
-        font-weight: 700;
-        color: #17343d;
-        background: #f6faf9;
-    }
-    QPushButton#secondaryButton:checked,
-    QPushButton#tabButton:checked {
-        background: #dcefed;
-        border-color: #5ea9a5;
-        color: #236d69;
-        font-weight: 700;
-    }
-    QPushButton#advancedToggleButton {
-        min-height: 34px;
-        padding: 7px 13px;
-        border: 1px solid #cfd9dd;
-        border-radius: 8px;
-        background: #f8fbfb;
-        color: #40515a;
-        text-align: left;
-    }
-    QPushButton#advancedToggleButton:hover {
-        border-color: #9eb7bd;
-        background: #eef5f4;
-    }
-    QPushButton#advancedToggleButton:checked {
-        background: #dcefed;
-        border-color: #5ea9a5;
-        color: #236d69;
-        font-weight: 700;
-    }
-    QPushButton#tabButtonActive {
-        background: #e7f3f1;
-        color: #236d69;
-        font-weight: 700;
-    }
-    QPushButton#primaryButton:hover {
-        background: #226f6b;
-    }
-    QPushButton#primaryButton:pressed {
-        background: #1d625f;
-    }
-    QLineEdit#formInput:focus,
-    QComboBox#formInput:focus,
-    QTextEdit#logBox:focus,
-    QTextEdit:focus {
-        border-color: #5ea9a5;
-    }
-    QPushButton:disabled,
-    QTextEdit:disabled {
-        color: #8b989e;
-        background: #eef2f3;
-    }
-    QLineEdit#formInput,
-    QComboBox#formInput,
-    QTextEdit#logBox,
-    QTextEdit {
-        border: 1px solid #cfd9dd;
-        border-radius: 8px;
-        background: #fdfefe;
-        padding: 8px;
-    }
-    QScrollArea#manualContentScroll {
-        border: 0px;
-        background: transparent;
-    }
-    QFrame#manualSection {
-        border: 1px solid #d5e0e3;
-        border-radius: 8px;
-        background: #fbfdfd;
-    }
-    QLabel#manualSectionTitle {
-        color: #18242c;
-        font-size: 17px;
-        font-weight: 800;
-    }
-    QFrame#manualParamTable {
-        background: #fdfefe;
-        border: 1px solid #dce6e8;
-        border-radius: 8px;
-        padding: 8px;
-    }
-    QLabel#manualTableHeader {
-        color: #236d69;
-        font-size: 12px;
-        font-weight: 800;
-        padding: 5px 6px;
-        background: #eef7f6;
-        border-radius: 6px;
-    }
-    QLabel#manualTableCell {
-        color: #33434b;
-        padding: 5px 6px;
-        line-height: 1.35;
-    }
-    QFrame#manualNote {
-        background: #f2f8f7;
-        border: 1px solid #d5e4e2;
-        border-radius: 8px;
-    }
-    QProgressBar#taskProgressBar {
-        min-height: 18px;
-        max-height: 18px;
-        border: 1px solid #cfd9dd;
-        border-radius: 8px;
-        background: #f7fbfb;
-        color: #26333b;
-        text-align: center;
-        font-size: 12px;
-        font-weight: 700;
-    }
-    QProgressBar#taskProgressBar::chunk {
-        border-radius: 7px;
-        background: #4c9d97;
-    }
-    QLineEdit#formInput {
-        min-height: 24px;
-    }
-    QComboBox#formInput {
-        min-height: 24px;
-        padding: 6px 8px;
-    }
-    QCheckBox#formCheckBox {
-        color: #33434b;
-        spacing: 8px;
-    }
-    QCheckBox#formCheckBox::indicator {
-        width: 15px;
-        height: 15px;
-    }
-    QFrame#pathPicker {
-        min-height: 34px;
-        border: 1px solid #cfd9dd;
-        border-radius: 8px;
-        background: #fdfefe;
-    }
-    QFrame#pathPicker QLineEdit#formInput {
-        border: none;
-        background: transparent;
-        padding: 8px 10px;
-    }
-    QToolButton#pathBrowseButton {
-        min-width: 58px;
-        border: none;
-        border-left: 1px solid #d4dfe2;
-        border-top-right-radius: 8px;
-        border-bottom-right-radius: 8px;
-        background: #f5f9f8;
-        color: #2f6663;
-        font-weight: 700;
-    }
-    QToolButton#pathBrowseButton:hover {
-        background: #eaf4f2;
-    }
-    QToolButton#pathBrowseButton:pressed {
-        background: #ddeceb;
-    }
-    QTreeWidget#reviewNodeTree {
-        border: 1px solid #cfd9dd;
-        border-radius: 8px;
-        background: #fdfefe;
-        alternate-background-color: #f7fbfa;
-        padding: 4px;
-    }
-    QTreeWidget#reviewNodeTree::item {
-        padding: 6px 8px;
-    }
-    QTreeWidget#reviewNodeTree::item:selected {
-        background: #dcefed;
-        color: #236d69;
-    }
-    QHeaderView::section {
-        border: none;
-        border-bottom: 1px solid #d3dfe2;
-        background: #f4f8f8;
-        padding: 6px 8px;
-        color: #526269;
-        font-weight: 700;
-    }
-    QFrame#sourceChoicePanel,
-    QFrame#commonOptionsPanel,
-    QFrame#advancedOptionsPanel,
-    QFrame#reviewSelectionPanel {
-        border: 1px solid #d3dfe2;
-        border-radius: 8px;
-        background: #f8fbfb;
-    }
-    QWidget#homePage {
-        background: #eef3f4;
-    }
-    QFrame#homeHero {
-        border-radius: 8px;
-        border: 1px solid #c7d7d9;
-        background: #fbfdfd;
-    }
-    QLabel#homeEyebrow {
-        color: #257b76;
-        font-size: 15px;
-        font-weight: 800;
-    }
-    QLabel#homeTitle {
-        color: #18242c;
-        font-size: 30px;
-        font-weight: 800;
-    }
-    QFrame#homeModulePanel {
-        background: transparent;
-        border: none;
-    }
-    QPushButton#moduleCardButton {
-        border: 1px solid #cfdade;
-        border-radius: 8px;
-        background: #fbfdfd;
-        text-align: center;
-    }
-    QPushButton#moduleCardButton:hover {
-        border-color: #73aaa5;
-        background: #f2faf8;
-    }
-    QPushButton#moduleCardButton:pressed {
-        border-color: #4f8f88;
-        background: #e5f3f1;
-    }
-    QLabel#moduleTitleText {
-        min-height: 30px;
-        padding: 3px 4px;
-        border: none;
-        border-radius: 7px;
-        background: transparent;
-        color: #17242d;
-        font-size: 16px;
-        font-weight: 800;
-    }
-    QLabel#moduleDescription {
-        color: #5d6f78;
-        font-size: 14px;
-        line-height: 1.35;
-    }
-    QFrame#aiPreview {
-        border-radius: 8px;
-        border: 1px solid #cfdade;
-        background: #fbfdfd;
-    }
-    QLabel#aiTitle {
-        color: #18242c;
-        font-size: 19px;
-        font-weight: 800;
-    }
-    QLabel#aiStatus {
-        color: #667981;
-        font-size: 12px;
-        font-weight: 800;
-    }
-    QLabel#aiChip {
-        min-height: 22px;
-        padding: 2px 8px;
-        border: 1px solid #bddbd6;
-        border-radius: 11px;
-        color: #257b76;
-        background: #eef8f5;
-        font-size: 12px;
-        font-weight: 700;
-    }
-    QFrame#aiThread {
-        background: transparent;
-        border: none;
-    }
-    QLabel#aiBubbleUser {
-        padding: 8px 10px;
-        border-radius: 8px;
-        color: #f6fbfb;
-        background: #146e69;
-        font-size: 13px;
-    }
-    QLabel#aiBubbleBot {
-        padding: 8px 10px;
-        border: 1px solid #c5dfda;
-        border-radius: 8px;
-        color: #24333a;
-        background: #eef8f5;
-        font-size: 13px;
-    }
-    QFrame#aiInput {
-        border: 1px solid #b6c7cc;
-        border-radius: 9px;
-        background: #fbfdfd;
-    }
-    QLabel#aiInputHint {
-        color: #617179;
-        font-size: 13px;
-    }
-    QPushButton#aiSendButton {
-        min-height: 32px;
-        padding: 6px 10px;
-        border: 1px solid #bddbd6;
-        border-radius: 8px;
-        color: #257b76;
-        background: #eef8f5;
-        font-weight: 700;
-    }
-    QPushButton#aiSendButton:disabled {
-        color: #7b8b92;
-        border-color: #cbd8dc;
-        background: #eef2f3;
-    }
-    QFrame#homeSupportPanel {
-        border: 1px solid #cfdade;
-        border-radius: 8px;
-        background: #fbfdfd;
-    }
-    QLabel#supportCore {
-        color: #a05d15;
-        font-size: 12px;
-        font-weight: 800;
-    }
-    QFrame#homeStrengthBand {
-        border: 1px solid #d5e0e3;
-        border-radius: 8px;
-        background: #f8fbfb;
-    }
-    QFrame#strengthItem {
-        border: none;
-        background: transparent;
-        min-height: 86px;
-    }
-    QFrame#strengthDivider {
-        color: #d7e2e4;
-        max-width: 1px;
-    }
-    QLabel#loginWorkflowStep,
-    QLabel#loginBoundaryItem,
-    QFrame#settingsStatusItem {
-        border: 1px solid #d5e0e3;
-        border-radius: 8px;
-        background: #f6faf9;
-        color: #17343d;
-        padding: 8px;
-    }
-    QFrame#taskRow {
-        background: #fdfefe;
-    }
-    QFrame#taskRowActions {
-        background: transparent;
-        border: none;
-    }
-    QFrame#taskCenterSummaryPanel {
-        background: #f8fbfb;
-    }
-    QFrame#taskSummaryItem {
-        border: 1px solid #d5e0e3;
-        border-radius: 8px;
-        background: #fdfefe;
-    }
-    QFrame#taskSummaryItem[selected="true"] {
-        border-color: #2a8f89;
-        background: #eef8f7;
-    }
-    QPushButton#taskSummaryButton {
-        border: none;
-        background: transparent;
-        text-align: left;
-    }
-    QPushButton#taskSummaryButton:hover {
-        border: 1px solid #9eb7bd;
-        border-radius: 8px;
-        background: rgba(42, 143, 137, 0.04);
-    }
-    QLabel#taskSummaryLabel {
-        color: #236d69;
-        font-size: 12px;
-        font-weight: 800;
-    }
-    QLabel#taskSummaryValue {
-        color: #18242c;
-        font-size: 16px;
-        font-weight: 800;
-        line-height: 1.25;
-    }
-    QLabel#taskRowTitle {
-        color: #18242c;
-        font-size: 15px;
-        font-weight: 800;
-    }
-    QLabel#taskDateHeader {
-        color: #257b76;
-        font-size: 12px;
-        font-weight: 800;
-        padding: 8px 2px 2px;
-    }
-    QPushButton#taskBackButton,
-    QPushButton#taskDeleteButton {
-        min-height: 30px;
-        padding: 5px 10px;
-        border: 1px solid #cfd9dd;
-        border-radius: 8px;
-        background: #f8fbfb;
-        color: #236d69;
-        font-weight: 700;
-    }
-    QPushButton#taskDeleteButton {
-        color: #8a4f1e;
-    }
-    QPushButton#taskBackButton:hover,
-    QPushButton#taskDeleteButton:hover {
-        border-color: #9eb7bd;
-        background: #eef5f4;
-    }
-    QCheckBox#riskCheckbox {
-        color: #17343d;
-        spacing: 8px;
-        padding: 6px 0px;
-    }
-    QCheckBox#riskCheckbox:disabled {
-        color: #7b8b92;
-    }
-    QCheckBox#riskCheckbox::indicator {
-        width: 16px;
-        height: 16px;
-    }
-    QCheckBox#riskCheckbox::indicator:disabled {
-        border: 1px solid #cbd8dc;
-        background: #eef2f3;
-    }
-    QLabel#strengthBadge {
-        min-width: 34px;
-        max-width: 34px;
-        min-height: 34px;
-        max-height: 34px;
-        border-radius: 8px;
-        color: #f7fbfb;
-        background: #007b78;
-        font-size: 12px;
-        font-weight: 800;
-    }
-    QLabel#strengthTitle {
-        color: #202b33;
-        font-size: 15px;
-        font-weight: 800;
-    }
-    QLabel#strengthBody {
-        color: #607078;
-        font-size: 12px;
-        line-height: 1.25;
-    }
-    QLabel#developerLabel {
-        color: #607078;
-        font-size: 13px;
-        font-weight: 700;
-    }
-    QFrame#rightSupportPanel {
-        border: 1px solid #cfdade;
-        border-radius: 8px;
-        background: #fbfdfd;
-    }
-    QLabel#aiRailTitle {
-        color: #18242c;
-        font-size: 22px;
-        font-weight: 800;
-    }
-    QLabel#aiRailBadge {
-        min-height: 24px;
-        padding: 2px 8px;
-        border: 1px solid #bddbd6;
-        border-radius: 12px;
-        color: #257b76;
-        background: #eef8f5;
-        font-size: 12px;
-        font-weight: 800;
-    }
-    QTextEdit#aiRailThread,
-    QTextEdit#aiRailInput {
-        border: 1px solid #c4d3d8;
-        border-radius: 8px;
-        background: #fbfdfd;
-        padding: 10px;
-        color: #27363d;
-    }
-    QFrame#preflightPanel,
-    QFrame#runtimePanel {
-        border: 1px solid #d3dfe2;
-        border-radius: 8px;
-        background: #f8fbfb;
-    }
-    QLabel#preflightSummary {
-        padding: 8px 10px;
-        border: 1px solid #d7e2e5;
-        border-radius: 8px;
-        background: #fbfdfd;
-        color: #40515a;
-    }
-    QFrame#railDivider {
-        color: #d3dfe2;
-    }
-    QWidget#loginView {
-        background: #e9eff1;
-    }
-    QFrame#loginStory[surfaceRole="product"] {
-        background: #f8fbfa;
-        border: 1px solid #b8c8cd;
-        border-radius: 8px;
-    }
-    QFrame#loginCard[surfaceRole="access"] {
-        min-width: 326px;
-        max-width: 372px;
-        background: #fcfdfc;
-        border: 1px solid #aebec5;
-        border-radius: 8px;
-    }
-    QFrame#loginWorkflowPanel[surfaceRole="workflow"] {
-        background: #eef6fb;
-        border: 1px solid #b5d0e2;
-        border-radius: 8px;
-    }
-    QFrame#loginBoundaryPanel[surfaceRole="boundary"] {
-        background: #fff7e8;
-        border: 1px solid #dfbb72;
-        border-radius: 8px;
-    }
-    QLabel#loginWorkflowStep {
-        border: 1px solid #c4dbe7;
-        border-radius: 8px;
-        background: #f8fcfe;
-        color: #214d63;
-        font-weight: 800;
-        padding: 9px 10px;
-    }
-    QLabel#loginBoundaryItem {
-        border: 1px solid #e6cd96;
-        border-radius: 8px;
-        background: #fffaf0;
-        color: #684913;
-        font-weight: 700;
-        padding: 9px 10px;
-    }
-    QPushButton#primaryButton[buttonRole="primaryAccess"] {
-        min-height: 42px;
-        background: #075f6a;
-        border-color: #064c55;
-        color: #f7fbfb;
-        font-size: 14px;
-    }
-    QPushButton#secondaryButton[buttonRole="reservedAccess"] {
-        min-height: 38px;
-        background: #eef2f3;
-        border-color: #c5d0d5;
-        color: #77868d;
-    }
-    QFrame#leftMainPanel {
-        background: #fcfdfc;
-        border: 1px solid #becdd2;
-    }
-    QFrame#rightSupportPanel[surfaceRole="support"] {
-        background: #f6f9f9;
-        border: 1px solid #c2d0d5;
-    }
-    QFrame#preflightPanel,
-    QFrame#runtimePanel,
-    QFrame#sourceChoicePanel,
-    QFrame#commonOptionsPanel,
-    QFrame#advancedOptionsPanel,
-    QFrame#reviewStatusPanel,
-    QFrame#reviewEmptyState,
-    QFrame#scanStructureExample {
-        background: #f5f8f9;
-        border: 1px solid #c4d1d7;
-        border-radius: 8px;
-    }
-    QLabel#fieldLabel {
-        color: #2b3f49;
-        font-weight: 800;
-    }
-    QLineEdit#formInput,
-    QComboBox#formInput,
-    QTextEdit {
-        border: 1px solid #b7c5cb;
-        border-radius: 8px;
-        background: #fdfefe;
-        color: #1f2e36;
-        padding: 8px;
-    }
-    QLineEdit#formInput:focus,
-    QComboBox#formInput:focus,
-    QTextEdit:focus {
-        border-color: #347f8a;
-    }
-    QFrame#pathPicker {
-        min-height: 36px;
-        border: 1px solid #aebec5;
-        border-radius: 8px;
-        background: #fdfefe;
-    }
-    QToolButton#pathBrowseButton {
-        min-width: 62px;
-        border-left: 1px solid #c6d2d7;
-        background: #edf3f4;
-        color: #245d64;
-        font-weight: 800;
-    }
-    QToolButton#pathBrowseButton:hover {
-        background: #e1ecee;
-    }
-    QLabel[feedbackRole="explanation"] {
-        padding: 9px 11px;
-        border: 1px solid #d4dee3;
-        border-radius: 8px;
-        background: #f4f7f8;
-        color: #4b5c65;
-        line-height: 1.45;
-    }
-    QLabel[feedbackRole="status"] {
-        padding: 8px 11px;
-        border: 1px solid #b7d2e3;
-        border-radius: 8px;
-        background: #eef6fb;
-        color: #214f68;
-        line-height: 1.4;
-    }
-    QLabel[feedbackRole="result"] {
-        padding: 10px 12px;
-        border: 1px solid #9fcfbe;
-        border-radius: 8px;
-        background: #edf8f4;
-        color: #174f46;
-        font-weight: 800;
-        line-height: 1.45;
-    }
-    QLabel[feedbackRole="output"] {
-        padding: 10px 12px;
-        border: 1px solid #abcfe3;
-        border-radius: 8px;
-        background: #f0f7fb;
-        color: #1e526b;
-        line-height: 1.45;
-    }
-    QLabel[feedbackRole="risk"] {
-        padding: 10px 12px;
-        border: 1px solid #dfbb72;
-        border-radius: 8px;
-        background: #fff7e8;
-        color: #684913;
-        font-weight: 800;
-        line-height: 1.45;
-    }
-    QTextEdit#logBox[surfaceRole="log"] {
-        border: 1px solid #bdc9cf;
-        background: #f6f8f9;
-        color: #24343c;
-        font-family: "Cascadia Mono", "Consolas", monospace;
-        font-size: 12px;
-    }
-    QCheckBox[feedbackRole="riskConfirm"],
-    QPushButton#confirmCheckbox[buttonRole="riskConfirm"] {
-        min-height: 34px;
-        padding: 7px 10px;
-        border: 1px solid #dfbb72;
-        border-radius: 8px;
-        background: #fff8ec;
-        color: #684913;
-        font-weight: 800;
-    }
-    QPushButton#confirmCheckbox[buttonRole="riskConfirm"]:checked {
-        background: #e7c878;
-        border-color: #b9872d;
-        color: #2f240a;
-    }
-    QCheckBox[feedbackRole="riskConfirm"]:disabled {
-        color: #8b989e;
-        background: #eef2f3;
-        border-color: #cbd8dc;
-    }
-    QPushButton#tabButtonActive {
-        background: #d9ece8;
-        border-color: #4d9186;
-        color: #165c55;
-        font-weight: 800;
-    }
-    QPushButton#tabButton {
-        background: #f8fbfb;
-        border-color: #c8d4d9;
-        color: #40515a;
-    }
-    QPushButton#secondaryButton:checked,
-    QPushButton#tabButton:checked {
-        background: #d9ece8;
-        border-color: #4d9186;
-        color: #165c55;
-        font-weight: 800;
-    }
-    QProgressBar#taskProgressBar {
-        border: 1px solid #b8c8cd;
-        background: #f5f8f9;
-        color: #22343c;
-    }
-    QProgressBar#taskProgressBar::chunk {
-        background: #3f8f86;
-    }
-    QPushButton#moduleCardButton {
-        border: 1px solid #c8d5da;
-        background: #fcfdfc;
-    }
-    QLabel#moduleDescription {
-        color: #526872;
-    }
-    """

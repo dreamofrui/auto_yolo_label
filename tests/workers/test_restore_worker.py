@@ -131,6 +131,32 @@ def test_restore_worker_preflights_independent_restore_without_writing(
     assert not (image_root / "Product1" / "a.xml").exists()
 
 
+def test_restore_worker_preserves_invalid_box_diagnostics(tmp_path: Path) -> None:
+    """Desktop preflight returns actionable core validation details unchanged."""
+    image_root = tmp_path / "images"
+    label_root = tmp_path / "labels"
+    image_path = image_root / "Product1" / "a.jpg"
+    make_image(image_path)
+    label_path = label_root / "Product1" / "a.txt"
+    label_path.parent.mkdir(parents=True, exist_ok=True)
+    label_path.write_text("0 0.5 1.0 0.2 0.2\n", encoding="utf-8")
+    (label_root / "classes.txt").write_text("CodeA\n", encoding="utf-8")
+
+    outcome = RestoreWorker(
+        registry=TaskRegistry(task_dir=tmp_path / "tasks")
+    ).preflight_independent(
+        IndependentRestoreConfig(image_root=image_root, label_root=label_root)
+    )
+
+    assert outcome.success is False
+    assert outcome.error is not None
+    assert outcome.error.code == "VALIDATION_ERROR"
+    assert outcome.error.details is not None
+    assert f"label_file: {label_path}" in outcome.error.details
+    assert "line: 1" in outcome.error.details
+    assert "violation: ymax=35 exceeds image_height=32" in outcome.error.details
+
+
 def test_restore_worker_converts_errors_to_failed_task(tmp_path: Path) -> None:
     """Desktop restore worker records business failures on the shared registry."""
     site = tmp_path / "site"

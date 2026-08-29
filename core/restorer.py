@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import isfinite
 from pathlib import Path
 from typing import TypeAlias
 
 from loguru import logger
 from PIL import Image
 
-from core.annotation_formats import parse_yolo_label_text, yolo_boxes_to_voc_xml
+from core.annotation_formats import (
+    AnnotationFormatError,
+    parse_yolo_label_text,
+    yolo_boxes_to_voc_xml,
+)
 from utils.exceptions import (
     AutoLabelerError,
     ErrorCode,
@@ -586,15 +591,194 @@ def _restore_xml_text(source_path: Path, target_path: Path, classes: list[str]) 
         raise RestoreSourceNotFoundError(
             "Label file cannot be read", details=str(source_path)
         ) from exc
-    boxes = parse_yolo_label_text(label_text, classes)
-    return yolo_boxes_to_voc_xml(
-        filename=image_path.name,
-        image_size=image_size,
-        boxes=boxes,
-        classes=classes,
-        folder=image_path.parent.name,
-        path=str(image_path.resolve()),
+    try:
+        boxes = parse_yolo_label_text(label_text, classes)
+        return yolo_boxes_to_voc_xml(
+            filename=image_path.name,
+            image_size=image_size,
+            boxes=boxes,
+            classes=classes,
+            folder=image_path.parent.name,
+            path=str(image_path.resolve()),
+        )
+    except AnnotationFormatError as exc:
+        raise AnnotationFormatError(
+            exc.message,
+            details=_restore_annotation_error_details(
+                source_path=source_path,
+                image_path=image_path,
+                image_size=image_size,
+                label_text=label_text,
+                classes=classes,
+                original_error=exc,
+            ),
+        ) from exc
+
+
+def _restore_annotation_error_details(
+    source_path: Path,
+    image_path: Path,
+    image_size: tuple[int, int],
+    label_text: str,
+    classes: list[str],
+    original_error: AnnotationFormatError,
+) -> str:
+    """Return actionable source context for one invalid restore annotation."""
+    for line_number, raw_row in enumerate(label_text.splitlines(), start=1):
+        if not raw_row.strip():
+            continue
+        try:
+            boxes = parse_yolo_label_text(raw_row, classes)
+            yolo_boxes_to_voc_xml(
+                filename=image_path.name,
+                image_size=image_size,
+                boxes=boxes,
+                classes=classes,
+            )
+        except AnnotationFormatError as row_error:
+            return _format_restore_label_row_diagnostic(
+                source_path=source_path,
+                image_path=image_path,
+                image_size=image_size,
+                line_number=line_number,
+                raw_row=raw_row,
+                classes=classes,
+                row_error=row_error,
+            )
+
+    image_width, image_height = image_size
+    details = [
+        f"label_file: {source_path}",
+        f"image_file: {image_path}",
+        f"image_size: {image_width}x{image_height}",
+    ]
+    if original_error.details:
+        details.append(f"validation_detail: {original_error.details}")
+    return "\n".join(details)
+
+
+def _format_restore_label_row_diagnostic(
+    source_path: Path,
+    image_path: Path,
+    image_size: tuple[int, int],
+    line_number: int,
+    raw_row: str,
+    classes: list[str],
+    row_error: AnnotationFormatError,
+) -> str:
+    """Describe the exact label row that cannot be restored to VOC XML."""
+    image_width, image_height = image_size
+    details = [
+        f"label_file: {source_path}",
+        f"line: {line_number}",
+        f"raw_row: {raw_row}",
+        f"image_file: {image_path}",
+        f"image_size: {image_width}x{image_height}",
+    ]
+    parts = raw_row.split()
+    if len(parts) != 5:
+        if row_error.details:
+            details.append(f"validation_detail: {row_error.details}")
+        return "\n".join(details)
+
+    try:
+        class_id = int(parts[0])
+        x_center, y_center, width, height = map(float, parts[1:])
+    except ValueError:
+        if row_error.details:
+            details.append(f"validation_detail: {row_error.details}")
+        return "\n".join(details)
+
+    details.append(f"class_id: {class_id}")
+    if 0 <= class_id < len(classes):
+        details.append(f"class_name: {classes[class_id]}")
+    details.append(
+        "normalized_box: "
+        f"x={x_center:g} y={y_center:g} w={width:g} h={height:g}"
     )
+    normalized_violations = _restore_normalized_box_violations(
+        x_center=x_center,
+        y_center=y_center,
+        width=width,
+        height=height,
+    )
+    if normalized_violations:
+        details.append(f"violation: {'; '.join(normalized_violations)}")
+        if row_error.details:
+            details.append(f"validation_detail: {row_error.details}")
+        return "\n".join(details)
+    xmin = round((x_center - width / 2) * image_width)
+    ymin = round((y_center - height / 2) * image_height)
+    xmax = round((x_center + width / 2) * image_width)
+    ymax = round((y_center + height / 2) * image_height)
+    details.append(
+        f"pixel_bounds: xmin={xmin} ymin={ymin} xmax={xmax} ymax={ymax}"
+    )
+    violations = _restore_box_violations(
+        xmin=xmin,
+        ymin=ymin,
+        xmax=xmax,
+        ymax=ymax,
+        image_width=image_width,
+        image_height=image_height,
+    )
+    if violations:
+        details.append(f"violation: {'; '.join(violations)}")
+    elif row_error.details:
+        details.append(f"validation_detail: {row_error.details}")
+    return "\n".join(details)
+
+
+def _restore_normalized_box_violations(
+    *,
+    x_center: float,
+    y_center: float,
+    width: float,
+    height: float,
+) -> list[str]:
+    """Explain invalid normalized YOLO geometry without pixel conversion."""
+    violations: list[str] = []
+    for label, value in (("x", x_center), ("y", y_center)):
+        if not isfinite(value):
+            violations.append(f"{label}={value:g} is not finite")
+        elif value < 0:
+            violations.append(f"{label}={value:g} is below 0")
+        elif value > 1:
+            violations.append(f"{label}={value:g} exceeds 1")
+    for label, value in (("w", width), ("h", height)):
+        if not isfinite(value):
+            violations.append(f"{label}={value:g} is not finite")
+        elif value <= 0:
+            violations.append(f"{label}={value:g} must be greater than 0")
+        elif value > 1:
+            violations.append(f"{label}={value:g} exceeds 1")
+    return violations
+
+
+def _restore_box_violations(
+    *,
+    xmin: int,
+    ymin: int,
+    xmax: int,
+    ymax: int,
+    image_width: int,
+    image_height: int,
+) -> list[str]:
+    """Explain which converted VOC pixel-bound rules are violated."""
+    violations: list[str] = []
+    if xmin < 0:
+        violations.append(f"xmin={xmin} is below 0")
+    if ymin < 0:
+        violations.append(f"ymin={ymin} is below 0")
+    if xmax > image_width:
+        violations.append(f"xmax={xmax} exceeds image_width={image_width}")
+    if ymax > image_height:
+        violations.append(f"ymax={ymax} exceeds image_height={image_height}")
+    if xmax <= xmin:
+        violations.append(f"xmax={xmax} is not greater than xmin={xmin}")
+    if ymax <= ymin:
+        violations.append(f"ymax={ymax} is not greater than ymin={ymin}")
+    return violations
 
 
 def _image_path_for_xml_target(xml_path: Path) -> Path:

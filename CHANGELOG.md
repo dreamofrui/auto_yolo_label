@@ -3,9 +3,64 @@
 All notable changes to this repo are recorded here.
 
 ## [Unreleased]
+### Product / GUI
+
+- Changed the default application theme to light, using `#F8FAFC` surfaces,
+  white elevated cards, and `#0F172A` primary text across the desktop shell.
+- Restored role-based navigation, feedback, and confirmation styling in the
+  generated stylesheet while keeping the side navigation dark for contrast.
+- Simplified theme management to a single generated light stylesheet; removed
+  dark palette definitions, runtime switching, and theme preference persistence.
+
+### Tests
+
+- Updated theme manager coverage for the light default, light stylesheet color
+  tokens, and isolated singleton state between tests.
+- Removed obsolete dark-theme and persistence assertions from GUI coverage.
+
+### Documentation
+
+- Added an owner-confirmed UI regression boundary for staged redesign work,
+  separating blocking behavior and safety checks from semantic and visual
+  review, and classifying existing GUI assertions for migration.
 
 ### Product / GUI
 
+- Added the Issue #26 HITL homepage prototype with a production-line entry model, local-first trust boundaries, disabled preview states, and wide/small desktop review artifacts. It is isolated under `.prototypes/` and does not change the PySide6 product surface.
+
+- Defined the enterprise visual-data-operations, local-first workbench, and product-homepage terms that guide the new UI redesign route.
+
+### Tests
+
+- Relocated tests into ownership-based hierarchy: `tests/core/` (core logic), `tests/workers/` (desktop worker lifecycle), `tests/gui/` (GUI shell and widgets), `tests/utils/` (shared infrastructure), `tests/server_scripts/` (standalone server scripts), and `tests/integration/` (scenario chains). Root-level contract and import-boundary tests remain in `tests/`. Existing test collection (353 pytest cases) preserved.
+- Added `tests/gui/conftest.py` as the GUI test support seam, centralizing shared QApplication, window, mapping, task, and deterministic-state setup. Extracted `app()`, `make_window()`, `close_qt_windows()`, `make_image()`, `set_task_timestamp()`, and `make_scanned_site()` from `test_gui_shell.py` and `test_path_picker.py` into the shared seam. All 85 GUI tests preserve their external assertions and cleanup behavior; the collected case count is unchanged. The seam does not become a production dependency.
+
+### Tests
+- Split the monolithic `test_gui_shell.py` (3238 lines, 82 tests) into independently navigable per-tool-page test modules: `test_gui_scan.py` (scan), `test_gui_sample.py` (sample), `test_gui_train.py` (train), `test_gui_infer.py` (infer), `test_gui_restore.py` (restore), `test_gui_convert.py` (convert), `test_gui_label.py` (label), and `test_gui_review.py` (review). The shell file retains login, homepage, side nav, task center, manual, settings, and global visual-contract tests (30 tests). Shared `FakeLabelImgWorker` moved to `conftest.py`. Total collected GUI case count (87) is unchanged. A maintainer can now run global-shell coverage without opening tool-page test files.
+
+### Development Checks
+
+- Updated `.pre-commit-config.yaml` path filters: removed stale `api` reference from deleted architecture, added `server_scripts` for standalone server scripts.
+- Renamed discipline checker rules from numeric labels (`Rule 1`, `Rule 3`, etc.) to descriptive names (`NO_GUI_HTTP_IN_CORE`, `NO_IMPLICIT_ENV`, `USE_PATHLIB`, `NO_DIRECT_MAPPING_JSON`, `EXCEPTION_INHERITS_BASE`, `PUBLIC_DOCSTRING`). Enforcement behavior unchanged.
+
+### Product / GUI
+
+- Redesigned login page with painpoint-driven narrative: shows the annotation
+  problem first ("万张图像，逐张标注？"), then the solution (半自动化), quantified
+  proof (100 → 10,000), process flow, and trust markers. Removed function module
+  cards and boundary panels for cleaner focus. Updated left panel to dark theme
+  (#1a3743) with unified brand colors (#007b78) matching the main workbench.
+- Redesigned utility navigation buttons (首页、任务中心、使用手册、设置) with
+  compact single-line layout, emoji badges (🏠 📋 📖 ⚙️), reduced height from
+  50-56px to 40px, and improved text contrast (#b8d4db) for clearer visual
+  hierarchy against flow buttons.
+- Fixed tool page header stretch and enhanced utility nav buttons with structured
+  two-line layout (badge + title + subtitle) matching flow button visual density.
+- Expanded Restore validation logs with the exact label row, matched image,
+  class, converted pixel bounds, and violated boundary while keeping the
+  visible failure summary compact.
+- Moved persisted tool defaults from the user home directory to the project's
+  ignored `.autolabeler/tool_defaults.json` runtime file.
 - Updated Task Center rows so action buttons remain visible with long summaries,
   and added clickable 运行中/需要处理 summary filters with a return action to
   the full task list.
@@ -36,6 +91,8 @@ All notable changes to this repo are recorded here.
 
 ### Architecture
 
+- Documented staged annotation migration through Restore, Convert, and Sample,
+  with private format implementations removed after each adoption step.
 - Reframed the active architecture around the PySide6 desktop GUI, stable
   framework-free `core/`, and thin `gui/workers/` adapters that call `core/`
   directly.
@@ -54,6 +111,27 @@ All notable changes to this repo are recorded here.
 
 ### Documentation
 
+- Added `docs/dev/ARCHITECTURE.md` as the current architecture description:
+  system context, dependency direction, module responsibilities, key data
+  flows, persistence locations, long-running task ownership, and external
+  integrations. Excludes completed-work lists, per-file maps, risk logs,
+  reading orders, and future plans.
+- Separated architecture direction out of `docs/dev/PRODUCT_SPEC.md` so the
+  product contract now covers only externally observable Flow and Independent
+  mode behavior, inputs, outputs, validation, failure conditions, and
+  destructive-operation safety guarantees.
+- Kept old retained documents (`ONBOARDING_SUMMARY.md`, `UI_SPEC.md`) in place
+  as temporary migration input while the new structure is reviewed.
+- Rebuilt the interrupted Trellis bootstrap into codebase-backed specs for the
+  core, GUI, worker, utility, and standalone server-script layers, with
+  project-specific cross-layer and reuse guides.
+- Documented one canonical LabelImg-compatible VOC XML serialization for
+  annotation workflows instead of preserving conflicting historical layouts.
+- Added `CONTEXT.md` to define Annotation and Annotation Format as shared
+  domain terms across YOLO TXT and Pascal VOC XML workflows, including strict
+  rejection of out-of-bounds annotations and shared Annotation Diagnostics.
+- Added per-repo engineering-skill configuration for GitHub issue tracking,
+  canonical triage labels, and single-context domain docs.
 - Added contributor rules requiring bug fixes to be traced to specific
   functions and call paths, with a lightweight flow for small single-function
   fixes.
@@ -71,8 +149,29 @@ All notable changes to this repo are recorded here.
 - Added the onboarding guide to first-read documentation entry points and
   extended it with a code-level module maintenance map.
 
+
+### Documentation
+
+- Added `docs/dev/UI_STANDARD.md` as the forward-looking UI standard: desktop
+  product goals, information hierarchy, keyboard and focus behavior, WCAG 2.2 AA
+  contrast and semantic state roles, fixed typography, responsive structure and
+  small-window priority, error/loading/empty states, and Qt desktop interaction
+  conventions. Gaps are recorded as future work rather than standard exceptions.
+  Page-specific business behavior remains in PRODUCT_SPEC.md and UI_SPEC.md.
+
+### Server Scripts
+
+- Upgraded `scripts/ui_snapshot.py` to capture all GUI surfaces (login,
+  workbench, modules, task-center, manual, settings) at more than one desktop
+  size (defaults: 1440x900 and 1280x720). Output defaults to the git-ignored
+  `.ui-snapshots/` directory; PNGs are not preserved as source assets.
+  Added `.ui-snapshots/` to `.gitignore`.
+
 ### Tests
 
+- Documented the annotation test seam: format behavior belongs to the shared
+  module interface, while feature and worker tests retain policy and lifecycle
+  coverage without duplicating private parser tests.
 - Added scanner coverage for ignoring XML label files and rejecting unsupported
   Product-folder files.
 
@@ -85,3 +184,18 @@ All notable changes to this repo are recorded here.
   journals, static GUI mockups, old user guides, project-specific scratch
   notes, and repo-local agent skill docs from the active documentation set.
 - Removed `CLAUDE.md`; `AGENTS.md` is now the single contributor-rule entry.
+
+### Documentation
+
+- Consolidated `AGENTS.md` as the canonical agent rules: active workflow,
+  architecture boundaries, filesystem safety, verification requirements,
+  protected assets, disabled Trellis workflow, and mandatory GitNexus checks.
+  Removed the trailing Trellis block. Added explicit Filesystem Safety section.
+- Simplified `CLAUDE.md` to point to `AGENTS.md` for canonical rules, keeping
+  only Claude-specific Direction guidance and the explicit Trellis reminder.
+- Pruned `CONTEXT.md` glossary to only the implemented Annotation and Annotation
+  Format terms; removed Annotation Diagnostic term.
+- Retained only the strict Annotation bounds ADR (`0001`); removed the eight
+  draft, strategy-only, or incomplete ADRs (`0002`–`0009`).
+
+

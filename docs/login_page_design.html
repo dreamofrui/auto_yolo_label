@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Labeler - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+            background: #0A0E14;
+            color: #E6EDF3;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .login-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* ========== LEFT: BRAND STORY (40%) ========== */
+        .brand-section {
+            flex: 0 0 40%;
+            background: linear-gradient(135deg, #0A0E14 0%, #141922 100%);
+            padding: 56px 56px 64px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .brand-wordmark {
+            font-size: 32px;
+            font-weight: 700;
+            color: #E6EDF3;
+            margin-bottom: 90px;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-headline {
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1.3;
+            color: #E6EDF3;
+            margin-bottom: 24px;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-description {
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.7;
+            color: #9DA9BB;
+            margin-bottom: 64px;
+            max-width: 480px;
+        }
+
+        /* Statistics - Industrial Readout Style */
+        .stats-display {
+            display: flex;
+            gap: 56px;
+            margin-bottom: auto;
+        }
+
+        .stat-readout {
+            text-align: center;
+            position: relative;
+        }
+
+        .stat-readout::after {
+            content: '';
+            position: absolute;
+            right: -28px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1px;
+            height: 60px;
+            background: #21262D;
+        }
+
+        .stat-readout:last-child::after {
+            display: none;
+        }
+
+        .stat-value {
+            font-size: 40px;
+            font-weight: 700;
+            color: #0EA5E9;
+            margin-bottom: 6px;
+            letter-spacing: -1px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            font-weight: 400;
+            color: #6B7785;
+            letter-spacing: 0.3px;
+        }
+
+        .brand-footer {
+            font-size: 13px;
+            color: #6B7785;
+            line-height: 1.5;
+        }
+
+        /* ========== RIGHT: FORM ACCESS (60%) ========== */
+        .form-section {
+            flex: 0 0 60%;
+            background: #141922;
+            padding: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .form-card {
+            background: #1C2128;
+            border: 1px solid #30363D;
+            border-radius: 12px;
+            padding: 48px;
+            width: 440px;
+            max-width: 100%;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        .form-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #E6EDF3;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .form-subtitle {
+            font-size: 14px;
+            color: #9DA9BB;
+            margin-bottom: 48px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #E6EDF3;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            background: #1A1F29;
+            border: 1px solid #30363D;
+            border-radius: 6px;
+            padding: 12px 14px;
+            font-size: 14px;
+            color: #E6EDF3;
+            font-family: inherit;
+            transition: border-color 0.15s ease, outline 0.15s ease;
+        }
+
+        .form-input::placeholder {
+            color: #6B7785;
+        }
+
+        .form-input:focus {
+            outline: 2px solid rgba(14, 165, 233, 0.2);
+            outline-offset: 0;
+            border-color: #0EA5E9;
+        }
+
+        .forgot-link {
+            display: block;
+            text-align: right;
+            font-size: 13px;
+            color: #0EA5E9;
+            text-decoration: none;
+            margin-bottom: 16px;
+            transition: color 0.15s ease;
+        }
+
+        .forgot-link:hover {
+            color: #0284C7;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: #0EA5E9;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 6px;
+            padding: 14px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.1s ease;
+            margin-bottom: 32px;
+        }
+
+        .btn-primary:hover {
+            background: #0284C7;
+        }
+
+        .btn-primary:active {
+            background: #0369A1;
+            transform: translateY(1px);
+        }
+
+        .enterprise-label {
+            font-size: 12px;
+            color: #6B7785;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .btn-secondary {
+            width: 100%;
+            background: transparent;
+            color: #6B7785;
+            border: 1px solid #30363D;
+            border-radius: 6px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1366px) {
+            .brand-section {
+                flex: 0 0 35%;
+                padding: 48px 40px 56px;
+            }
+
+            .stats-display {
+                flex-direction: column;
+                gap: 32px;
+            }
+
+            .stat-readout::after {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- LEFT: BRAND STORY -->
+        <div class="brand-section">
+            <div class="brand-wordmark">Auto Labeler</div>
+
+            <h1 class="brand-headline">AI 驱动的<br>智能标注平台</h1>
+
+            <p class="brand-description">
+                使用先进的机器学习技术，自动完成数据标注任务，将标注效率提升 10 倍，助力制造业质检团队实现智能化升级。
+            </p>
+
+            <!-- Industrial Statistics Readout -->
+            <div class="stats-display">
+                <div class="stat-readout">
+                    <div class="stat-value">95%</div>
+                    <div class="stat-label">标注准确率</div>
+                </div>
+                <div class="stat-readout">
+                    <div class="stat-value">10x</div>
+                    <div class="stat-label">效率提升</div>
+                </div>
+                <div class="stat-readout">
+                    <div class="stat-value">50K+</div>
+                    <div class="stat-label">处理图像</div>
+                </div>
+            </div>
+
+            <div class="brand-footer">
+                © 2026 Auto Labeler. 企业级 AI 标注解决方案
+            </div>
+        </div>
+
+        <!-- RIGHT: FORM ACCESS -->
+        <div class="form-section">
+            <div class="form-card">
+                <h2 class="form-title">登录</h2>
+                <p class="form-subtitle">欢迎回来，请输入您的凭据继续使用</p>
+
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-input" placeholder="输入您的用户名">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-input" placeholder="输入您的密码">
+                </div>
+
+                <a href="#" class="forgot-link">忘记密码？</a>
+
+                <button class="btn-primary">登录</button>
+
+                <div class="enterprise-label">企业用户</div>
+                <button class="btn-secondary" disabled>使用 SSO 登录</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
