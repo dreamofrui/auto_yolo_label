@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from gui.design_system import SPACING, RADIUS, FONT_SIZE, PADDING, LIGHT_THEME
+from gui.animations import create_button_press_animation
 
 
 # =============================================================================
@@ -34,6 +35,7 @@ class PrimaryButton(QPushButton):
     Primary action button with brand color styling.
 
     Object name: "primaryButton" for QSS styling.
+    Includes press animation for tactile feedback.
     """
 
     def __init__(self, text: str = "", parent: Optional[QWidget] = None):
@@ -41,6 +43,23 @@ class PrimaryButton(QPushButton):
         self.setObjectName("primaryButton")
         self.setCursor(Qt.PointingHandCursor)
         self.setMinimumHeight(40)
+        self._press_animation: Optional[QPropertyAnimation] = None
+
+    def mousePressEvent(self, event) -> None:
+        """Handle mouse press with animation."""
+        super().mousePressEvent(event)
+        if self._press_animation:
+            self._press_animation.stop()
+        self._press_animation = create_button_press_animation(self, pressed=True)
+        self._press_animation.start()
+
+    def mouseReleaseEvent(self, event) -> None:
+        """Handle mouse release with animation."""
+        super().mouseReleaseEvent(event)
+        if self._press_animation:
+            self._press_animation.stop()
+        self._press_animation = create_button_press_animation(self, pressed=False)
+        self._press_animation.start()
 
 
 class SecondaryButton(QPushButton):
