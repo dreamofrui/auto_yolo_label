@@ -90,6 +90,26 @@
 
 ## 第一部分：视觉设计系统
 
+### 0.1 术语说明
+
+> **重要**：本文档使用 CSS 术语描述布局和样式以便于理解，实际实现需转换为 PySide6 等价写法。
+
+#### CSS 与 PySide6 术语对照
+
+| CSS 术语 | PySide6 实现 | 说明 |
+|---------|-------------|------|
+| `display: grid` | `QGridLayout` | 网格布局 |
+| `display: flex` | `QHBoxLayout` / `QVBoxLayout` | 弹性盒子布局 |
+| `gap: 12px` | `layout.setSpacing(12)` | 元素间距 |
+| `padding: 10px 20px` | `setContentsMargins(20, 10, 20, 10)` | 内边距 |
+| `margin: 16px` | `setMargin(16)` | 外边距 |
+| `background-color` | `setStyleSheet("background-color: ...")` | 背景色 |
+| `border-radius` | QSS `border-radius` | 圆角 |
+| `transition` | `QPropertyAnimation` | 过渡动画 |
+| `@keyframes` | `QPropertyAnimation` + `QEasingCurve` | 关键帧动画 |
+
+**注意**：文档中的 CSS 代码块仅为示意，实际开发时请参考 `gui/components.py` 和 `gui/theme_manager.py` 中的实现。
+
 ### 1.1 色彩规范
 
 #### 浅色主题 — Light Professional
@@ -805,6 +825,8 @@ color: #FFFFFF
 
 ### 2.2 登录页（Login Page）
 
+> ⚠️ **当前版本未实现** - 此页面为设计规范，实际产品中尚未开发
+
 > **设计原则**：企业级视觉 + 功能诚实（不伪装未实现的安全特性）
 
 #### 布局结构
@@ -1121,6 +1143,8 @@ line-height: 1.4
 ```
 
 #### AI 预览面板规格
+
+> ⚠️ **实现状态待确认** - AI 预览面板可能未完全实现，需验证功能
 
 ```python
 # 容器
