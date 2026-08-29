@@ -19,11 +19,11 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QLinearGradient, QPaintEvent, QPalette
 from PySide6.QtWidgets import (
     QPushButton, QProgressBar, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
-    QFrame, QGraphicsOpacityEffect
+    QFrame, QGraphicsOpacityEffect, QGraphicsDropShadowEffect
 )
 
 from gui.design_system import SPACING, RADIUS, FONT_SIZE, PADDING, LIGHT_THEME
-from gui.animations import create_button_press_animation
+from gui.animations import create_button_press_animation, get_animations_enabled
 
 
 # =============================================================================
@@ -279,18 +279,32 @@ class Card(QFrame):
     - Border-simulated shadow (performance optimized)
     - Hover animation: translateY -4px (200ms)
     - Rounded corners (8px)
+    - Configurable shadow mode: "border" (default) or "real"
 
     Object name: "card" for QSS styling.
     """
 
     clicked = Signal()
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: Optional[QWidget] = None, shadow_mode: str = "border"):
         super().__init__(parent)
         self.setObjectName("card")
         self._base_y = 0
         self._hover_animation: Optional[QPropertyAnimation] = None
         self._is_clickable = False
+        self._shadow_mode = shadow_mode
+        self._applyShadowMode()
+
+    def _applyShadowMode(self) -> None:
+        """Apply shadow based on shadow_mode setting."""
+        if self._shadow_mode == "real":
+            # Apply real QGraphicsDropShadowEffect
+            shadow = QGraphicsDropShadowEffect(self)
+            shadow.setBlurRadius(8)
+            shadow.setColor(QColor(0, 0, 0, 25))  # rgba(0, 0, 0, 0.1)
+            shadow.setOffset(0, 2)
+            self.setGraphicsEffect(shadow)
+        # else: "border" mode uses QSS border styling (default)
 
     def setClickable(self, clickable: bool) -> None:
         """Enable/disable click behavior and cursor."""
@@ -327,12 +341,54 @@ class Card(QFrame):
         if self._base_y == 0:
             self._base_y = current_pos.y()
 
+        # Check if animations are enabled
+        if not get_animations_enabled():
+            # Skip animation, directly set position
+            self.move(current_pos.x(), self._base_y + offset_y)
+            return
+
         self._hover_animation = QPropertyAnimation(self, b"pos")
         self._hover_animation.setDuration(200)
         self._hover_animation.setStartValue(current_pos)
         self._hover_animation.setEndValue(QPoint(current_pos.x(), self._base_y + offset_y))
         self._hover_animation.setEasingCurve(QEasingCurve.OutCubic)
         self._hover_animation.start()
+
+
+class StandardCard(Card):
+    """
+    Standard card with 24px padding.
+
+    Use for: main page modules, task cards, general content cards.
+    """
+
+    def __init__(self, parent: Optional[QWidget] = None, shadow_mode: str = "border"):
+        super().__init__(parent, shadow_mode=shadow_mode)
+        self.setContentsMargins(24, 24, 24, 24)
+
+
+class CompactCard(Card):
+    """
+    Compact card with 16px padding.
+
+    Use for: list items, dense layouts, sidebars.
+    """
+
+    def __init__(self, parent: Optional[QWidget] = None, shadow_mode: str = "border"):
+        super().__init__(parent, shadow_mode=shadow_mode)
+        self.setContentsMargins(16, 16, 16, 16)
+
+
+class SpaciousCard(Card):
+    """
+    Spacious card with 32px padding.
+
+    Use for: feature highlights, important announcements, hero sections.
+    """
+
+    def __init__(self, parent: Optional[QWidget] = None, shadow_mode: str = "border"):
+        super().__init__(parent, shadow_mode=shadow_mode)
+        self.setContentsMargins(32, 32, 32, 32)
 
 
 # =============================================================================
