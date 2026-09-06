@@ -41,6 +41,16 @@ def test_theme_manager_stylesheet_excludes_progress_from_transition():
     assert "Animations handled by QPropertyAnimation" in stylesheet
 
 
+def test_theme_manager_uses_enterprise_visual_language():
+    """The generated QSS exposes the navy rail/teal action system."""
+    stylesheet = ThemeManager().get_stylesheet()
+
+    assert LIGHT_THEME.NAV_BG in stylesheet
+    assert LIGHT_THEME.BRAND_PRIMARY in stylesheet
+    assert LIGHT_THEME.BRAND_ACCENT in stylesheet
+    assert "qlineargradient" not in stylesheet
+
+
 def test_theme_manager_documents_python_animations():
     stylesheet = ThemeManager().get_stylesheet()
 

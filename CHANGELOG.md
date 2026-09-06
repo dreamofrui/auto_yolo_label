@@ -5,6 +5,14 @@ All notable changes to this repo are recorded here.
 ## [Unreleased]
 ### Product / GUI
 
+- Reframed the desktop visual language around a deep-navy navigation rail,
+  cool-mist light canvas, cool-teal actions, and restrained champagne brand
+  details. Centralized module accents, focus states, typography, and panel
+  hierarchy in the existing design token/QSS layer without changing workflow
+  layout, task lifecycle, or safety confirmations.
+- Kept Convert actions reachable after an analysis summary expands the form by
+  reusing the existing small-window scroll-to-action behavior from Restore.
+
 - Changed the default application theme to light, using `#F8FAFC` surfaces,
   white elevated cards, and `#0F172A` primary text across the desktop shell.
 - Restored role-based navigation, feedback, and confirmation styling in the
@@ -19,6 +27,10 @@ All notable changes to this repo are recorded here.
 - Removed obsolete dark-theme and persistence assertions from GUI coverage.
 
 ### Documentation
+
+- Added ADR 0002 and refreshed `CONTEXT.md`, `UI_SPEC.md`, and `UI_STANDARD.md`
+  so the enterprise visual language and two-size screenshot verification gate
+  have one maintained source of truth.
 
 - Added an owner-confirmed UI regression boundary for staged redesign work,
   separating blocking behavior and safety checks from semantic and visual

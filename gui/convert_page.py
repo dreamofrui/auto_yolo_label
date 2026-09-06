@@ -220,7 +220,8 @@ class ConvertPage(QWidget):
         )
         self.right_support_panel = self.ai_assistant_panel
 
-        root.addWidget(wrap_scroll_panel(self.left_main_panel), 1)
+        self.left_scroll_area = wrap_scroll_panel(self.left_main_panel)
+        root.addWidget(self.left_scroll_area, 1)
         root.addWidget(self.right_support_panel, 0)
 
         for field in (
@@ -273,6 +274,7 @@ class ConvertPage(QWidget):
         self.confirm_classes_checkbox.setChecked(False)
         self._show_analysis(outcome.analysis)
         self._sync_action_state()
+        QTimer.singleShot(0, lambda: self._scroll_actions_into_view(retries=2))
 
     def run_convert(self) -> None:
         """Convert after analysis and class confirmation."""
@@ -382,6 +384,18 @@ class ConvertPage(QWidget):
         self.convert_button.setEnabled(
             analysis_ok and self.confirm_classes_checkbox.isChecked()
         )
+
+    def _scroll_actions_into_view(self, *, retries: int = 0) -> None:
+        """Keep conversion actions reachable after analysis expands the form."""
+        try:
+            self.left_main_panel.adjustSize()
+            self.left_scroll_area.ensureWidgetVisible(self.analyze_button, 0, 18)
+        except RuntimeError:
+            return
+        if retries > 0:
+            QTimer.singleShot(
+                0, lambda: self._scroll_actions_into_view(retries=retries - 1)
+            )
 
     def _show_analysis(self, analysis: XmlDatasetAnalysis) -> None:
         status = "分析完成" if not analysis.blocking_issues else "分析阻断"

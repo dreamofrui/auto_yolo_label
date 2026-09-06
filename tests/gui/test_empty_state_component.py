@@ -1,7 +1,7 @@
 """
 Test EmptyState component from gui/components.py
 
-Verifies compliance with UI_DESIGN_SPEC_v2.md section 2.12.
+Verifies the empty-state rules in docs/dev/UI_STANDARD.md.
 """
 
 import pytest
@@ -153,7 +153,7 @@ def test_empty_state_both_actions(qapp):
 
 
 def test_empty_state_all_scenarios(qapp):
-    """Test all scenarios from UI_DESIGN_SPEC_v2.md section 2.12."""
+    """Test all documented empty-state scenarios."""
 
     scenarios = [
         ("📋", "暂无任务记录", "当您运行扫描、抽样、训练、推理等任务时"),

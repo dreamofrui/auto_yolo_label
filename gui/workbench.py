@@ -496,7 +496,7 @@ class LoginView(QWidget):
         password.setObjectName("formInput")
 
         # Forgot password link
-        forgot_link = QLabel('<a href="#" style="color: #0EA5E9; text-decoration: none;">忘记密码？</a>')
+        forgot_link = QLabel('<a href="#">忘记密码？</a>')
         forgot_link.setObjectName("loginForgotLink")
         forgot_link.setAlignment(Qt.AlignmentFlag.AlignRight)
         forgot_link.setOpenExternalLinks(False)
@@ -878,6 +878,9 @@ class WorkbenchView(QWidget):
         for index, module in enumerate(MODULES):
             card = QPushButton()
             card.setObjectName("moduleCardButton")
+            # The key is a visual hook only; activation still routes through
+            # the existing module callback below.
+            card.setProperty("moduleKey", module.key)
             card.setCursor(Qt.CursorShape.PointingHandCursor)
             card.setMinimumHeight(108)
             card.setSizePolicy(

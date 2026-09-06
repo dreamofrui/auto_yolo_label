@@ -1,7 +1,7 @@
 # AutoLabeler UI Spec
 
 > Status: owner-confirmed GUI spec.
-> Last updated: 2026-05-28
+> Last updated: 2026-09-06
 > Regression gate: `docs/dev/UI_REGRESSION_BOUNDARY.md`.
 
 This document defines the first-version desktop GUI direction. It complements
@@ -34,21 +34,30 @@ feedback, logs, result summary, and actionable errors.
 
 ## 2. Design Direction
 
-Use a consistent light workspace and navigation with a restrained brand accent.
-The interface should look professional, stable, and task-focused.
+Use a calm, high-trust visual language for professional visual-data operations:
+
+- **Canvas:** cool mist `#F4F7FA` with white workflow surfaces
+- **Navigation:** deep navy `#101C2E` with clear inverse text hierarchy
+- **Actions:** cool teal `#0C766E`; champagne `#C89B5B` is a brand detail only
+- **Typography:** Inter first, with Microsoft YaHei UI/Segoe UI fallbacks;
+  regular 32px page titles and a compact 14px body scale
+- **Depth:** thin borders and low-diffusion shadows; no glassmorphism or visual
+  noise
 
 Design rules:
 
 - Follow the UI workflow requirements in `AGENTS.md` before UI design or
   implementation work.
-- Prefer familiar product UI patterns over invented controls.
-- Keep colors restrained; use accent color for selection, primary action, and
-  state only.
-- Do not rely on decorative gradients, oversized cards, or AI-looking visual
-  tricks for polish.
-- Keep typography fixed and product-like; do not use viewport-scaled type.
-- Keep all pages usable in smaller desktop windows, including Mac laptop-sized
-  windows.
+- Use Qt-native techniques only; keep hover/pressed/focus feedback short and
+  skippable (120–180ms) and respect system reduced-motion settings
+- Colors follow WCAG 2.2 AA contrast requirements (see `UI_STANDARD.md`)
+- Typography is fixed (not viewport-scaled)
+- Keep all pages usable in smaller desktop windows (minimum 1024×680px)
+
+The complete visual token source is `gui/design_system.py`; generated widget
+styles live in `gui/theme_manager.py`. This document remains the behavior and
+layout baseline, while `docs/adr/0002-enterprise-visual-language.md` records
+the rationale for the current visual direction.
 
 ## 3. App Shell
 

@@ -31,3 +31,14 @@ _Avoid_: Cloud workspace, multi-tenant workspace
 The first application surface that explains AutoLabeler's value and guides a
 user into a supported data workflow; it is distinct from the task center.
 _Avoid_: Operations dashboard, task board
+
+**Enterprise Visual Language**:
+The shared visual vocabulary for the production workbench: dark navy navigation,
+light content surfaces, cool teal actions, and status colors kept separate from
+brand accents.
+_Avoid_: Marketing skin, decorative theme
+
+**Workflow Surface**:
+A screen region that helps an operator complete one labeling operation while
+keeping its inputs, preflight, execution state, and result feedback together.
+_Avoid_: Dashboard card, landing-page section

@@ -4,7 +4,7 @@ Performance-Optimized Animation System for AutoLabeler GUI
 This module provides GPU-accelerated animations using QPropertyAnimation.
 Only animates transform and opacity properties to avoid layout recalculation.
 
-Design Reference: UI_DESIGN_SPEC_v2.md Section 1.7
+Design Reference: docs/dev/UI_STANDARD.md (motion and accessibility rules)
 
 Performance Principles:
 - Use QPropertyAnimation (GPU accelerated) instead of QSS transitions
