@@ -1,12 +1,8 @@
-"""
-AutoLabeler Design System
-========================
+"""AutoLabeler visual design tokens.
 
-Design tokens and constants extracted from UI_DESIGN_SPEC_v2.md sections 1.1-1.5.
-Defines the light color palette, typography, spacing, border radius, and shadow system.
-
-Version: 2.1 (Performance Optimized)
-Last Updated: 2026-08-24
+The workbench uses a light content canvas with a dark navy navigation rail.
+All visual surfaces consume these tokens so a palette refresh never changes
+workflow semantics or widget contracts.
 """
 
 from dataclasses import dataclass
@@ -21,52 +17,82 @@ from PySide6.QtWidgets import QGraphicsDropShadowEffect
 
 @dataclass(frozen=True)
 class LightThemeColors:
-    """Light Professional Theme (Day Mode)"""
+    """Premium light theme for the local-first production workbench."""
 
     # Background Colors
-    BG_APP: str = "#F8FAFC"          # Application base
-    BG_SURFACE: str = "#FFFFFF"      # Main content area background
+    BG_APP: str = "#F4F7FA"          # Cool mist canvas
+    BG_SURFACE: str = "#FFFFFF"      # Primary content surface
     BG_ELEVATED: str = "#FFFFFF"     # Cards, dialogs (white + shadow)
-    BG_HOVER: str = "#F1F5F9"        # Hover state background
-    BG_ACTIVE: str = "#E2E8F0"       # Active/selected state background
+    BG_HOVER: str = "#EEF3F7"        # Hover state background
+    BG_ACTIVE: str = "#E4ECF2"       # Active/selected state background
     BG_INPUT: str = "#FFFFFF"        # Input field background
 
+    # Navigation rail
+    NAV_BG: str = "#101C2E"
+    NAV_SURFACE: str = "#17263B"
+    NAV_HOVER: str = "#20334D"
+    NAV_ACTIVE: str = "#28435F"
+    NAV_TEXT: str = "#D7E2EE"
+    NAV_MUTED: str = "#8EA2B8"
+
     # Text Colors
-    TEXT_PRIMARY: str = "#0F172A"    # Primary text
-    TEXT_SECONDARY: str = "#475569"  # Secondary text
-    TEXT_TERTIARY: str = "#94A3B8"   # Auxiliary text
-    TEXT_DISABLED: str = "#CBD5E1"   # Disabled state
+    TEXT_PRIMARY: str = "#0B1220"    # Deep ink
+    TEXT_SECONDARY: str = "#52657A"  # Secondary text
+    TEXT_TERTIARY: str = "#94A3B8"   # Auxiliary text (Slate 400)
+    TEXT_DISABLED: str = "#CBD5E1"   # Disabled state (Slate 300)
 
     # Brand Colors
-    BRAND_PRIMARY: str = "#0EA5E9"
-    BRAND_HOVER: str = "#0284C7"
-    BRAND_ACTIVE: str = "#0369A1"
-    BRAND_SUBTLE: str = "#E0F2FE"    # Light background block
+    BRAND_PRIMARY: str = "#0C766E"   # Cool teal (AA on white)
+    BRAND_HOVER: str = "#0B6F69"
+    BRAND_ACTIVE: str = "#07534F"
+    BRAND_SUBTLE: str = "#E2F3F0"
+
+    # Brand Accent
+    BRAND_ACCENT: str = "#C89B5B"     # Champagne gold (brand detail only)
+    BRAND_ACCENT_HOVER: str = "#A97C43"
+    BRAND_ACCENT_ACTIVE: str = "#805A2B"
+    BRAND_ACCENT_SUBTLE: str = "#F5EBDD"
 
     # Semantic Colors - Success
-    SUCCESS: str = "#10B981"
-    SUCCESS_BG: str = "#D1FAE5"
-    SUCCESS_BORDER: str = "#34D399"
+    SUCCESS: str = "#059669"         # Emerald 600
+    SUCCESS_BG: str = "#D1FAE5"      # Emerald 100
+    SUCCESS_BORDER: str = "#6EE7B7"  # Emerald 300
 
     # Semantic Colors - Warning
-    WARNING: str = "#F59E0B"
-    WARNING_BG: str = "#FEF3C7"
-    WARNING_BORDER: str = "#FBBF24"
+    WARNING: str = "#8A5A13"         # Amber (AA on warning surface)
+    WARNING_BG: str = "#FFF7E6"
+    WARNING_BORDER: str = "#F2D39B"
 
     # Semantic Colors - Error
-    ERROR: str = "#EF4444"
-    ERROR_BG: str = "#FEE2E2"
-    ERROR_BORDER: str = "#F87171"
+    ERROR: str = "#B91C1C"           # Red (AA on error surface)
+    ERROR_BG: str = "#FEE2E2"        # Red 100
+    ERROR_BORDER: str = "#FCA5A5"    # Red 300
 
     # Semantic Colors - Info
-    INFO: str = "#3B82F6"
-    INFO_BG: str = "#DBEAFE"
-    INFO_BORDER: str = "#60A5FA"
+    INFO: str = "#0369A1"            # Sky (AA on info surface)
+    INFO_BG: str = "#E0F2FE"         # Sky 100
+    INFO_BORDER: str = "#7DD3FC"     # Sky 300
 
     # Borders and Dividers
-    BORDER_DEFAULT: str = "#E2E8F0"
-    BORDER_SUBTLE: str = "#F1F5F9"
-    BORDER_EMPHASIS: str = "#CBD5E1"
+    BORDER_DEFAULT: str = "#D9E2EC"      # Standard borders
+    BORDER_SUBTLE: str = "#EAF0F4"       # Very light borders
+    BORDER_EMPHASIS: str = "#B8C7D6"     # Strong borders
+    BORDER_CARD: str = "#D5E0E9"         # Card edge definition
+
+    # Focus and inverse surfaces
+    FOCUS_RING: str = "#58BEB7"
+    TEXT_INVERSE: str = "#FFFFFF"
+
+    # Per-module accents keep the workflow scannable without recolouring
+    # business states. Values are used for a thin card edge and icon tint.
+    MODULE_SCAN: str = "#1C9DB5"
+    MODULE_SAMPLE: str = "#7B69C7"
+    MODULE_LABEL: str = "#C27C3A"
+    MODULE_TRAIN: str = "#B05D88"
+    MODULE_INFER: str = "#0F8F86"
+    MODULE_REVIEW: str = "#2E9B72"
+    MODULE_RESTORE: str = "#5B75B8"
+    MODULE_CONVERT: str = "#759D3A"
 
 
 LIGHT_THEME = LightThemeColors()
@@ -89,10 +115,9 @@ class FontFamily:
     def __post_init__(self):
         # Using object.__setattr__ because dataclass is frozen
         object.__setattr__(self, 'SANS_SERIF', [
-            "Microsoft YaHei UI",      # Windows recommended
-            "Microsoft YaHei",         # Windows fallback
-            "PingFang SC",             # macOS
+            "Inter",                   # Primary (must bundle fonts)
             "SF Pro Display",          # macOS system font
+            "Microsoft YaHei UI",      # Windows recommended
             "Segoe UI",                # Windows system font
             "-apple-system",
             "BlinkMacSystemFont",
@@ -118,16 +143,17 @@ class FontFamily:
 
 @dataclass(frozen=True)
 class FontSize:
-    """Font size hierarchy in pixels"""
+    """Font size hierarchy in pixels (Desktop-first scale)"""
 
-    # Heading levels
-    H1: int = 28    # Page main title
-    H2: int = 22    # Section title
-    H3: int = 18    # Card title
-    H4: int = 16    # Subsection title
+    # Display and heading levels
+    DISPLAY: int = 40   # Hero headlines
+    H1: int = 32        # Page main title
+    H2: int = 24        # Section title
+    H3: int = 18        # Card title
+    H4: int = 16        # Subsection title
 
     # Body levels
-    BODY_L: int = 15    # Large body (key descriptions)
+    BODY_L: int = 16    # Large body (key descriptions)
     BODY: int = 14      # Standard body (form labels, buttons)
     BODY_S: int = 13    # Small body (description text)
     CAPTION: int = 12   # Auxiliary text (hints, tags)
@@ -165,34 +191,34 @@ FONT_WEIGHT = FontWeight()
 
 @dataclass(frozen=True)
 class Spacing:
-    """8px base grid spacing system"""
+    """8px base grid spacing system (Desktop-generous scale)"""
 
     SPACE_1: int = 4     # Minimal spacing (icon + text)
     SPACE_2: int = 8     # Small spacing (tight elements)
     SPACE_3: int = 12    # Standard spacing (related elements)
     SPACE_4: int = 16    # Medium spacing (group elements)
     SPACE_5: int = 24    # Large spacing (between groups)
-    SPACE_6: int = 32    # Extra large spacing (block separation)
-    SPACE_8: int = 48    # Super large spacing (page areas)
-    SPACE_10: int = 64   # Page-level spacing
+    SPACE_6: int = 40    # Extra large spacing (block separation)
+    SPACE_8: int = 64    # Super large spacing (page areas)
+    SPACE_10: int = 80   # Page-level spacing
 
 
 @dataclass(frozen=True)
 class ComponentPadding:
-    """Component internal padding specifications"""
+    """Component internal padding specifications (Desktop-generous)"""
 
     # Button padding (vertical, horizontal)
     BUTTON_SM: Tuple[int, int] = (6, 12)     # Small button
     BUTTON_MD: Tuple[int, int] = (10, 20)    # Standard button
-    BUTTON_LG: Tuple[int, int] = (14, 28)    # Large button
+    BUTTON_LG: Tuple[int, int] = (14, 32)    # Large button
 
     # Card padding
-    CARD_PADDING: int = 24              # Standard card
-    CARD_PADDING_COMPACT: int = 16      # Compact card
-    CARD_PADDING_SPACIOUS: int = 32     # Spacious card
+    CARD_PADDING: int = 32              # Standard card (hero/module cards)
+    CARD_PADDING_COMPACT: int = 24      # Compact card
+    CARD_PADDING_SPACIOUS: int = 40     # Spacious card
 
     # Page margins
-    PAGE_PADDING: int = 32              # Page main area
+    PAGE_PADDING: int = 48              # Page main area
     SIDEBAR_PADDING: int = 20           # Sidebar
 
 
@@ -207,13 +233,13 @@ PADDING = ComponentPadding()
 
 @dataclass(frozen=True)
 class BorderRadius:
-    """Border radius values in pixels"""
+    """Border radius values in pixels (Warm, modern scale)"""
 
     SM: int = 4       # Small elements (tags, badges)
-    MD: int = 6       # Buttons, input fields
-    LG: int = 8       # Cards
-    XL: int = 12      # Dialogs, large cards
-    XXL: int = 16     # Modal dialogs
+    MD: int = 8       # Buttons, input fields
+    LG: int = 12      # Cards, panels
+    XL: int = 16      # Large cards, hero sections
+    XXL: int = 20     # Modal dialogs
     FULL: int = 9999  # Circular elements
 
 
@@ -254,54 +280,71 @@ class BorderSimulatedShadow:
 
 class RealShadowFactory:
     """
-    Real shadow factory (Scheme B) - Selective Use Only
+    Real shadow factory (Industrial Precision Design)
 
-    Performance Note:
-    - Use ONLY for: login page cards, dialogs/modals, hover states (dynamic)
-    - AVOID for: static cards, lists with many items (>10)
-    - QGraphicsDropShadowEffect has significant rendering cost
+    Physical depth system:
+    - Small: 3mm lift (controls, pills)
+    - Medium: 6mm lift (cards at rest)
+    - Large: 12mm lift (cards on hover)
+    - Extra large: 20mm lift (modals, elevated panels)
     """
 
     @staticmethod
     def create_small_shadow_light() -> QGraphicsDropShadowEffect:
-        """Small shadow for light theme"""
+        """Small shadow: 3mm physical lift"""
         effect = QGraphicsDropShadowEffect()
-        effect.setBlurRadius(4)
-        effect.setColor(QColor(0, 0, 0, 13))   # 5% opacity
-        effect.setOffset(0, 2)
+        effect.setBlurRadius(3)
+        effect.setColor(QColor(15, 23, 42, 31))   # 12% opacity, Slate 900
+        effect.setOffset(0, 1)
         return effect
 
     @staticmethod
     def create_medium_shadow_light() -> QGraphicsDropShadowEffect:
-        """Medium shadow for light theme"""
+        """Medium shadow: 6mm physical lift (card default) - Enhanced for better visibility"""
         effect = QGraphicsDropShadowEffect()
-        effect.setBlurRadius(8)
-        effect.setColor(QColor(0, 0, 0, 26))   # 10% opacity
-        effect.setOffset(0, 4)
+        effect.setBlurRadius(16)                  # Increased from 12px
+        effect.setColor(QColor(15, 23, 42, 31))   # Increased to 12% opacity (was 10%)
+        effect.setOffset(0, 6)                    # Increased from 4px
+        return effect
+
+    @staticmethod
+    def create_large_shadow_light() -> QGraphicsDropShadowEffect:
+        """Large shadow: 12mm physical lift (card hover) - Enhanced for dramatic lift"""
+        effect = QGraphicsDropShadowEffect()
+        effect.setBlurRadius(28)                  # Increased from 20px
+        effect.setColor(QColor(15, 23, 42, 36))   # Increased to 14% opacity (was 12%)
+        effect.setOffset(0, 14)                   # Increased from 8px
+        return effect
+
+    @staticmethod
+    def create_xlarge_shadow_light() -> QGraphicsDropShadowEffect:
+        """Extra large shadow: 20mm physical lift (modals)"""
+        effect = QGraphicsDropShadowEffect()
+        effect.setBlurRadius(32)
+        effect.setColor(QColor(15, 23, 42, 38))   # 15% opacity
+        effect.setOffset(0, 16)
         return effect
 
 
 @dataclass(frozen=True)
 class ShadowUsageGuide:
     """
-    Shadow usage decision tree and component mapping
+    Shadow usage for industrial precision design
 
-    Decision Tree:
-    - Static display? → Border simulation (Scheme A)
-    - Hover/Temporary? → Real shadow (Scheme B)
-    - Element count > 10? → Border simulation (Scheme A)
+    NEW STRATEGY (Industrial Design):
+    - Use REAL shadows for primary surfaces (cards, panels, hero)
+    - 8 module cards = acceptable performance cost
+    - Border simulation ONLY for list items (>20 rows)
 
     Component Mapping:
-    - Homepage module cards (static): Scheme A
-    - Homepage module cards (hover): Scheme A (use border + translateY)
-    - Login page form card: Scheme B (single static card acceptable)
-    - Task center task cards: Scheme A (variable count)
-    - Preflight result cards: Scheme A (multiple cards)
-    - Manual page chapter cards: Scheme A (border only, no shadow)
-    - Settings page parameter cards: Scheme A (border only)
-    - Primary buttons: Scheme A (border on hover)
-    - Input fields (focus): No shadow (use outline for glow simulation)
-    - Dialogs/confirmation modals: Scheme B (temporary display acceptable)
+    - Homepage module cards: REAL medium shadow → large shadow on hover
+    - Homepage hero section: REAL medium shadow
+    - Login page form card: REAL large shadow
+    - Tool page panels: REAL medium shadow
+    - Task center task cards: Border simulation (variable count, can be >20)
+    - Preflight result cards: REAL small shadow (usually <10 items)
+    - Buttons: No shadow (use solid backgrounds)
+    - Dialogs/modals: REAL xlarge shadow
     """
     pass
 

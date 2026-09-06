@@ -84,10 +84,14 @@ class ThemeManager:
 }}
 
 QWidget {{
-    background-color: {colors.BG_APP};
+    background-color: transparent;
     color: {colors.TEXT_PRIMARY};
     font-size: {FONT_SIZE.BODY}px;
     font-weight: {FONT_WEIGHT.REGULAR};
+}}
+
+QMainWindow {{
+    background-color: {colors.BG_APP};
 }}
 
 /* ============================================================================
@@ -107,16 +111,14 @@ QWidget {{
    ============================================================================ */
 
 #sideNav {{
-    background-color: {colors.BG_APP};
-    border-right: 1px solid {colors.BORDER_SUBTLE};
+    background-color: {colors.NAV_BG};
+    border-right: 1px solid {colors.NAV_SURFACE};
     min-width: 240px;
     max-width: 240px;
 }}
 
 #navMark {{
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                                stop:0 {colors.BRAND_PRIMARY},
-                                stop:1 {colors.BRAND_HOVER});
+    background-color: {colors.BRAND_PRIMARY};
     color: #FFFFFF;
     font-size: 18px;
     font-weight: {FONT_WEIGHT.BOLD};
@@ -128,14 +130,14 @@ QWidget {{
 }}
 
 #navBrand {{
-    color: {colors.TEXT_PRIMARY};
+    color: {colors.TEXT_INVERSE};
     font-size: 16px;
     font-weight: {FONT_WEIGHT.SEMIBOLD};
     line-height: {LINE_HEIGHT.TIGHT};
 }}
 
 #navSection {{
-    color: {colors.TEXT_TERTIARY};
+    color: {colors.NAV_MUTED};
     font-size: 11px;
     font-weight: {FONT_WEIGHT.SEMIBOLD};
     letter-spacing: 0.5px;
@@ -146,7 +148,7 @@ QPushButton#navButton,
 QPushButton#navFlowButton,
 QPushButton#navUtilityButton {{
     background-color: transparent;
-    color: {colors.TEXT_SECONDARY};
+    color: {colors.NAV_TEXT};
     border: none;
     border-left: 3px solid transparent;
     border-radius: {RADIUS.MD}px;
@@ -160,33 +162,33 @@ QPushButton#navUtilityButton {{
 QPushButton#navButton:hover,
 QPushButton#navFlowButton:hover,
 QPushButton#navUtilityButton:hover {{
-    background-color: {colors.BG_SURFACE};
-    color: {colors.TEXT_PRIMARY};
+    background-color: {colors.NAV_HOVER};
+    color: {colors.TEXT_INVERSE};
 }}
 
 QPushButton#navButton[selected="true"],
 QPushButton#navFlowButton[selected="true"],
 QPushButton#navUtilityButton[selected="true"] {{
-    background-color: {colors.BRAND_SUBTLE};
-    color: {colors.BRAND_PRIMARY};
+    background-color: {colors.NAV_ACTIVE};
+    color: {colors.TEXT_INVERSE};
     border-left: 3px solid {colors.BRAND_PRIMARY};
     font-weight: {FONT_WEIGHT.SEMIBOLD};
 }}
 
 #navStepNumber, #navUtilityBadge {{
-    background-color: {colors.BG_SURFACE};
-    border: 1px solid {colors.BORDER_DEFAULT};
+    background-color: {colors.NAV_SURFACE};
+    border: 1px solid {colors.NAV_HOVER};
     border-radius: {RADIUS.SM}px;
-    color: {colors.TEXT_SECONDARY};
+    color: {colors.NAV_TEXT};
 }}
 
 #navStepTitle {{
-    color: {colors.TEXT_PRIMARY};
+    color: {colors.NAV_TEXT};
     font-weight: {FONT_WEIGHT.SEMIBOLD};
 }}
 
 #navStepSubtitle {{
-    color: {colors.TEXT_TERTIARY};
+    color: {colors.NAV_MUTED};
     font-size: {FONT_SIZE.CAPTION}px;
 }}
 
@@ -201,7 +203,7 @@ QPushButton#navFlowButton[selected="true"] #navStepTitle,
 QPushButton#navFlowButton[selected="true"] #navStepSubtitle,
 QPushButton#navUtilityButton[selected="true"] #navStepTitle,
 QPushButton#navUtilityButton[selected="true"] #navStepSubtitle {{
-    color: {colors.TEXT_PRIMARY};
+    color: {colors.TEXT_INVERSE};
 }}
 
 /* ============================================================================
@@ -213,8 +215,8 @@ QPushButton#navUtilityButton[selected="true"] #navStepSubtitle {{
     color: #FFFFFF;
     border: none;
     border-radius: {RADIUS.MD}px;
-    padding: 14px 28px;
-    font-size: 15px;
+    padding: 10px 20px;
+    font-size: {FONT_SIZE.BODY}px;
     font-weight: {FONT_WEIGHT.SEMIBOLD};
 }}
 
@@ -314,7 +316,7 @@ QPushButton#advancedToggleButton:checked {{
 
 #formInput:focus, QLineEdit:focus {{
     border-color: {colors.BRAND_PRIMARY};
-    outline: 2px solid rgba(14, 165, 233, 0.2);
+    outline: 2px solid {colors.FOCUS_RING};
     outline-offset: 0px;
 }}
 
@@ -465,21 +467,26 @@ QProgressBar#taskProgressBar::chunk {{
 
 QFrame[objectName*="Card"], QFrame[objectName*="Panel"] {{
     background-color: {colors.BG_SURFACE};
-    border: 1px solid {colors.BORDER_SUBTLE};
+    border: 1px solid {colors.BORDER_CARD};
     border-bottom: 2px solid {shadow_light[1]};
     border-radius: {RADIUS.LG}px;
 }}
 
 #homeHero, #homeModulePanel, #homeSupportPanel {{
     background-color: {colors.BG_SURFACE};
-    border: 1px solid {colors.BORDER_SUBTLE};
+    border: 1px solid {colors.BORDER_CARD};
     border-bottom: 2px solid {shadow_light[1]};
     border-radius: {RADIUS.LG}px;
 }}
 
+#homeHero {{
+    background-color: {colors.BRAND_SUBTLE};
+    border-top: 3px solid {colors.BRAND_PRIMARY};
+}}
+
 #aiPreview {{
     background-color: {colors.BG_SURFACE};
-    border: 1px solid {colors.BORDER_SUBTLE};
+    border: 1px solid {colors.BORDER_CARD};
     border-radius: {RADIUS.LG}px;
 }}
 
@@ -489,17 +496,28 @@ QFrame[objectName*="Card"], QFrame[objectName*="Panel"] {{
 
 QPushButton[objectName="moduleCardButton"] {{
     background-color: {colors.BG_SURFACE};
-    border: 1px solid {colors.BORDER_SUBTLE};
+    border: 1px solid {colors.BORDER_CARD};
     border-bottom: 2px solid {shadow_light[1]};
+    border-left: 3px solid {colors.BORDER_CARD};
     border-radius: {RADIUS.LG}px;
     padding: 10px 12px;
     text-align: center;
 }}
 
 QPushButton[objectName="moduleCardButton"]:hover {{
-    border-color: {colors.BORDER_DEFAULT};
+    border: 1px solid {colors.BORDER_DEFAULT};
+    border-left-width: 4px;
     border-bottom: 3px solid {shadow_medium[1]};
 }}
+
+QPushButton[objectName="moduleCardButton"][moduleKey="scan"] {{ border-left-color: {colors.MODULE_SCAN}; }}
+QPushButton[objectName="moduleCardButton"][moduleKey="sample"] {{ border-left-color: {colors.MODULE_SAMPLE}; }}
+QPushButton[objectName="moduleCardButton"][moduleKey="label"] {{ border-left-color: {colors.MODULE_LABEL}; }}
+QPushButton[objectName="moduleCardButton"][moduleKey="train"] {{ border-left-color: {colors.MODULE_TRAIN}; }}
+QPushButton[objectName="moduleCardButton"][moduleKey="infer"] {{ border-left-color: {colors.MODULE_INFER}; }}
+QPushButton[objectName="moduleCardButton"][moduleKey="review"] {{ border-left-color: {colors.MODULE_REVIEW}; }}
+QPushButton[objectName="moduleCardButton"][moduleKey="restore"] {{ border-left-color: {colors.MODULE_RESTORE}; }}
+QPushButton[objectName="moduleCardButton"][moduleKey="convert"] {{ border-left-color: {colors.MODULE_CONVERT}; }}
 
 /* ============================================================================
    Semantic role surfaces and feedback
@@ -625,14 +643,14 @@ QWidget#skeletonLoader {{
 
 #toolTitle {{
     font-size: {FONT_SIZE.H1}px;
-    font-weight: {FONT_WEIGHT.BOLD};
+    font-weight: {FONT_WEIGHT.REGULAR};
     color: {colors.TEXT_PRIMARY};
     line-height: {LINE_HEIGHT.TIGHT};
 }}
 
 #homeTitle {{
     font-size: {FONT_SIZE.H1}px;
-    font-weight: {FONT_WEIGHT.BOLD};
+    font-weight: {FONT_WEIGHT.REGULAR};
     color: {colors.TEXT_PRIMARY};
 }}
 
@@ -714,9 +732,7 @@ QProgressBar {{
 }}
 
 QProgressBar::chunk {{
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                                stop:0 {colors.BRAND_PRIMARY},
-                                stop:1 {colors.BRAND_HOVER});
+    background-color: {colors.BRAND_PRIMARY};
     border-radius: {RADIUS.SM}px;
 }}
 
@@ -769,27 +785,25 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
    ============================================================================ */
 
 #loginStory {{
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                                stop:0 {colors.BG_APP},
-                                stop:1 {colors.BG_SURFACE});
+    background-color: {colors.NAV_BG};
 }}
 
 #loginBrand {{
     font-size: 32px;
     font-weight: {FONT_WEIGHT.BOLD};
-    color: {colors.TEXT_PRIMARY};
+    color: {colors.TEXT_INVERSE};
 }}
 
 #loginHeadline {{
     font-size: 36px;
     font-weight: {FONT_WEIGHT.BOLD};
-    color: {colors.TEXT_PRIMARY};
+    color: {colors.TEXT_INVERSE};
     line-height: 1.3;
 }}
 
 #loginSubheadline {{
     font-size: 16px;
-    color: {colors.TEXT_SECONDARY};
+    color: {colors.NAV_TEXT};
     line-height: {LINE_HEIGHT.RELAXED};
 }}
 
@@ -820,7 +834,7 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
 #loginDescription {{
     font-size: 16px;
     font-weight: {FONT_WEIGHT.REGULAR};
-    color: {colors.TEXT_SECONDARY};
+    color: {colors.NAV_TEXT};
     line-height: {LINE_HEIGHT.RELAXED};
 }}
 
@@ -837,18 +851,18 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
 #loginStatLabel {{
     font-size: {FONT_SIZE.BODY}px;
     font-weight: {FONT_WEIGHT.REGULAR};
-    color: {colors.TEXT_TERTIARY};
+    color: {colors.NAV_MUTED};
     letter-spacing: 0.3px;
 }}
 
 #loginStatSeparator {{
-    background: {colors.BORDER_SUBTLE};
+    background: {colors.NAV_SURFACE};
     border: none;
 }}
 
 #loginStoryFooter {{
     font-size: 13px;
-    color: {colors.TEXT_TERTIARY};
+    color: {colors.NAV_MUTED};
     line-height: 1.5;
 }}
 
@@ -951,6 +965,90 @@ QFrame[objectName*="success"], QFrame[objectName*="Success"] {{
     border-left: 4px solid {colors.SUCCESS};
     border-radius: {RADIUS.MD}px;
 }}
+
+/* ============================================================================
+   Shared labels, support rail, and risk controls
+   ============================================================================ */
+
+#fieldLabel, #panelTitle, #homeSectionTitle, #manualSectionTitle {{
+    color: {colors.TEXT_PRIMARY};
+    font-weight: {FONT_WEIGHT.SEMIBOLD};
+}}
+
+#panelTitle, #homeSectionTitle {{
+    font-size: {FONT_SIZE.H3}px;
+}}
+
+#dangerButton {{
+    background-color: {colors.ERROR};
+    color: {colors.TEXT_INVERSE};
+    border: none;
+    border-radius: {RADIUS.MD}px;
+    padding: 8px 16px;
+    font-weight: {FONT_WEIGHT.SEMIBOLD};
+}}
+
+#dangerButton:hover {{ background-color: #B91C1C; }}
+#dangerButton:pressed {{ background-color: #991B1B; }}
+#dangerButton:disabled {{ background-color: {colors.BORDER_DEFAULT}; color: {colors.TEXT_TERTIARY}; }}
+
+#aiRailTitle, #aiTitle {{
+    color: {colors.TEXT_PRIMARY};
+    font-size: {FONT_SIZE.H3}px;
+    font-weight: {FONT_WEIGHT.SEMIBOLD};
+}}
+
+#aiRailBadge, #aiStatus {{
+    background-color: {colors.BRAND_ACCENT_SUBTLE};
+    color: {colors.BRAND_ACCENT_ACTIVE};
+    border: 1px solid {colors.BRAND_ACCENT};
+    border-radius: {RADIUS.SM}px;
+    padding: 3px 8px;
+    font-size: {FONT_SIZE.CAPTION}px;
+    font-weight: {FONT_WEIGHT.SEMIBOLD};
+}}
+
+#aiRailThread, #aiThread {{
+    background-color: {colors.BG_HOVER};
+    border: 1px solid {colors.BORDER_SUBTLE};
+    border-radius: {RADIUS.MD}px;
+}}
+
+#aiRailInput, #aiInput {{
+    background-color: {colors.BG_INPUT};
+    border: 1px solid {colors.BORDER_DEFAULT};
+    border-radius: {RADIUS.MD}px;
+}}
+
+#homeStrengthBand {{
+    background-color: {colors.NAV_BG};
+    border-radius: {RADIUS.LG}px;
+}}
+
+#strengthItem, #strengthBadge {{
+    color: {colors.NAV_TEXT};
+}}
+
+#strengthTitle {{ color: {colors.TEXT_INVERSE}; font-weight: {FONT_WEIGHT.SEMIBOLD}; }}
+#strengthBody {{ color: {colors.NAV_MUTED}; }}
+#strengthDivider {{ background-color: {colors.NAV_SURFACE}; }}
+
+QTreeWidget, QListWidget, QTableWidget {{
+    background-color: {colors.BG_SURFACE};
+    alternate-background-color: {colors.BG_HOVER};
+    color: {colors.TEXT_PRIMARY};
+    border: 1px solid {colors.BORDER_DEFAULT};
+    border-radius: {RADIUS.MD}px;
+    outline: none;
+}}
+
+QTreeWidget::item:selected, QListWidget::item:selected, QTableWidget::item:selected {{
+    background-color: {colors.BRAND_SUBTLE};
+    color: {colors.BRAND_ACTIVE};
+}}
+
+QCheckBox {{ spacing: 8px; color: {colors.TEXT_SECONDARY}; }}
+QCheckBox:focus {{ outline: 2px solid {colors.FOCUS_RING}; }}
 
 /* ============================================================================
    End of Stylesheet

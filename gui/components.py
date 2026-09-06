@@ -319,11 +319,10 @@ class Card(QFrame):
     def _applyShadowMode(self) -> None:
         """Apply shadow based on shadow_mode setting."""
         if self._shadow_mode == "real":
-            # Apply real QGraphicsDropShadowEffect
-            shadow = QGraphicsDropShadowEffect(self)
-            shadow.setBlurRadius(8)
-            shadow.setColor(QColor(0, 0, 0, 25))  # alpha 25/255 ≈ 10% opacity
-            shadow.setOffset(0, 2)
+            # Apply enhanced real QGraphicsDropShadowEffect (v2.1 update)
+            # Using medium shadow settings from design_system.py
+            from gui.design_system import REAL_SHADOW
+            shadow = REAL_SHADOW.create_medium_shadow_light()
             self.setGraphicsEffect(shadow)
         # else: "border" mode uses QSS border styling (default)
 
@@ -428,7 +427,8 @@ class EmptyState(QWidget):
     - Secondary action link (optional)
     - Container: padding 60px 40px, min-height 320px
 
-    Supports all scenarios from UI_DESIGN_SPEC_v2.md section 2.12:
+    Supports the empty-state scenarios described by UI_SPEC.md and the
+    component rules in UI_STANDARD.md:
     - Task center: 📋 "暂无任务记录"
     - Inference run list: 📂 "还没有推理运行记录"
     - Code/Product tree: 🌳 "未找到产品分组"
@@ -703,7 +703,7 @@ class ErrorPanel(QFrame):
     - User action suggestions (bulleted list)
     - Expandable technical details section with toggle button
     - Monospace font for technical content
-    - Deep red color scheme per UI_DESIGN_SPEC_v2.md section 2.14
+    - Semantic error palette from UI_STANDARD.md
 
     Object names:
     - errorPanel: container frame
@@ -861,7 +861,7 @@ class WarningPanel(QFrame):
     Features:
     - Warning title with icon (⚠️)
     - Description text with line-height 1.5
-    - Orange color scheme per UI_DESIGN_SPEC_v2.md section 2.14
+    - Semantic warning palette from UI_STANDARD.md
 
     Object names:
     - warningPanel: container frame
